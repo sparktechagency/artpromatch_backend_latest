@@ -7,6 +7,7 @@ export const serviceTypes = {
   GUEST_SPOTS: 'Guest Spots',
 } as const;
 
+
 export const favoritePiercings = {
   EAR_LOBE: 'Ear Lobe',
   LIP: 'Lip (Labret, Monroe)',
@@ -20,6 +21,7 @@ export const favoritePiercings = {
   TRAGUSS: 'Traguss',
   CONCH: 'Conch',
 } as const;
+
 
 export const favoriteTattoos = {
   //A

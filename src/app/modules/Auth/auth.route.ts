@@ -72,6 +72,7 @@ router
 router
   .route('/forget-password-verify')
   .post(
+    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
     validateRequest(AuthValidation.forgetPasswordVerifySchema),
     AuthController.verifyOtpForForgetPassword
   );
@@ -81,6 +82,15 @@ router
   .post(
     validateRequest(AuthValidation.resetPasswordSchema),
     AuthController.resetPassword
+  );
+
+
+router
+  .route('/deactive-account')
+  .post(
+    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
+    validateRequest(AuthValidation.userDeactivationSchema),
+    AuthController.deactivateUserAccount
   );
 
 router

@@ -1,13 +1,13 @@
 /* eslint-disable no-unused-vars */
-import { z } from 'zod';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import { favoriteTattoos, serviceTypes } from '../Client/client.constant';
+import { z } from 'zod';
 import { ARTIST_TYPE, expertiseTypes } from '../Artist/artist.constant';
-import { ROLE } from './auth.constant';
 import {
   OPERATING_DAYS,
   SERVICES_OFFERED,
 } from '../Business/business.constants';
+import { favoriteTattoos, serviceTypes } from '../Client/client.constant';
+import { ROLE } from './auth.constant';
 
 // Reusable validators
 export const zodEnumFromObject = <T extends Record<string, string>>(obj: T) =>
@@ -148,6 +148,17 @@ const refreshTokenSchema = z.object({
       required_error: 'Refresh token is required!',
     }),
   }),
+});
+
+export const userDeactivationSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email'),
+    password: z.string(),
+    deactivationReason: z
+      .string()
+      .min(3, 'Reason must be at least 3 characters')
+      .optional(),
+  }).strict(),
 });
 
 const accessTokenSchema = z.object({
@@ -414,4 +425,5 @@ export const AuthValidation = {
   profileSchema,
   socialSchema,
   forgetPasswordVerifySchema,
+  userDeactivationSchema
 };

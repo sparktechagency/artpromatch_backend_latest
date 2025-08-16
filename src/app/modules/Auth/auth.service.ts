@@ -1,27 +1,29 @@
 /* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { generateOtp, verifyToken } from '../../lib';
-import sendOtpSms from '../../utils/sendOtpSms';
-import { IAuth } from './auth.interface';
-import config from '../../config';
-import { AppError, Logger, sendOtpEmail } from '../../utils';
-import status from 'http-status';
-import Auth from './auth.model';
-import { AuthValidation, TProfilePayload } from './auth.validation';
-import { ROLE } from './auth.constant';
-import Client from '../Client/client.model';
-import ClientPreferences from '../ClientPreferences/clientPreferences.model';
 import bcrypt from 'bcryptjs';
-import mongoose from 'mongoose';
-import Artist from '../Artist/artist.model';
-import { TProfileFileFields, TSocialLoginPayload } from '../../types';
 import fs from 'fs';
+import status from 'http-status';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import { z } from 'zod';
+import config from '../../config';
+import { generateOtp, verifyToken } from '../../lib';
+import {
+  TDeactiveAccountPayload,
+  TProfileFileFields,
+  TSocialLoginPayload,
+} from '../../types';
+import { AppError, Logger, sendOtpEmail } from '../../utils';
+import Artist from '../Artist/artist.model';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import Business from '../Business/business.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
-import { z } from 'zod';
-
+import Client from '../Client/client.model';
+import ClientPreferences from '../ClientPreferences/clientPreferences.model';
+import { ROLE } from './auth.constant';
+import { IAuth } from './auth.interface';
+import Auth from './auth.model';
+import { AuthValidation, TProfilePayload } from './auth.validation';
 
 const createAuth = async (payload: IAuth) => {
   const existingUser = await Auth.findOne({ email: payload.email });
@@ -451,8 +453,8 @@ const changePasswordIntoDB = async (
   payload: z.infer<typeof AuthValidation.passwordChangeSchema.shape.body>
 ) => {
   const { id } = await verifyToken(accessToken);
-   
-  console.log("id")
+
+  console.log('id');
   const user = await Auth.findOne({ _id: id, isActive: true }).select(
     '+password'
   );
@@ -542,10 +544,7 @@ const resetPasswordIntoDB = async (
   resetPasswordToken: string,
   newPassword: string
 ) => {
-  const { email } = (await verifyToken(
-    resetPasswordToken
-  )) as any;
-
+  const { email } = (await verifyToken(resetPasswordToken)) as any;
 
   const user = await Auth.findOne({ email, isActive: true });
 
@@ -620,28 +619,58 @@ const fetchProfileFromDB = async (user: IAuth) => {
 };
 
 const fetchAllConnectedAcount = async (user: IAuth) => {
-  let currentUser; 
-  
-  if(user.role === ROLE.CLIENT){
+  let currentUser;
+
+  if (user.role === ROLE.CLIENT) {
     currentUser = await Client.findOne({ auth: user._id }).select('_id');
-  }
-  else if(user.role === ROLE.ARTIST){
-    currentUser = await Artist.findOne({ auth: user._id }).select('_id')
-  }
-  else if(user.role === ROLE.BUSINESS){
-     currentUser = await Business.findOne({ auth: user._id }).select('_id')
+  } else if (user.role === ROLE.ARTIST) {
+    currentUser = await Artist.findOne({ auth: user._id }).select('_id');
+  } else if (user.role === ROLE.BUSINESS) {
+    currentUser = await Business.findOne({ auth: user._id }).select('_id');
   }
 
   if (!currentUser) {
     throw new AppError(status.NOT_FOUND, 'profile not found');
   }
-  
-  console.log(currentUser)
+
+  console.log(currentUser);
   const result = await ClientPreferences.findOne(
     { clientId: currentUser._id },
-    { connectedAccounts: 1, _id: 0 } 
+    { connectedAccounts: 1, _id: 0 }
   );
 
+  return result;
+};
+
+const deactiveUserCurrentAccount = async (
+  user: IAuth,
+  payload: TDeactiveAccountPayload
+) => {
+  console.log(user);
+  const { email, password, deactivationReason } = payload;
+  const currentUser = await Auth.findOne({ _id: user._id, email: email });
+
+  if (!currentUser) throw new AppError(status.NOT_FOUND, 'User not found');
+  console.log(currentUser);
+  console.log(currentUser.password, password);
+
+  const isPasswordCorrect = currentUser.isPasswordCorrect(password);
+
+  if (!isPasswordCorrect) {
+    throw new AppError(status.BAD_REQUEST, 'Invalid credentials');
+  }
+
+  const result = await Auth.findByIdAndUpdate(
+    user._id,
+    {
+      $set: {
+        isDeactivated: true,
+        deactivationReason: deactivationReason,
+        deactivatedAt: new Date(),
+      },
+    },
+    { new: true, select: 'email fullName isDeactivated deactivationReason' }
+  );
   return result;
 };
 
@@ -658,5 +687,6 @@ export const AuthService = {
   verifyOtpForForgetPassword,
   resetPasswordIntoDB,
   fetchProfileFromDB,
-  fetchAllConnectedAcount
+  fetchAllConnectedAcount,
+  deactiveUserCurrentAccount,
 };

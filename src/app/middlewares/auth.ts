@@ -30,11 +30,15 @@ const auth = (...requiredRoles: TRole[]) => {
     const user = await Auth.findById(id);
 
     if (!user) {
-      throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
+      throw new AppError(httpStatus.UNAUTHORIZED, 'User not exists!');
     }
     
     if(user.isDeleted){
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    }
+    
+    if(user.isDeactivated) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You account is Deactive now!');
     }
 
     if(!user.isActive){
@@ -46,7 +50,7 @@ const auth = (...requiredRoles: TRole[]) => {
     if (requiredRoles.length && !requiredRoles.includes(user.role)) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        'You have no access to this route'
+        'You have no access to this route, Forbidden!'
       );
     }
 

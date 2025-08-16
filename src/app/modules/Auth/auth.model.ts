@@ -60,7 +60,11 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: Boolean,
       default: true,
     },
-     isDeleted: {
+
+    isDeactivated: { type: Boolean, default: false },
+    deactivationReason: { type: String },
+    deactivatedAt: { type: Date },
+    isDeleted: {
       type: Boolean,
       default: false,
     },

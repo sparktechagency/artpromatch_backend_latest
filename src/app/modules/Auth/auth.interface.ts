@@ -14,6 +14,9 @@ export interface IAuth extends Document {
   refreshToken?: string | null;
   isProfile: boolean;
   isVerified: boolean;
+  isDeactivated: boolean;
+  deactivationReason: String;
+  deactivatedAt: Date;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: Date;

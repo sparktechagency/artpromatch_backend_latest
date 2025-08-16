@@ -159,6 +159,21 @@ const fetchClientConnectedAccount = asyncHandler(async (req, res) => {
     );
 });
 
+
+const deactivateUserAccount = asyncHandler(async(req,res)=>{
+  const result = await AuthService.deactiveUserCurrentAccount(req.user,req.body);
+  res
+    .status(status.OK)
+    .json(
+      new AppResponse(
+        status.OK,
+        result,
+        'Account Deactivate successfully!',
+      )
+    );
+})
+
+
 export const AuthController = {
   createAuth,
   saveAuthData,
@@ -172,5 +187,6 @@ export const AuthController = {
   verifyOtpForForgetPassword,
   resetPassword,
   fetchProfile,
-  fetchClientConnectedAccount
+  fetchClientConnectedAccount,
+  deactivateUserAccount
 };

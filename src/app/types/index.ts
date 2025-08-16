@@ -27,3 +27,9 @@ export type TSocialLoginPayload = {
   phoneNumber?: string;
   address?: string;
 };
+
+export type TDeactiveAccountPayload = {
+  email: string;
+  password: string;
+  deactivationReason: string;
+}
