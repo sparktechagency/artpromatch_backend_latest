@@ -60,6 +60,10 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: Boolean,
       default: true,
     },
+     isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true, versionKey: false }
 );

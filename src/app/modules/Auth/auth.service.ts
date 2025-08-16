@@ -128,7 +128,6 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
   };
 };
 
-
 const saveProfileIntoDB = async (
   payload: TProfilePayload,
   user: IAuth,
@@ -257,7 +256,7 @@ const saveProfileIntoDB = async (
 
       await Auth.findByIdAndUpdate(
         user._id,
-        { role: ROLE.ARTIST, isProfile: true },
+        { role: ROLE.ARTIST, isActive: false, isProfile: true },
         { session }
       );
 
@@ -306,7 +305,7 @@ const saveProfileIntoDB = async (
 
       await Auth.findByIdAndUpdate(
         user._id,
-        { role: ROLE.BUSINESS, isProfile: true },
+        { role: ROLE.BUSINESS, isActive: false, isProfile: true },
         { session }
       );
 
@@ -357,7 +356,6 @@ const saveProfileIntoDB = async (
     );
   }
 };
-
 
 const socialLoginServices = async (payload: TSocialLoginPayload) => {
   const { email, fcmToken, image, fullName, address } = payload;
@@ -637,7 +635,8 @@ const fetchAllConnectedAcount = async (user: IAuth) => {
   if (!currentUser) {
     throw new AppError(status.NOT_FOUND, 'profile not found');
   }
-
+  
+  console.log(currentUser)
   const result = await ClientPreferences.findOne(
     { clientId: currentUser._id },
     { connectedAccounts: 1, _id: 0 } 

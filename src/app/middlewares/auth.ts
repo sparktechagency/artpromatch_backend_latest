@@ -6,6 +6,7 @@ import { TRole } from '../modules/Auth/auth.constant';
 import Auth from '../modules/Auth/auth.model';
 import { console } from 'inspector';
 
+
 const auth = (...requiredRoles: TRole[]) => {
   return asyncHandler(async (req, res, next) => {
     const token =
@@ -31,6 +32,14 @@ const auth = (...requiredRoles: TRole[]) => {
     if (!user) {
       throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
     }
+    
+    if(user.isDeleted){
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    }
+
+    if(!user.isActive){
+        throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    }
 
     console.log("role",requiredRoles)
 
@@ -40,6 +49,7 @@ const auth = (...requiredRoles: TRole[]) => {
         'You have no access to this route'
       );
     }
+
     req.user = user;
     next();
   });

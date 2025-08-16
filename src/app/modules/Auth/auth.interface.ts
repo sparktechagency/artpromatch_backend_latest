@@ -15,6 +15,7 @@ export interface IAuth extends Document {
   isProfile: boolean;
   isVerified: boolean;
   isActive: boolean;
+  isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
