@@ -71,11 +71,6 @@ const businessSchema = new Schema<IBusiness>(
     description: { type: String },
     profileViews: { type: Number, default: 0 },
 
-    // Status flags
-    isVerified: { type: Boolean, default: false },
-    isDeleted: { type: Boolean, default: false },
-    isActive: { type: Boolean, default: false },
-
     // Relationships
     preferences: { type: Schema.Types.ObjectId, ref: 'BusinessPreferences' },
     guestSpots: [{ type: Schema.Types.ObjectId, ref: 'GuestSpot' }],

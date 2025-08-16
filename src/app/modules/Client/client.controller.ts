@@ -60,8 +60,10 @@ const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
     );
 });
 
+
+
 const fetchDiscoverArtists = asyncHandler(async (req, res) => {
-  const {data, meta} = await ClientService.fetchDiscoverArtistFromDB(
+  const { data, meta } = await ClientService.fetchDiscoverArtistFromDB(
     req.user,
     req.query
   );

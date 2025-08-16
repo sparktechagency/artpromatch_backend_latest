@@ -10,7 +10,6 @@ const saveFolder = asyncHandler(async (req, res) => {
     req.body,
     files
   );
-
   res
     .status(status.OK)
     .json(new AppResponse(status.OK, result, 'Folder saved successfully'));

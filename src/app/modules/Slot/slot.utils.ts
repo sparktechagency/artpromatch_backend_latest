@@ -1,6 +1,7 @@
 // Convert HH:mm to total minutes
 export const toMinutes = (time: string) => {
   const [h, m] = time.split(':').map(Number);
+  console.log(h,m)
   return h * 60 + m;
 };
 

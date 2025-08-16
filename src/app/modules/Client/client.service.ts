@@ -1,55 +1,26 @@
 /* eslint-disable no-unused-vars */
+import status from 'http-status';
+import { AppError } from '../../utils';
+import Artist from '../Artist/artist.model';
+import { IAuth } from '../Auth/auth.interface';
+import Auth from '../Auth/auth.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
 import Client from './client.model';
-import { IAuth } from '../Auth/auth.interface';
-import { AppError } from '../../utils';
-import status from 'http-status';
-import mongoose from 'mongoose';
 import {
   TUpdateNotificationPayload,
   TUpdatePreferencePayload,
   TUpdateProfilePayload,
   TUpdateSecuritySettingsPayload,
 } from './client.validation';
-import Auth from '../Auth/auth.model';
-import Artist from '../Artist/artist.model';
+import { ROLE } from '../Auth/auth.constant';
+import Business from '../Business/business.model';
 
 const updateProfile = async (user: IAuth, payload: TUpdateProfilePayload) => {
-  const client = await Client.findOne({ auth: user._id });
-
-  if (!client) {
-    throw new AppError(status.NOT_FOUND, 'Client not found');
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    await Auth.findByIdAndUpdate(user._id, payload, { session });
-
-    const response = await Client.findOneAndUpdate(
-      { auth: user._id },
-      { country: payload.country },
-      { new: true, session }
-    ).populate([
-      {
-        path: 'auth',
-        select: 'fullName email phoneNumber',
-      },
-    ]);
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return response;
-  } catch {
-    await session.abortTransaction();
-    session.endSession();
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      'Something went wrong while updating profile data'
-    );
-  }
+  const result = await Auth.findByIdAndUpdate(user._id, payload, {
+    new: true,
+    select: 'fullName',
+  });
+  return result;
 };
 
 const updatePreferences = async (
@@ -62,21 +33,24 @@ const updatePreferences = async (
     throw new AppError(status.NOT_FOUND, 'Client not found');
   }
 
-  // Find and update preferences, or create new ones if not found
-  const preferences = await ClientPreferences.findOneAndUpdate(
-    { clientId: client._id },
-    payload,
-    { new: true, upsert: true }
-  );
+  console.log('client', client);
 
-  if (!preferences) {
+  const result = await Client.findByIdAndUpdate(client._id, payload, {
+    new: true,
+  });
+
+  console.log('update preferrence', result);
+
+  // Find and update preferences, or create new ones if not found
+
+  if (!result) {
     throw new AppError(
       status.INTERNAL_SERVER_ERROR,
       'Error updating preferences'
     );
   }
 
-  return preferences;
+  return result;
 };
 
 const updateNotificationPreferences = async (
@@ -89,20 +63,34 @@ const updateNotificationPreferences = async (
     throw new AppError(status.NOT_FOUND, 'Client not found');
   }
 
+  console.log('payload', payload);
+  const updateData = payload.all
+    ? {
+        bookingConfirmations: true,
+        bookingReminders: true,
+        bookingCancellations: true,
+        newMessageNotifications: true,
+        appUpdates: true,
+        newAvailability: true,
+        lastMinuteBookings: true,
+        newGuestArtists: true,
+      }
+    : {
+        bookingConfirmations: payload.bookingConfirmations,
+        bookingReminders: payload.bookingReminders,
+        bookingCancellations: payload.bookingCancellations,
+        newMessageNotifications: payload.newMessageNotifications,
+        appUpdates: payload.appUpdates,
+        newAvailability: payload.newAvailability,
+        lastMinuteBookings: payload.lastMinuteBookings,
+        newGuestArtists: payload.newGuestArtists,
+        notificationPreferences: payload.notificationPreferences,
+      };
+
   // Step 2: Find and update the client's notification preferences
   const preferences = await ClientPreferences.findOneAndUpdate(
     { clientId: client._id },
-    {
-      bookingConfirmations: payload.bookingConfirmations,
-      bookingReminders: payload.bookingReminders,
-      bookingCancellations: payload.bookingCancellations,
-      newMessageNotifications: payload.newMessageNotifications,
-      appUpdates: payload.appUpdates,
-      newAvailability: payload.newAvailability,
-      lastMinuteBookings: payload.lastMinuteBookings,
-      newGuestArtists: payload.newGuestArtists,
-      notificationChannels: payload.notificationChannels,
-    },
+    updateData,
     { new: true }
   );
 
@@ -114,35 +102,40 @@ const updateNotificationPreferences = async (
   }
 
   // Return the updated preferences
-  return preferences;
+  return updateData;
 };
 
 const updatePrivacySecuritySettings = async (
   user: IAuth,
   payload: TUpdateSecuritySettingsPayload
 ) => {
-  const clientPreferences = await ClientPreferences.findOne({
-    clientId: user._id,
-  });
+  const client = await Client.findOne({ auth: user._id }).select('_id');
+  if (!client) {
+    throw new AppError(status.NOT_FOUND, 'Client not found');
+  }
 
-  if (!clientPreferences) {
+  const updatedPreferences = await ClientPreferences.findOneAndUpdate(
+    { clientId: client._id },
+    { $set: payload },
+    {
+      new: true,
+      projection: {
+        twoFactorAuthEnabled: 1,
+        locationSuggestions: 1,
+        personalizedContent: 1,
+        _id: 0,
+      },
+    }
+  );
+
+  if (!updatedPreferences) {
     throw new AppError(status.NOT_FOUND, 'Client preferences not found');
   }
 
-  if (payload.twoFactorAuthEnabled !== undefined) {
-    clientPreferences.twoFactorAuthEnabled = payload.twoFactorAuthEnabled;
-  }
-  if (payload.personalizedContent !== undefined) {
-    clientPreferences.personalizedContent = payload.personalizedContent;
-  }
-  if (payload.locationSuggestions !== undefined) {
-    clientPreferences.locationSuggestions = payload.locationSuggestions;
-  }
-
-  await clientPreferences.save();
-
-  return clientPreferences;
+  return updatedPreferences;
 };
+
+
 
 const fetchDiscoverArtistFromDB = async (
   user: IAuth,
@@ -193,9 +186,6 @@ const fetchDiscoverArtistFromDB = async (
     },
     {
       $match: {
-        isActive: true, // Match active artists
-        isDeleted: false, // Exclude deleted artists
-        isVerified: true, // Optionally, filter only verified artists
         ...artistTypeFilter,
       },
     },
@@ -223,9 +213,6 @@ const fetchDiscoverArtistFromDB = async (
     },
     {
       $match: {
-        isActive: true, // Match active artists
-        isDeleted: false, // Exclude deleted artists
-        isVerified: true, // Optionally, filter only verified artists
         ...artistTypeFilter,
       },
     },
@@ -285,4 +272,5 @@ export const ClientService = {
   updateNotificationPreferences,
   updatePrivacySecuritySettings,
   fetchDiscoverArtistFromDB,
+  
 };

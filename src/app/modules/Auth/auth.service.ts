@@ -22,6 +22,7 @@ import Business from '../Business/business.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
 import { z } from 'zod';
 
+
 const createAuth = async (payload: IAuth) => {
   const existingUser = await Auth.findOne({ email: payload.email });
 
@@ -30,7 +31,7 @@ const createAuth = async (payload: IAuth) => {
   }
 
   const otp = generateOtp();
-  await sendOtpSms(payload.phoneNumber, otp);
+  // await sendOtpSms(payload.phoneNumber, otp);
   const token = jwt.sign({ ...payload, otp }, config.jwt_access_secret!, {
     expiresIn: '5m',
   });
@@ -48,7 +49,7 @@ const signupOtpSendAgain = async (token: string) => {
   };
 
   const otp = generateOtp();
-  await sendOtpSms(decoded.phoneNumber, otp);
+  // await sendOtpSms(decoded.phoneNumber, otp);
   const newToken = jwt.sign({ ...authData, otp }, config.jwt_access_secret!, {
     expiresIn: '5m',
   });
@@ -127,6 +128,7 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
   };
 };
 
+
 const saveProfileIntoDB = async (
   payload: TProfilePayload,
   user: IAuth,
@@ -194,7 +196,6 @@ const saveProfileIntoDB = async (
         favoriteTattoos,
         location,
         radius,
-        studioName,
         lookingFor,
         auth: user._id,
       };
@@ -357,6 +358,7 @@ const saveProfileIntoDB = async (
   }
 };
 
+
 const socialLoginServices = async (payload: TSocialLoginPayload) => {
   const { email, fcmToken, image, fullName, address } = payload;
 
@@ -451,7 +453,8 @@ const changePasswordIntoDB = async (
   payload: z.infer<typeof AuthValidation.passwordChangeSchema.shape.body>
 ) => {
   const { id } = await verifyToken(accessToken);
-
+   
+  console.log("id")
   const user = await Auth.findOne({ _id: id, isActive: true }).select(
     '+password'
   );
@@ -541,19 +544,15 @@ const resetPasswordIntoDB = async (
   resetPasswordToken: string,
   newPassword: string
 ) => {
-  const { email, isResetPassword } = (await verifyToken(
+  const { email } = (await verifyToken(
     resetPasswordToken
   )) as any;
+
 
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
     throw new AppError(status.NOT_FOUND, 'User not found');
-  }
-
-  // Check if the OTP matches
-  if (!isResetPassword) {
-    throw new AppError(status.BAD_REQUEST, 'Invalid reset password token or ');
   }
 
   // Update the user's password
@@ -622,6 +621,31 @@ const fetchProfileFromDB = async (user: IAuth) => {
   }
 };
 
+const fetchAllConnectedAcount = async (user: IAuth) => {
+  let currentUser; 
+  
+  if(user.role === ROLE.CLIENT){
+    currentUser = await Client.findOne({ auth: user._id }).select('_id');
+  }
+  else if(user.role === ROLE.ARTIST){
+    currentUser = await Artist.findOne({ auth: user._id }).select('_id')
+  }
+  else if(user.role === ROLE.BUSINESS){
+     currentUser = await Business.findOne({ auth: user._id }).select('_id')
+  }
+
+  if (!currentUser) {
+    throw new AppError(status.NOT_FOUND, 'profile not found');
+  }
+
+  const result = await ClientPreferences.findOne(
+    { clientId: currentUser._id },
+    { connectedAccounts: 1, _id: 0 } 
+  );
+
+  return result;
+};
+
 export const AuthService = {
   createAuth,
   saveAuthIntoDB,
@@ -635,4 +659,5 @@ export const AuthService = {
   verifyOtpForForgetPassword,
   resetPasswordIntoDB,
   fetchProfileFromDB,
+  fetchAllConnectedAcount
 };

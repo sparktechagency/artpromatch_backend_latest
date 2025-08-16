@@ -107,21 +107,6 @@ const artistSchema = new Schema<IArtist>(
       type: String,
       required: false,
     },
-
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
-
-    isActive: {
-      type: Boolean,
-      default: false,
-    },
     flashes: [
       {
         type: portfolioSchema,

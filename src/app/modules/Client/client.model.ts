@@ -1,13 +1,13 @@
 import mongoose, { Schema, model } from 'mongoose';
-import { IClient } from './client.interface';
 import {
-  serviceTypes,
-  favoriteTattoos,
-  favoritePiercings,
-  homeViews,
   artistTypes,
   dateFormats,
+  favoritePiercings,
+  favoriteTattoos,
+  homeViews,
+  serviceTypes,
 } from './client.constant';
+import { IClient } from './client.interface';
 // import { locationSchema } from '../Location/location.model';
 
 const clientSchema = new Schema<IClient>(
@@ -33,6 +33,7 @@ const clientSchema = new Schema<IClient>(
       type: [String],
       enum: Object.values(serviceTypes),
       required: false,
+      default: [],
     },
 
     country: {
@@ -44,24 +45,28 @@ const clientSchema = new Schema<IClient>(
       type: [String],
       enum: Object.values(favoriteTattoos),
       required: false,
+      default: [],
     },
 
     favoritePiercing: {
       type: [String],
       enum: Object.values(favoritePiercings),
       required: false,
+      default: [],
     },
 
     homeView: {
       type: String,
       enum: Object.values(homeViews),
       required: false,
+      default: homeViews.BOTH,
     },
 
     preferredArtistType: {
       type: String,
       enum: Object.values(artistTypes),
       required: false,
+      default: artistTypes.BOTH,
     },
 
     language: {

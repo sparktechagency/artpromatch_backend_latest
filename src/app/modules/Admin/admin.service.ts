@@ -78,7 +78,7 @@ const verifiedBusinessByAdminIntoDB = async (businessId: string) => {
   );
 
   if (!result) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(status.NOT_FOUND, 'business not found');
   }
 
   return result;

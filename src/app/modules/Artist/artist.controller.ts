@@ -3,6 +3,7 @@ import status from 'http-status';
 import { AppResponse, asyncHandler } from '../../utils';
 import { ArtistService } from './artist.service';
 
+// update profile
 const updateProfile = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateProfile(req.user, req.body);
 
@@ -13,6 +14,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     );
 });
 
+// update preferrence
 const updatePreferences = asyncHandler(async (req, res) => {
   const result = await ArtistService.updatePreferences(req.user, req.body);
 
@@ -27,6 +29,7 @@ const updatePreferences = asyncHandler(async (req, res) => {
     );
 });
 
+// update notification prefereence
 const updateNotificationPreferences = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateNotificationPreferences(
     req.user,
@@ -44,6 +47,7 @@ const updateNotificationPreferences = asyncHandler(async (req, res) => {
     );
 });
 
+// update Privacy security settings
 const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
   const result = await ArtistService.updatePrivacySecuritySettings(
     req.user,
@@ -61,6 +65,7 @@ const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
     );
 });
 
+// update artist flashes
 const updateArtistFlashes = asyncHandler(async (req, res) => {
   const files = req.files as Express.Multer.File[] | undefined;
   const result = await ArtistService.addFlashesIntoDB(req.user, files);
@@ -70,6 +75,7 @@ const updateArtistFlashes = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, result, 'Flashes update successfully'));
 });
 
+//update artist 
 const updateArtistPortfolio = asyncHandler(async (req, res) => {
   const files = req.files as Express.Multer.File[] | undefined;
   const result = await ArtistService.addPortfolioImages(req.user, files);
@@ -79,6 +85,7 @@ const updateArtistPortfolio = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, result, 'Flashes update successfully'));
 });
 
+// remove image
 const removeImage = asyncHandler(async (req, res) => {
   const filePath = req.body.filePath;
   const result = await ArtistService.removeImage(req.user, filePath);
@@ -88,6 +95,7 @@ const removeImage = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, result, 'Flash remove successfully'));
 });
 
+// update artist personal info
 const updateArtistPersonalInfo = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateArtistPersonalInfoIntoDB(
     req.user,
@@ -99,6 +107,7 @@ const updateArtistPersonalInfo = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, result, 'Update profile successfully'));
 });
 
+// save availibility
 const saveAvailability = asyncHandler(async (req, res) => {
   const result = await ArtistService.saveAvailabilityIntoDB(req.user, req.body);
 
@@ -107,6 +116,7 @@ const saveAvailability = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, result, 'Save availability successfully'));
 });
 
+// fetch all artist
 const fetchAllArtists = asyncHandler(async (req, res) => {
   const { data, meta } = await ArtistService.fetchAllArtistsFromDB(req.query);
 
@@ -127,6 +137,7 @@ const updateAvailability = asyncHandler(async (req, res) => {
     );
 });
 
+// update timeoff
 const updateTimeOff = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateTimeOff(req.user, req.body);
   res
@@ -134,6 +145,7 @@ const updateTimeOff = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, result, 'Time off updated successfully'));
 });
 
+// get availibility
 const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
   const artistId = req.params.id;
   const month = Number(req.query.month);

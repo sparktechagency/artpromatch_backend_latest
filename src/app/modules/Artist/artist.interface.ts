@@ -20,9 +20,6 @@ export interface IArtist extends Document {
   services?: TServices;
   contact?: TContact;
   description: string;
-  isVerified: boolean;
-  isDeleted: boolean;
-  isActive: boolean;
   flashes: Types.ObjectId[];
   portfolio: Types.ObjectId[];
   preferences?: Types.ObjectId;

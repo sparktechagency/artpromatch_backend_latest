@@ -48,7 +48,10 @@ const clientPreferencesSchema = new Schema<IClientPreferences>(
     personalizedContent: { type: Boolean, default: true },
     locationSuggestions: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true, 
+    versionKey:false
+  },
+
 );
 
 const ClientPreferences = mongoose.model<IClientPreferences>(

@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { Document, Model } from 'mongoose';
+import { Document, Model, Types } from 'mongoose';
 import { TRole } from './auth.constant';
 
 export interface IAuth extends Document {

@@ -1,20 +1,16 @@
 /* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Artist from './artist.model';
-import { IAuth } from '../Auth/auth.interface';
-import { AppError } from '../../utils';
-import status from 'http-status';
-import mongoose, { ObjectId } from 'mongoose';
-import {
-  TUpdateArtistNotificationPayload,
-  TUpdateArtistPayload,
-  TUpdateArtistPreferencesPayload,
-  TUpdateArtistPrivacySecurityPayload,
-  TUpdateArtistProfilePayload,
-} from './artist.validation';
-import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import fs from 'fs';
+import status from 'http-status';
+import moment from 'moment';
+import { ObjectId } from 'mongoose';
+import QueryBuilder from '../../builders/QueryBuilder';
 import { TAvailability } from '../../schema/slotValidation';
+import { AppError } from '../../utils';
+import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
+import { IAuth } from '../Auth/auth.interface';
+import Auth from '../Auth/auth.model';
+import Booking from '../Booking/booking.model';
 import Slot from '../Slot/slot.model';
 import {
   hasOverlap,
@@ -22,43 +18,43 @@ import {
   splitIntoHourlySlots,
   toMinutes,
 } from '../Slot/slot.utils';
-import QueryBuilder from '../../builders/QueryBuilder';
-import Booking from '../Booking/booking.model';
-import moment from 'moment';
+import Artist from './artist.model';
+import {
+  TUpdateArtistNotificationPayload,
+  TUpdateArtistPayload,
+  TUpdateArtistPreferencesPayload,
+  TUpdateArtistPrivacySecurityPayload,
+  TUpdateArtistProfilePayload,
+} from './artist.validation';
 
+// update profile
 const updateProfile = async (
   user: IAuth,
   payload: TUpdateArtistProfilePayload
 ) => {
   const artist = await Artist.findOne({ auth: user._id });
 
+  console.log('artist', artist);
   if (!artist) {
     throw new AppError(status.NOT_FOUND, 'Artist not found');
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    await Artist.findByIdAndUpdate(user._id, payload, { session });
-
-    const updatedArtist = await Artist.findOne({ auth: user._id }).populate(
-      'auth'
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-    return updatedArtist;
-  } catch {
-    await session.abortTransaction();
-    session.endSession();
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      'Failed to update artist profile'
-    );
+  const updatedArtist = await Auth.findByIdAndUpdate(user._id, payload);
+  
+  console.log("a",updatedArtist)
+  if (!updatedArtist?.isModified) {
+    throw new AppError(status.NOT_FOUND, 'Failed to update artist!');
   }
+
+  const result = await Artist.findOne({ auth: user._id }).select('_id').populate({
+    path: 'auth',
+    select: 'fullName', 
+  });
+
+  return result;
 };
 
+// update preferrence
 const updatePreferences = async (
   user: IAuth,
   payload: TUpdateArtistPreferencesPayload
@@ -85,6 +81,7 @@ const updatePreferences = async (
   return artistPreferences;
 };
 
+// update Notification preferrence
 const updateNotificationPreferences = async (
   user: IAuth,
   payload: TUpdateArtistNotificationPayload
@@ -111,6 +108,7 @@ const updateNotificationPreferences = async (
   return artistPreferences;
 };
 
+// update privacy security
 const updatePrivacySecuritySettings = async (
   user: IAuth,
   payload: TUpdateArtistPrivacySecurityPayload
@@ -137,17 +135,17 @@ const updatePrivacySecuritySettings = async (
   return artistPreferences;
 };
 
+// add flashes
 const addFlashesIntoDB = async (
   user: IAuth,
   files: Express.Multer.File[] | undefined
 ) => {
+  console.log('id', user._id);
   const artist = await Artist.findOne({
     auth: user._id,
-    isActive: true,
-    isDeleted: false,
-    isVerified: true,
   });
 
+  console.log('user', artist);
   if (!artist) {
     throw new AppError(status.NOT_FOUND, 'Artist not found');
   }
@@ -156,6 +154,7 @@ const addFlashesIntoDB = async (
     throw new AppError(status.BAD_REQUEST, 'Files are required');
   }
 
+  console.log('files', files);
   return await Artist.findByIdAndUpdate(
     artist._id,
     {
@@ -167,26 +166,26 @@ const addFlashesIntoDB = async (
   );
 };
 
+// add portfolio
 const addPortfolioImages = async (
   user: IAuth,
   files: Express.Multer.File[] | undefined
 ) => {
   const artist = await Artist.findOne({
     auth: user._id,
-    isDeleted: false,
   });
 
   if (!artist) {
     throw new AppError(status.NOT_FOUND, 'Artist not found');
   }
 
-  if (!artist.isVerified) {
-    throw new AppError(status.BAD_REQUEST, 'Artist not verified');
-  }
+  // if (!artist.isVerified) {
+  //   throw new AppError(status.BAD_REQUEST, 'Artist not verified');
+  // }
 
-  if (!artist.isActive) {
-    throw new AppError(status.BAD_REQUEST, 'Artist not activated by admin yet');
-  }
+  // if (!artist.isActive) {
+  //   throw new AppError(status.BAD_REQUEST, 'Artist not activated by admin yet');
+  // }
 
   if (!files || !files?.length) {
     throw new AppError(status.BAD_REQUEST, 'Files are required');
@@ -203,12 +202,10 @@ const addPortfolioImages = async (
   );
 };
 
+// remove image
 const removeImage = async (user: IAuth, filePath: string) => {
   const artist = await Artist.findOne({
     auth: user._id,
-    isActive: true,
-    isDeleted: false,
-    isVerified: true,
   });
 
   if (!artist) {
@@ -240,6 +237,7 @@ const removeImage = async (user: IAuth, filePath: string) => {
   return updatedArtist;
 };
 
+// update artist person info into db
 const updateArtistPersonalInfoIntoDB = async (
   user: IAuth,
   payload: TUpdateArtistPayload
@@ -259,6 +257,7 @@ const updateArtistPersonalInfoIntoDB = async (
   }).populate('preferences');
 };
 
+// save availbility into db
 const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   const { day, slots } = payload;
 
@@ -267,9 +266,11 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
     splitIntoHourlySlots(slot.start, slot.end)
   );
 
+  console.log('hourlyslots', hourlySlots);
   // Step 2: Deduplicate within request
   const uniqueSlots = removeDuplicateSlots(hourlySlots);
 
+  console.log('uniqueslots', uniqueSlots);
   // Step 3: Fetch existing slots for that day
   const existing = await Slot.findOne({ auth: user._id, day });
 
@@ -304,13 +305,10 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   }
 };
 
+// fetch all artist from db
 const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   const artistsQuery = new QueryBuilder(
-    Artist.find({
-      isActive: true,
-      isDeleted: false,
-      isVerified: true,
-    }).populate([
+    Artist.find({}).populate([
       {
         path: 'auth',
         select: 'fullName image phoneNumber',
@@ -353,6 +351,7 @@ const updateAvailability = async (user: IAuth, data: any) => {
   return artist;
 };
 
+// update time off
 const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
   // Handle time-off (if needed, set blocked dates, etc.)
   // Assuming time off is stored as an array of dates that are blocked
@@ -415,6 +414,7 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
   return updatedArtist;
 };
 
+// get availibilty excluding time off
 const getAvailabilityExcludingTimeOff = async (
   artistId: string,
   month: number,

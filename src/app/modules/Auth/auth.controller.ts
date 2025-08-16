@@ -6,7 +6,7 @@ import { TProfileFileFields } from '../../types';
 
 const createAuth = asyncHandler(async (req, res) => {
   const result = await AuthService.createAuth(req.body);
-
+  console.log(result)
   res
     .status(status.OK)
     .json(new AppResponse(status.OK, result, 'OTP send successfully'));
@@ -25,7 +25,7 @@ const saveAuthData = asyncHandler(async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1] || '';
   const otp = req.body.otp;
   const result = await AuthService.saveAuthIntoDB(token, otp);
-
+  console.log(result)
   res
     .status(status.CREATED)
     .cookie('accessToken', result.accessToken, options as CookieOptions)
@@ -60,6 +60,7 @@ const signin = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, result, 'Signin successfully'));
 });
 
+
 const socialSignin = asyncHandler(async (req, res) => {
   const { response, accessToken, refreshToken } =
     await AuthService.socialLoginServices(req.body);
@@ -73,6 +74,7 @@ const socialSignin = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.OK, response, 'Signin successfully'));
 });
 
+
 const updateProfilePhoto = asyncHandler(async (req, res) => {
   const result = await AuthService.updateProfilePhoto(req.user, req.file);
 
@@ -84,9 +86,9 @@ const updateProfilePhoto = asyncHandler(async (req, res) => {
 });
 
 const changePassword = asyncHandler(async (req, res) => {
-  const accessToken = req.cookies.accessToken;
+  const accessToken = req.header('Authorization')?.replace('Bearer ', '') || req.cookies.accessToken;
+  console.log("accessToken",accessToken)
   const result = await AuthService.changePasswordIntoDB(accessToken, req.body);
-
   res
     .status(status.OK)
     .json(new AppResponse(status.OK, result, 'Password change successfully'));
@@ -132,12 +134,28 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 const fetchProfile = asyncHandler(async (req, res) => {
+  console.log(req.body)
   const result = await AuthService.fetchProfileFromDB(req.user);
 
   res
     .status(status.OK)
     .json(
       new AppResponse(status.OK, result, 'Profile data retrieved successfully')
+    );
+});
+
+const fetchClientConnectedAccount = asyncHandler(async (req, res) => {
+  console.log(req.user)
+  const result = await AuthService.fetchAllConnectedAcount(req.user);
+
+  res
+    .status(status.OK)
+    .json(
+      new AppResponse(
+        status.OK,
+        result,
+        'Discover artists retrieved successfully',
+      )
     );
 });
 
@@ -154,4 +172,5 @@ export const AuthController = {
   verifyOtpForForgetPassword,
   resetPassword,
   fetchProfile,
+  fetchClientConnectedAccount
 };

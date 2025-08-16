@@ -95,4 +95,5 @@ router
     ArtistController.updateTimeOff
   );
 
+
 export const ArtistRoutes = router;

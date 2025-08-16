@@ -34,11 +34,6 @@ export interface IBusiness extends Document {
   profileViews: number;
   description?: string;
 
-  // Status
-  isVerified: boolean;
-  isDeleted: boolean;
-  isActive: boolean;
-
   // References
   preferences?: Types.ObjectId;
   guestSpots?: Types.ObjectId[];

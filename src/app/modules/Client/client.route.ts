@@ -30,6 +30,8 @@ router
     ClientController.updateNotificationPreferences
   );
 
+
+
 router
   .route('/privacy-security')
   .patch(

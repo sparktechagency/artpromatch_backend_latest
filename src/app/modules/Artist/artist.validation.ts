@@ -11,9 +11,6 @@ import { dateFormats, notificationChannel } from '../Client/client.constant';
 const artistProfileSchema = z.object({
   body: z.object({
     fullName: z.string().min(3, 'Full name is required'),
-    email: z.string().email('Invalid email format'),
-    phoneNumber: z.string().min(10, 'Phone number is required'),
-    country: z.string().min(2, 'Country is required'),
   }),
 });
 
@@ -207,3 +204,5 @@ export type TUpdateArtistPrivacySecurityPayload = z.infer<
   typeof artistPrivacySecuritySchema.shape.body
 >;
 export type TUpdateArtistPayload = z.infer<typeof updateSchema.shape.body>;
+
+

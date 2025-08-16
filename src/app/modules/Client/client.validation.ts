@@ -1,13 +1,12 @@
 import { z } from 'zod';
 import {
-  homeViews,
-  favoriteTattoos,
-  favoritePiercings,
   artistTypes,
   dateFormats,
+  favoritePiercings,
+  favoriteTattoos,
+  homeViews,
   notificationChannel,
 } from './client.constant';
-import parsePhoneNumberFromString from 'libphonenumber-js';
 
 const preferencesSchema = z.object({
   body: z.object({
@@ -74,53 +73,41 @@ const notificationSchema = z.object({
 });
 
 const privacySecuritySchema = z.object({
-  body: z.object({
-    twoFactorAuthentication: z.boolean().optional(),
-    personalizedContent: z.boolean().optional(),
-    locationBasedSuggestions: z.boolean().optional(),
-  }),
+  body: z
+    .object({
+      twoFactorAuthEnabled: z.boolean().optional(),
+      personalizedContent: z.boolean().optional(),
+      locationSuggestions: z.boolean().optional(),
+    })
+    .strict(),
 });
 
 const profileInfoSchema = z.object({
   body: z
     .object({
-      email: z.string().email({ message: 'Invalid email format' }).optional(),
       fullName: z
         .string()
         .nonempty('Name is required')
         .min(3, 'Name must be at least 3 characters long')
         .max(100, 'Name cannot exceed 100 characters')
         .optional(),
-      phoneNumber: z
-        .string()
-        .refine(
-          (val) => {
-            const parsed = parsePhoneNumberFromString(val);
-            return parsed?.isValid();
-          },
-          {
-            message: 'Phone number must be a valid international format',
-          }
-        )
-        .optional(),
-      country: z.string().nonempty('Country is required').optional(),
     })
-    .strict(),
+    .strict({ message: 'Only "fullName" is allowed in the request body' }),
 });
 
 const clientPreferencesSchema = z.object({
   body: z.object({
-    favoriteTattooStyles: z
+    favoriteTattoos: z
       .array(z.enum(Object.values(favoriteTattoos) as [string, ...string[]]))
       .min(1, 'Please select at least one favorite tattoo style.')
       .optional(),
 
-    favoritePiercings: z
+    favoritePiercing: z
       .array(z.enum(Object.values(favoritePiercings) as [string, ...string[]]))
       .min(1, 'Please select at least one favorite piercing.')
       .optional(),
 
-    defaultHomeView: z
+    omeView: z
       .enum(Object.values(homeViews) as [string, ...string[]])
       .default(homeViews.BOTH)
       .optional(),
@@ -136,18 +123,12 @@ const clientPreferencesSchema = z.object({
       .enum(Object.values(dateFormats) as [string, ...string[]])
       .default(dateFormats.DDMMYYYY)
       .optional(),
-
-    notificationChannels: z
-      .array(
-        z.enum(Object.values(notificationChannel) as [string, ...string[]])
-      )
-      .min(1, 'Please select at least one notification channel.')
-      .optional(),
   }),
 });
 
 const NotificationPreferencesSchema = z.object({
   body: z.object({
+    all: z.boolean().optional(),
     bookingConfirmations: z.boolean().optional(),
     bookingReminders: z.boolean().optional(),
     bookingCancellations: z.boolean().optional(),
@@ -156,7 +137,7 @@ const NotificationPreferencesSchema = z.object({
     newAvailability: z.boolean().optional(),
     lastMinuteBookings: z.boolean().optional(),
     newGuestArtists: z.boolean().optional(),
-    notificationChannels: z
+    notificationPreferences: z
       .array(z.enum(['app', 'email', 'sms']))
       .min(1, 'Please select at least one notification channel.')
       .optional(),

@@ -4,6 +4,7 @@ import config from '../config';
 import { AppError, asyncHandler } from '../utils';
 import { TRole } from '../modules/Auth/auth.constant';
 import Auth from '../modules/Auth/auth.model';
+import { console } from 'inspector';
 
 const auth = (...requiredRoles: TRole[]) => {
   return asyncHandler(async (req, res, next) => {
@@ -31,13 +32,14 @@ const auth = (...requiredRoles: TRole[]) => {
       throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
     }
 
+    console.log("role",requiredRoles)
+
     if (requiredRoles.length && !requiredRoles.includes(user.role)) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
         'You have no access to this route'
       );
     }
-
     req.user = user;
     next();
   });

@@ -6,12 +6,15 @@ import status from 'http-status';
 const client = twilio(config.twilio.accountSid, config.twilio.authToken);
 
 const sendOtpSms = async (phoneNumber: string, otp: string) => {
+  console.log(client)
   try {
-    await client.messages.create({
+    console.log('api hit')
+    const a = await client.messages.create({
       body: `Your OTP is: ${otp}. It will expire in 5 minutes.`,
       from: config.twilio.phoneNumber,
       to: phoneNumber,
     });
+    console.log(a)
   } catch {
     throw new AppError(status.INTERNAL_SERVER_ERROR, 'Failed to send OTP SMS');
   }

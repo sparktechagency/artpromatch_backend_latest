@@ -4,6 +4,7 @@ import { AuthValidation } from './auth.validation';
 import { AuthController } from './auth.controller';
 import { upload } from '../../lib';
 import { validateRequestFromFormData } from '../../middlewares/validateRequest';
+import { ROLE } from './auth.constant';
 
 const router = Router();
 
@@ -43,6 +44,13 @@ router
   .post(
     validateRequest(AuthValidation.socialSchema),
     AuthController.socialSignin
+  );
+
+router
+  .route('/connected-account')
+  .get(
+    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
+    AuthController.fetchClientConnectedAccount
   );
 
 router
