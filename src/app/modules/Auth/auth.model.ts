@@ -23,6 +23,7 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
     },
     phoneNumber: {
       type: String,
+      unique: true,
       required: false,
     },
     password: {

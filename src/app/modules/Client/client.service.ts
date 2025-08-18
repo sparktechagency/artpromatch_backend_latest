@@ -12,8 +12,6 @@ import {
   TUpdateProfilePayload,
   TUpdateSecuritySettingsPayload,
 } from './client.validation';
-import { ROLE } from '../Auth/auth.constant';
-import Business from '../Business/business.model';
 
 const updateProfile = async (user: IAuth, payload: TUpdateProfilePayload) => {
   const result = await Auth.findByIdAndUpdate(user._id, payload, {
@@ -134,8 +132,6 @@ const updatePrivacySecuritySettings = async (
 
   return updatedPreferences;
 };
-
-
 
 const fetchDiscoverArtistFromDB = async (
   user: IAuth,

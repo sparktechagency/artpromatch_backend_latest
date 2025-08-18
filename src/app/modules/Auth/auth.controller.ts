@@ -173,6 +173,18 @@ const deactivateUserAccount = asyncHandler(async(req,res)=>{
     );
 })
 
+const deleteSpecificAccount = asyncHandler(async(req,res)=>{
+   const result = await AuthService.deleteUserAccount(req.user);
+  res
+    .status(status.OK)
+    .json(
+      new AppResponse(
+        status.OK,
+        result,
+        'Account Deleted successfully!',
+      )
+    );
+})
 
 export const AuthController = {
   createAuth,
@@ -188,5 +200,6 @@ export const AuthController = {
   resetPassword,
   fetchProfile,
   fetchClientConnectedAccount,
-  deactivateUserAccount
+  deactivateUserAccount,
+  deleteSpecificAccount
 };

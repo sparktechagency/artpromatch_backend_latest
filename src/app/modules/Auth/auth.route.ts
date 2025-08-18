@@ -93,6 +93,13 @@ router
     AuthController.deactivateUserAccount
   );
 
+  router
+  .route('/delete-account')
+  .delete(
+    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
+    AuthController.deleteSpecificAccount
+  );
+
 router
   .route('/profile-image')
   .put(auth(), upload.single('file'), AuthController.updateProfilePhoto);

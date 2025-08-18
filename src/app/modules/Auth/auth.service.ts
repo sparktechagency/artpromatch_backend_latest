@@ -674,6 +674,95 @@ const deactiveUserCurrentAccount = async (
   return result;
 };
 
+// delete user
+const deleteUserAccount = async (user: IAuth) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const currentUser = await Auth.findById(user._id).session(session);
+    if (!currentUser) throw new AppError(status.NOT_FOUND, 'User not found');
+
+    currentUser.isDeleted = true;
+    currentUser.isDeactivated = false;
+    currentUser.isProfile = false;
+
+    if (user.role === ROLE.ARTIST || ROLE.BUSINESS) {
+      currentUser.isActive = false;
+    }
+    if (currentUser.deactivationReason) {
+      currentUser.deactivationReason = '';
+    }
+    await currentUser.save({ session });
+
+    if (user.role === ROLE.CLIENT) {
+      const client = await Client.findOne({ auth: user._id })
+        .select('_id')
+        .session(session);
+
+      if (client) {
+        const result = await Client.deleteOne({ _id: client._id }, { session });
+        if (result.deletedCount === 0)
+          throw new Error('Client deletion failed');
+
+        const prefResult = await ClientPreferences.deleteOne(
+          { clientId: client._id },
+          { session }
+        );
+        if (prefResult.deletedCount === 0)
+          throw new Error('Client deletion failed here');
+      }
+    } else if (user.role === ROLE.ARTIST) {
+      const artist = await Artist.findOne({ auth: user._id })
+        .select('_id')
+        .session(session);
+
+      if (artist) {
+        const result = await Artist.deleteOne({ _id: artist._id }, { session });
+        if (result.deletedCount === 0)
+          throw new Error('Client deletion failed');
+        const prefResult = await ArtistPreferences.deleteOne(
+          { artistId: artist._id },
+          { session }
+        );
+        if (prefResult.deletedCount === 0)
+          throw new Error('Client deletion failed');
+      }
+    } else if (user.role === ROLE.BUSINESS) {
+      const business = await Business.findOne({ auth: user._id })
+        .select('_id')
+        .session(session);
+
+      if (business) {
+        const result = await BusinessPreferences.deleteOne(
+          { businessId: business._id },
+          { session }
+        );
+        if (result.deletedCount === 0)
+          throw new Error('Client deletion failed');
+        const prefResult = await Business.deleteOne(
+          { _id: business._id },
+          { session }
+        );
+        if (prefResult.deletedCount === 0)
+          throw new Error('Client deletion failed');
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+    return {
+      email: currentUser.email,
+      id: currentUser._id,
+      fullName: currentUser.fullName,
+    };
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 export const AuthService = {
   createAuth,
   saveAuthIntoDB,
@@ -689,4 +778,5 @@ export const AuthService = {
   fetchProfileFromDB,
   fetchAllConnectedAcount,
   deactiveUserCurrentAccount,
+  deleteUserAccount,
 };
