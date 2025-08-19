@@ -67,3 +67,40 @@ export const splitIntoHourlySlots = (
 
   return result;
 };
+
+
+
+// parsed slots
+
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek"; 
+dayjs.extend(isoWeek);
+
+// Map Mon–Sun → numeric weekday (ISO: 1 = Monday, 7 = Sunday)
+const weekdayMap: Record<string, number> = {
+  mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7
+};
+
+export function parseSlotTime(day: string, time?: string): Date {
+  if (!time) throw new Error("Time is undefined");
+
+  const parts = time.trim().split(" ");
+  if (parts.length !== 2) throw new Error(`Invalid time format: ${time}`);
+
+  const [t, modifier] = parts;
+  const [hoursStr, minutesStr] = t.split(":");
+  if (!hoursStr || !minutesStr) throw new Error(`Invalid time format: ${time}`);
+
+  const hours = Number(hoursStr);
+  const minutes = Number(minutesStr);
+  if (isNaN(hours) || isNaN(minutes)) throw new Error(`Invalid numeric values in time: ${time}`);
+
+  // start from beginning of this ISO week
+  let base = dayjs().startOf("week").add(weekdayMap[day] - 1, "day");
+
+  // apply hours/minutes with AM/PM
+  let h = hours % 12; // 12-hour base
+  if (modifier.toLowerCase() === "pm") h += 12;
+
+  return base.hour(h).minute(minutes).second(0).millisecond(0).toDate();
+}

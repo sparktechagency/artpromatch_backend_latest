@@ -14,6 +14,7 @@ import Booking from '../Booking/booking.model';
 import Slot from '../Slot/slot.model';
 import {
   hasOverlap,
+  parseSlotTime,
   removeDuplicateSlots,
   splitIntoHourlySlots,
   toMinutes,
@@ -26,6 +27,7 @@ import {
   TUpdateArtistPrivacySecurityPayload,
   TUpdateArtistProfilePayload,
 } from './artist.validation';
+import ArtistSchedule from '../Slot/slot.model';
 
 // update profile
 const updateProfile = async (
@@ -258,52 +260,108 @@ const updateArtistPersonalInfoIntoDB = async (
 };
 
 // save availbility into db
+// const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
+//   const { day, slots } = payload;
+
+//   // Step 1: Normalize into 1-hour blocks
+//   const hourlySlots = slots.flatMap((slot) =>
+//     splitIntoHourlySlots(slot.start, slot.end)
+//   );
+
+//   console.log('hourlyslots', hourlySlots);
+//   // Step 2: Deduplicate within request
+//   const uniqueSlots = removeDuplicateSlots(hourlySlots);
+
+//   console.log('uniqueslots', uniqueSlots);
+//   // Step 3: Fetch existing slots for that day
+//   const existing = await Slot.findOne({ auth: user._id, day });
+
+//   if (existing) {
+//     const existingSlots = existing.slots;
+
+//     // Step 4: Check overlap
+//     if (hasOverlap(existingSlots, uniqueSlots)) {
+//       throw new AppError(
+//         status.BAD_REQUEST,
+//         'New slots overlap with existing slots'
+//       );
+//     }
+
+//     // Step 5: Merge, dedupe, and sort
+//     const merged = removeDuplicateSlots([
+//       ...existingSlots,
+//       ...uniqueSlots,
+//     ]).sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+
+//     // Step 6: Save
+//     existing.set('slots', merged);
+//     await existing.save();
+//     return existing;
+//   } else {
+//     // First time adding slots
+//     return await Slot.create({
+//       auth: user._id,
+//       day,
+//       slots: uniqueSlots,
+//     });
+//   }
+// };
+
 const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
-  const { day, slots } = payload;
+  
+  const { day, slots } = payload; 
 
-  // Step 1: Normalize into 1-hour blocks
-  const hourlySlots = slots.flatMap((slot) =>
-    splitIntoHourlySlots(slot.start, slot.end)
-  );
+  // Step 1: Parse incoming slots → with correct weekday
+  const parsedSlots = slots.map(slot => {
+    const start = parseSlotTime(day, slot.startTime);
+    const end = parseSlotTime(day, slot.endTime);
 
-  console.log('hourlyslots', hourlySlots);
-  // Step 2: Deduplicate within request
-  const uniqueSlots = removeDuplicateSlots(hourlySlots);
-
-  console.log('uniqueslots', uniqueSlots);
-  // Step 3: Fetch existing slots for that day
-  const existing = await Slot.findOne({ auth: user._id, day });
-
-  if (existing) {
-    const existingSlots = existing.slots;
-
-    // Step 4: Check overlap
-    if (hasOverlap(existingSlots, uniqueSlots)) {
-      throw new AppError(
-        status.BAD_REQUEST,
-        'New slots overlap with existing slots'
-      );
+    if (!(start instanceof Date) || isNaN(start.getTime()) ||
+        !(end instanceof Date) || isNaN(end.getTime())) {
+      throw new Error(`Invalid time format for slot: ${slot.startTime} - ${slot.endTime}`);
     }
 
-    // Step 5: Merge, dedupe, and sort
-    const merged = removeDuplicateSlots([
-      ...existingSlots,
-      ...uniqueSlots,
-    ]).sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+    return {
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      startDateTime: start,
+      endDateTime: end
+    };
+  });
 
-    // Step 6: Save
-    existing.set('slots', merged);
-    await existing.save();
-    return existing;
-  } else {
-    // First time adding slots
-    return await Slot.create({
-      auth: user._id,
-      day,
-      slots: uniqueSlots,
+  // Step 2: Fetch or create artist schedule
+  let schedule:any = await ArtistSchedule.findOne({ artistId: user._id });
+  if (!schedule) {
+    schedule = new ArtistSchedule({
+      artistId: user._id,
+      mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
     });
   }
+
+  // Step 3: Conflict check against existing slots
+  const existingSlots: typeof parsedSlots = schedule[day] || [];
+  parsedSlots.forEach(newSlot => {
+    const conflict = existingSlots.some(existing =>
+      newSlot.startDateTime < existing.endDateTime &&
+      newSlot.endDateTime > existing.startDateTime
+    );
+    if (conflict) {
+      throw new Error(
+        `Slot ${newSlot.startTime} - ${newSlot.endTime} overlaps with existing schedule`
+      );
+    }
+  });
+
+  // Step 4: Merge + sort
+  schedule[day] = [...existingSlots, ...parsedSlots].sort(
+    (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime()
+  );
+
+  await schedule.save();
+  return schedule;
 };
+
+/* ------ */
 
 // fetch all artist from db
 const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { WEEK_DAYS } from '../modules/Artist/artist.constant';
 
+import dayjs from 'dayjs';
+import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
 // Helper function to validate time format and convert to minutes for comparison
 const timeFormat = /^\d{2}:\d{2}$/;
 
@@ -62,45 +65,81 @@ const isValidTimeRange = (time: string) => {
 };
 
 // Zod validation schema
-const createSchema = z.object({
+// const createSchema = z.object({
+//   body: z.object({
+//     day: z.enum(WEEK_DAYS),
+//     slots: z
+//       .array(
+//         z
+//           .object({
+//             start: z
+//               .string()
+//               .regex(timeFormat, 'Start time must be in HH:MM format')
+//               .refine(isValidTimeRange, {
+//                 message:
+//                   'Start time must be a valid time within 00:00 to 23:59',
+//               }),
+//             end: z
+//               .string()
+//               .regex(timeFormat, 'End time must be in HH:MM format')
+//               .refine(isValidTimeRange, {
+//                 message: 'End time must be a valid time within 00:00 to 23:59',
+//               }),
+//           })
+//           .refine((data) => validateTimeSlot(data.start, data.end), {
+//             message: 'End time must be later than start time',
+//             path: ['end'], // Indicating where to report the error
+//           })
+//       )
+//       .refine((slots) => !hasDuplicateSlots(slots), {
+//         message: 'There are duplicate time slots',
+//         path: ['slots'], // Indicating where to report the error
+//       })
+//       .refine((slots) => !hasOverlap(slots), {
+//         message: 'There are overlapping time slots',
+//         path: ['slots'], // Indicating where to report the error
+//       }),
+//   }),
+// });
+
+const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(am|pm)$/i;
+
+export const slotSchema = z.object({
+  startTime: z.string().regex(timeRegex),
+  endTime: z.string().regex(timeRegex),
+}).superRefine((slot, ctx) => {
+  const start = dayjs(slot.startTime.toLowerCase(), "h:mm a");
+  const end = dayjs(slot.endTime.toLowerCase(), "h:mm a");
+
+  if (!start.isValid() || !end.isValid()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Invalid time format",
+    });
+    return;
+  }
+
+  if (!start.isBefore(end)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "End time must be after start time",
+      path: ["endTime"],
+    });
+  }
+});
+
+// Availability schema with req.body wrapper
+export const AvailabilitySchema = z.object({
   body: z.object({
-    day: z.enum(WEEK_DAYS),
-    slots: z
-      .array(
-        z
-          .object({
-            start: z
-              .string()
-              .regex(timeFormat, 'Start time must be in HH:MM format')
-              .refine(isValidTimeRange, {
-                message:
-                  'Start time must be a valid time within 00:00 to 23:59',
-              }),
-            end: z
-              .string()
-              .regex(timeFormat, 'End time must be in HH:MM format')
-              .refine(isValidTimeRange, {
-                message: 'End time must be a valid time within 00:00 to 23:59',
-              }),
-          })
-          .refine((data) => validateTimeSlot(data.start, data.end), {
-            message: 'End time must be later than start time',
-            path: ['end'], // Indicating where to report the error
-          })
-      )
-      .refine((slots) => !hasDuplicateSlots(slots), {
-        message: 'There are duplicate time slots',
-        path: ['slots'], // Indicating where to report the error
-      })
-      .refine((slots) => !hasOverlap(slots), {
-        message: 'There are overlapping time slots',
-        path: ['slots'], // Indicating where to report the error
-      }),
+    day: z.enum(WEEK_DAYS, { message: "Day must be mon–sun" }),
+    slots: z.array(slotSchema).min(1, "At least one slot is required"),
   }),
 });
 
 export const SlotValidation = {
-  createSchema,
+  slotSchema,
+  AvailabilitySchema,
 };
 
-export type TAvailability = z.infer<typeof createSchema.shape.body>;
+export type TAvailability = z.infer<typeof AvailabilitySchema.shape.body>;
+// export type TAvailability = z.infer<typeof createSchema.shape.body>;
