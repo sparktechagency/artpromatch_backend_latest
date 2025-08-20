@@ -1,6 +1,6 @@
 import mongoose, { Schema, model } from 'mongoose';
+import { ARTIST_TYPE, expertiseTypes } from './artist.constant';
 import { IArtist } from './artist.interface';
-import { expertiseTypes, ARTIST_TYPE } from './artist.constant';
 
 // 🔹 Subschema: Contact
 const contactSchema = new Schema(
@@ -15,10 +15,10 @@ const contactSchema = new Schema(
 // 🔹 Subschema: Services
 const servicesSchema = new Schema(
   {
-    hourlyRate: { type: Number, default: 0 },
-    dayRate: { type: Number, default: 0 },
-    consultationsFee: { type: Number, default: 0 },
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
   },
+
   { _id: false }
 );
 
@@ -42,6 +42,12 @@ const artistSchema = new Schema<IArtist>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Auth',
       required: true,
+    },
+
+    business: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Business',
+      required: false,
     },
 
     type: {
@@ -88,14 +94,19 @@ const artistSchema = new Schema<IArtist>(
       required: true,
     },
 
-    profileViews: {
+    taskCompleted: {
+      type: Number,
+      default: 0,
+    },
+    
+    rating: {
       type: Number,
       default: 0,
     },
 
     services: {
-      type: servicesSchema,
-      required: false,
+      type: [servicesSchema],
+      required: true,
     },
 
     contact: {

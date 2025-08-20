@@ -14,6 +14,7 @@ export interface IAuth extends Document {
   refreshToken?: string | null;
   isProfile: boolean;
   isVerified: boolean;
+  stripeAccountId: string;
   isDeactivated: boolean;
   deactivationReason: String;
   deactivatedAt: Date;

@@ -28,7 +28,7 @@ export interface ISlot {
 }
 
 export interface IArtistSchedule extends Document {
-  artistId: Types.ObjectId;
+  artist: Types.ObjectId;
   mon: ISlot[];
   tue: ISlot[];
   wed: ISlot[];

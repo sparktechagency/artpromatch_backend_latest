@@ -69,7 +69,7 @@ const businessSchema = new Schema<IBusiness>(
 
     // Description & stats
     description: { type: String },
-    profileViews: { type: Number, default: 0 },
+    taskCompleted: { type: Number, default: 0 },
 
     // Relationships
     preferences: { type: Schema.Types.ObjectId, ref: 'BusinessPreferences' },

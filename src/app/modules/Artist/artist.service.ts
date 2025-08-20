@@ -28,6 +28,7 @@ import {
   TUpdateArtistProfilePayload,
 } from './artist.validation';
 import ArtistSchedule from '../Slot/slot.model';
+import { IArtistSchedule } from '../Slot/slot.interface';
 
 // update profile
 const updateProfile = async (
@@ -307,59 +308,7 @@ const updateArtistPersonalInfoIntoDB = async (
 //   }
 // };
 
-const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
-  
-  const { day, slots } = payload; 
 
-  // Step 1: Parse incoming slots → with correct weekday
-  const parsedSlots = slots.map(slot => {
-    const start = parseSlotTime(day, slot.startTime);
-    const end = parseSlotTime(day, slot.endTime);
-
-    if (!(start instanceof Date) || isNaN(start.getTime()) ||
-        !(end instanceof Date) || isNaN(end.getTime())) {
-      throw new Error(`Invalid time format for slot: ${slot.startTime} - ${slot.endTime}`);
-    }
-
-    return {
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      startDateTime: start,
-      endDateTime: end
-    };
-  });
-
-  // Step 2: Fetch or create artist schedule
-  let schedule:any = await ArtistSchedule.findOne({ artistId: user._id });
-  if (!schedule) {
-    schedule = new ArtistSchedule({
-      artistId: user._id,
-      mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
-    });
-  }
-
-  // Step 3: Conflict check against existing slots
-  const existingSlots: typeof parsedSlots = schedule[day] || [];
-  parsedSlots.forEach(newSlot => {
-    const conflict = existingSlots.some(existing =>
-      newSlot.startDateTime < existing.endDateTime &&
-      newSlot.endDateTime > existing.startDateTime
-    );
-    if (conflict) {
-      throw new Error(
-        `Slot ${newSlot.startTime} - ${newSlot.endTime} overlaps with existing schedule`
-      );
-    }
-  });
-
-  // Step 4: Merge + sort
-  schedule[day] = [...existingSlots, ...parsedSlots].sort(
-    (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime()
-  );
-
-  await schedule.save();
-  return schedule;
-};
 
 /* ------ */
 
@@ -388,6 +337,62 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   const meta = await artistsQuery.countTotal();
 
   return { data, meta };
+};
+
+//
+
+const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
+  
+  const { day, slots } = payload; 
+
+  // Step 1: Parse incoming slots → with correct weekday
+  const parsedSlots = slots.map(slot => {
+    const start = parseSlotTime(day, slot.startTime);
+    const end = parseSlotTime(day, slot.endTime);
+
+    if (!(start instanceof Date) || isNaN(start.getTime()) ||
+        !(end instanceof Date) || isNaN(end.getTime())) {
+      throw new Error(`Invalid time format for slot: ${slot.startTime} - ${slot.endTime}`);
+    }
+
+    return {
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      startDateTime: start,
+      endDateTime: end
+    };
+  });
+
+  // Step 2: Fetch or create artist schedule
+  let schedule:any = await ArtistSchedule.findOne({ artist: user._id });
+  if (!schedule) {
+    schedule = new ArtistSchedule({
+      artist: user._id,
+      mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
+    });
+  }
+
+  // Step 3: Conflict check against existing slots
+  const existingSlots: typeof parsedSlots = schedule[day] || [];
+  parsedSlots.forEach(newSlot => {
+    const conflict = existingSlots.some(existing =>
+      newSlot.startDateTime < existing.endDateTime &&
+      newSlot.endDateTime > existing.startDateTime
+    );
+    if (conflict) {
+      throw new Error(
+        `Slot ${newSlot.startTime} - ${newSlot.endTime} overlaps with existing schedule`
+      );
+    }
+  });
+
+  // Step 4: Merge + sort
+  schedule[day] = [...existingSlots, ...parsedSlots].sort(
+    (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime()
+  );
+
+  await schedule.save();
+  return schedule;
 };
 
 // For availability

@@ -110,10 +110,14 @@ const updateArtistPersonalInfo = asyncHandler(async (req, res) => {
 // save availibility
 const saveAvailability = asyncHandler(async (req, res) => {
   const result = await ArtistService.saveAvailabilityIntoDB(req.user, req.body);
+  const filtered = result[req.body.day].map((slot: any) => ({
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+  }));
 
   res
     .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Save availability successfully'));
+    .json(new AppResponse(status.OK, filtered, 'Save availability successfully'));
 });
 
 // fetch all artist

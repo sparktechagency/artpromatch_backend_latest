@@ -75,7 +75,7 @@ router
 
 router
   .route('/availability')
-  .put(
+  .post(
     auth(ROLE.ARTIST),
     validateRequest(SlotValidation.AvailabilitySchema),
     ArtistController.saveAvailability

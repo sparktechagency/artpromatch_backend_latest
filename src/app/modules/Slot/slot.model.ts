@@ -35,43 +35,50 @@ import { IArtistSchedule, ISlot } from './slot.interface';
 
 // export default Slot;
 
-
-const SlotSchema = new Schema<ISlot>({
-  startTime: { 
-    type: String, 
-    required: true
+const SlotSchema = new Schema<ISlot>(
+  {
+    startTime: {
+      type: String,
+      required: true,
+    },
+    endTime: {
+      type: String,
+      required: true,
+    },
+    startDateTime: {
+      type: Date,
+      required: true,
+    },
+    endDateTime: {
+      type: Date,
+      required: true,
+    },
   },
-  endTime: { 
-    type: String, 
-    required: true
+  { timestamps: true }
+);
+
+const ArtistScheduleSchema = new Schema<IArtistSchedule>(
+  {
+    artist: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Artist',
+      required: true,
+    },
+
+    mon: [SlotSchema],
+    tue: [SlotSchema],
+    wed: [SlotSchema],
+    thu: [SlotSchema],
+    fri: [SlotSchema],
+    sat: [SlotSchema],
+    sun: [SlotSchema],
   },
-  startDateTime: { 
-    type: Date, 
-    required: true 
-  },
-  endDateTime: { 
-    type: Date, 
-    required: true 
-  }
-}, { timestamps: true });
+  { timestamps: true , versionKey: false}
+  
+);
 
-
-const ArtistScheduleSchema = new Schema<IArtistSchedule>({
-  artistId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Artist", 
-    required: true 
-  },
-
-  mon: [SlotSchema],
-  tue: [SlotSchema],
-  wed: [SlotSchema],
-  thu: [SlotSchema],
-  fri: [SlotSchema],
-  sat: [SlotSchema],
-  sun: [SlotSchema]
-
-}, { timestamps: true });
-
-const ArtistSchedule = model<IArtistSchedule>("ArtistSchedule", ArtistScheduleSchema)
-export default ArtistSchedule
+const ArtistSchedule = model<IArtistSchedule>(
+  'ArtistSchedule',
+  ArtistScheduleSchema
+);
+export default ArtistSchedule;

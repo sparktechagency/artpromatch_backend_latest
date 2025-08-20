@@ -8,6 +8,7 @@ import {
 
 export interface IArtist extends Document {
   auth: Types.ObjectId;
+  business: Types.ObjectId | null;
   type: TArtistType;
   expertise: ExpertiseType[];
   image?: string;
@@ -15,8 +16,9 @@ export interface IArtist extends Document {
   city: string;
   idCardFront: string;
   idCardBack: string;
+  rating:number;
   selfieWithId: string;
-  profileViews: number;
+  taskCompleted: number;
   services?: TServices;
   contact?: TContact;
   description: string;

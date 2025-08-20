@@ -50,7 +50,7 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       default: null,
     },
     isProfile: {
-      type: Boolean,
+      type: Boolean, 
       default: false,
     },
     isVerified: {
@@ -61,7 +61,11 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: Boolean,
       default: true,
     },
-
+    stripeAccountId: {
+      type: String,
+      required: false,
+      default: null
+    },
     isDeactivated: { type: Boolean, default: false },
     deactivationReason: { type: String },
     deactivatedAt: { type: Date },

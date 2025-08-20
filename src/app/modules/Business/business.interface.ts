@@ -31,7 +31,7 @@ export interface IBusiness extends Document {
   studioLicense?: string;
 
   // Metadata
-  profileViews: number;
+  taskCompleted: number;
   description?: string;
 
   // References
