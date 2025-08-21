@@ -14,6 +14,7 @@ export interface IArtist extends Document {
   image?: string;
   location: { type: 'Point'; coordinates: [number, number] };
   city: string;
+  isConnBusiness: boolean;
   idCardFront: string;
   idCardBack: string;
   rating:number;

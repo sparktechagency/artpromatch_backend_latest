@@ -6,29 +6,76 @@ import { IAuth } from './../Auth/auth.interface';
 import RequestModel from './request.model';
 import Artist from '../Artist/artist.model';
 import mongoose from 'mongoose';
+import { IRequest } from './request.interface';
+import { ROLE } from '../Auth/auth.constant';
+import { REQUEST_STATUS } from './request.constant';
+import { RequestPayload } from './request.validation';
+import { IArtist } from '../Artist/artist.interface';
 
-const createRequestIntoDB = async (user: IAuth, artistId: string) => {
-  // Step 1: Find the business
-  const business = await Business.findOne({ auth: user._id });
-
-  if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+const createRequestIntoDB = async (user: IAuth, payload:RequestPayload) => {
+  
+  // Artist send the request to business studios
+  if(user.role === ROLE.ARTIST){
+    const artist = await Artist.findOne({auth: user._id});
+    const business = await Business.findOne({_id: payload.receiverId})
+    if(!artist){
+      throw new AppError(status.NOT_FOUND, 'Artist not found');
+    }
+       if(!business){
+      throw new AppError(status.NOT_FOUND, 'business not found');
+    }
+    if(artist.business && artist.isConnBusiness){
+      throw new AppError(status.BAD_REQUEST, `you can't send request any studios! because you already have joined another studio`);
+    }
+    if(artist.business?.toString() === payload.receiverId){
+       throw new AppError(status.NOT_FOUND, 'This Artist Already Join Your Studio');
+    }
+    const isExistRequest = await RequestModel.findOne({$and: [{artistId: artist._id}, {businessId: payload.receiverId}]});
+    if(isExistRequest){
+       throw new AppError(status.BAD_REQUEST, 'Request already sent');
+    }
+    const requestPayload = {
+      artistId: artist._id,
+      BusinessId: payload.receiverId,
+      status: REQUEST_STATUS.PENDING
+    }
+    const result = await RequestModel.create(requestPayload);
+    if(!result){
+      throw new AppError(status.NOT_FOUND, 'Failed To create Request');
+    }
+    return result;
   }
-
-  // Step 2: Check if the artistId is valid
-  const artist = await Artist.findById(artistId);
-
-  if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+  
+  // business send the request to artist
+  if(user.role === ROLE.BUSINESS){
+    const business = await Business.findOne({auth: user._id});
+    if(!business){
+      throw new AppError(status.NOT_FOUND, 'business not found');
+    }
+    
+    const artist:IArtist = await Artist.findOne({_id:payload.receiverId}).select("sConnBusiness business")
+    
+    
+    if(artist.business && artist.isConnBusiness){
+      throw new AppError(status.BAD_REQUEST, `you can't send request any artist! because This artist have joined another studio`);
+    }
+    const isExistRequest = await RequestModel.findOne({$and: [{artistId: payload.receiverId}, {businessId: business._id}]});
+    if(isExistRequest){
+       throw new AppError(status.BAD_REQUEST, 'Request already sent');
+    }
+    const requestPayload = {
+      artistId: artist._id,
+      BusinessId: payload.receiverId,
+      status: REQUEST_STATUS.PENDING
+    }
+    const result = await RequestModel.create(requestPayload);
+    if(!result){
+      throw new AppError(status.NOT_FOUND, 'Failed To create Request');
+    }
+    return result;
   }
+  
 
-  // Step 3: Create the request
-  const request = await RequestModel.create({
-    artistId,
-    businessId: business._id,
-  });
-
-  return request;
 };
 
 const fetchRequestByArtist = async (user: IAuth) => {
@@ -61,7 +108,7 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
   const artist = await Artist.findOne({ auth: user._id });
 
   if (!artist) {
-    throw new AppError(status.OK, 'Artist not found');
+    throw new AppError(status.NOT_FOUND, 'Artist not found');
   }
 
   const request = await RequestModel.findOne({
@@ -70,13 +117,13 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
   });
 
   if (!request) {
-    throw new AppError(status.OK, 'Request not found');
+    throw new AppError(status.NOT_FOUND, 'Request not found');
   }
 
   const business = await Business.findById(request.businessId);
 
   if (!business) {
-    throw new AppError(status.OK, 'Business not found');
+    throw new AppError(status.NOT_FOUND, 'Business not found');
   }
 
   const session = await mongoose.startSession();

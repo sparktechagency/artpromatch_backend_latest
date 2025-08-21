@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { IRequest } from './request.interface';
 import { REQUEST_STATUS } from './request.constant';
+import { IRequest } from './request.interface';
 
 // Define the request schema
 const requestSchema = new mongoose.Schema<IRequest>(
@@ -21,7 +21,7 @@ const requestSchema = new mongoose.Schema<IRequest>(
       default: REQUEST_STATUS.PENDING,
     },
   },
-  { timestamps: true }
+  { timestamps: true,versionKey:false }
 );
 
 const RequestModel = mongoose.model<IRequest>('Request', requestSchema);

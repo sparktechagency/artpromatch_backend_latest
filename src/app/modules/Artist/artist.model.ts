@@ -48,6 +48,12 @@ const artistSchema = new Schema<IArtist>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Business',
       required: false,
+      default: null
+    },
+    
+    isConnBusiness:{
+      type: Boolean,
+      default: false
     },
 
     type: {
