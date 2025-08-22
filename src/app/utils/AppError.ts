@@ -6,7 +6,7 @@ class AppError extends Error {
     public message: string = 'Something went wrong!',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public errors: any[] = [],
-    public stack = ''
+    // public stack = ''
   ) {
     super(message);
     this.statusCode = statusCode;
@@ -14,9 +14,13 @@ class AppError extends Error {
     this.success = false;
     this.errors = errors;
 
-    if (stack) {
-      this.stack = stack;
-    } else {
+    // if (stack) {
+    //   this.stack = stack;
+    // } else {
+    //   Error.captureStackTrace(this, this.constructor);
+    // }
+
+    if (process.env.NODE_ENV === "development") {
       Error.captureStackTrace(this, this.constructor);
     }
   }

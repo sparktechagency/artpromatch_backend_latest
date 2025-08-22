@@ -5,6 +5,11 @@ import { IRequest } from './request.interface';
 // Define the request schema
 const requestSchema = new mongoose.Schema<IRequest>(
   {
+    senderType:{
+      type: String,
+      enum: ["ARTIST","BUSINESS"],
+      required:true
+    },
     artistId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Artist',

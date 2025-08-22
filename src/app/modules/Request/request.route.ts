@@ -1,16 +1,20 @@
 import { Router } from 'express';
-import { RequestController } from './request.controller';
-import { auth } from '../../middlewares';
+import { auth, validateRequest } from '../../middlewares';
 import { ROLE } from '../Auth/auth.constant';
+import { RequestController } from './request.controller';
+import { requestValidation } from './request.validation';
 
 const router = Router();
 
 router
+  .route('/send')
+  .post(auth(ROLE.BUSINESS, ROLE.ARTIST), validateRequest(requestValidation.createRequestSchema) ,RequestController.createRequest);
+
+router
   .route('/')
-  .post(auth(ROLE.BUSINESS), RequestController.createRequest)
   .get(
     auth(ROLE.BUSINESS, ROLE.ARTIST),
-    RequestController.fetchPendingRequests
+    RequestController.fetchMyRequests
   );
 
 router

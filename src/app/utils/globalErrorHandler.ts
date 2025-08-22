@@ -71,7 +71,7 @@ const globalErrorHandler = (
     success: false,
     message,
     errorMessages: errors,
-    stack: err?.stack,
+    ...(process.env.NODE_ENV === "development" && { stack: err?.stack }),
   });
 };
 

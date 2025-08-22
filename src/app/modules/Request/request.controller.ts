@@ -9,8 +9,8 @@ const createRequest = asyncHandler(async (req, res) => {
     .json(new AppResponse(status.CREATED, result, 'Request send successfully'));
 });
 
-const fetchPendingRequests = asyncHandler(async (req, res) => {
-  const result = await RequestService.fetchRequestByArtist(req.user);
+const fetchMyRequests = asyncHandler(async (req, res) => {
+  const result = await RequestService.fetchMyRequest(req.user,req.query);
 
   // Send the response
   res
@@ -43,7 +43,7 @@ const removeRequest = asyncHandler(async (req, res) => {
 
 export const RequestController = {
   createRequest,
-  fetchPendingRequests,
+  fetchMyRequests,
   acceptRequestFromArtist,
   removeRequest,
 };
