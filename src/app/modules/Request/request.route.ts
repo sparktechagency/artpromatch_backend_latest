@@ -11,12 +11,19 @@ router
   .post(auth(ROLE.BUSINESS, ROLE.ARTIST), validateRequest(requestValidation.createRequestSchema) ,RequestController.createRequest);
 
 router
-  .route('/')
+  .route('/me')
   .get(
     auth(ROLE.BUSINESS, ROLE.ARTIST),
     RequestController.fetchMyRequests
   );
 
+router
+  .route('/incoming')
+  .get(
+    auth(ROLE.BUSINESS, ROLE.ARTIST),
+    RequestController.fetchIncomingRequests
+  );
+  
 router
   .route('/:id')
   .put(auth(ROLE.ARTIST), RequestController.acceptRequestFromArtist)

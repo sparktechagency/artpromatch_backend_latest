@@ -1,80 +1,90 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import status from 'http-status';
+import mongoose from 'mongoose';
 import { AppError } from '../../utils';
+import Artist from '../Artist/artist.model';
+import { ROLE } from '../Auth/auth.constant';
 import Business from '../Business/business.model';
 import { IAuth } from './../Auth/auth.interface';
-import RequestModel from './request.model';
-import Artist from '../Artist/artist.model';
-import mongoose from 'mongoose';
-import { ROLE } from '../Auth/auth.constant';
 import { REQUEST_STATUS } from './request.constant';
+import RequestModel from './request.model';
 import { RequestPayload } from './request.validation';
-import { IArtist } from '../Artist/artist.interface';
 
-const createRequestIntoDB = async (user: IAuth, payload:RequestPayload) => {
-  
+const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
   // Artist send the request to business studios
-  if(user.role === ROLE.ARTIST){
-    const artist = await Artist.findOne({auth: user._id});
-    console.log("artist",artist)
-    const business = await Business.findOne({_id: payload.receiverId})
-    if(!artist){
+  if (user.role === ROLE.ARTIST) {
+    const artist = await Artist.findOne({ auth: user._id });
+    console.log('artist', artist);
+    const business = await Business.findOne({ _id: payload.receiverId });
+    if (!artist) {
       throw new AppError(status.NOT_FOUND, 'Artist not found');
     }
-       if(!business){
+    if (!business) {
       throw new AppError(status.NOT_FOUND, 'business not found');
     }
-    if(artist.business?.toString() === payload.receiverId){
-       throw new AppError(status.NOT_FOUND, 'This Artist Already Join Your Studio');
+    if (artist.business?.toString() === payload.receiverId) {
+      throw new AppError(
+        status.NOT_FOUND,
+        'This Artist Already Join Your Studio'
+      );
     }
-    const isExistRequest = await RequestModel.findOne({$and: [{artistId: artist._id}, {businessId: payload.receiverId}]});
-    if(isExistRequest){
-       throw new AppError(status.BAD_REQUEST, 'Request already sent by you or business');
+    const isExistRequest = await RequestModel.findOne({
+      $and: [{ artistId: artist._id }, { businessId: payload.receiverId }],
+    });
+    if (isExistRequest) {
+      throw new AppError(
+        status.BAD_REQUEST,
+        'Request already sent by you or business'
+      );
     }
     const requestPayload = {
       senderType: ROLE.ARTIST,
       artistId: artist._id,
       BusinessId: payload.receiverId,
-      status: REQUEST_STATUS.PENDING
-    }
+      status: REQUEST_STATUS.PENDING,
+    };
     const result = await RequestModel.create(requestPayload);
-    if(!result){
+    if (!result) {
       throw new AppError(status.NOT_FOUND, 'Failed To create Request');
     }
     return result;
   }
-  
+
   // business send the request to artist
-  if(user.role === ROLE.BUSINESS){
-    const business = await Business.findOne({auth: user._id});
-    if(!business){
+  if (user.role === ROLE.BUSINESS) {
+    const business = await Business.findOne({ auth: user._id });
+    if (!business) {
       throw new AppError(status.NOT_FOUND, 'business not found');
     }
-    
-    const artist = await Artist.findOne({_id:payload.receiverId})
-    if(!artist){
-       throw new AppError(status.NOT_FOUND, 'artist not found');
+
+    const artist = await Artist.findOne({ _id: payload.receiverId });
+    if (!artist) {
+      throw new AppError(status.NOT_FOUND, 'artist not found');
     }
-    console.log(artist)
-    
-    const isExistRequest = await RequestModel.findOne({$and: [{artistId: payload.receiverId}, {businessId: business._id}]});
-    if(isExistRequest){
-       throw new AppError(status.BAD_REQUEST, 'Request already sent by you or Artist!');
+    console.log(artist);
+
+    const isExistRequest = await RequestModel.findOne({
+      $and: [{ artistId: payload.receiverId }, { businessId: business._id }],
+    });
+    if (isExistRequest) {
+      throw new AppError(
+        status.BAD_REQUEST,
+        'Request already sent by you or Artist!'
+      );
     }
     const requestPayload = {
       senderType: ROLE.BUSINESS,
       artistId: payload.receiverId,
       businessId: business._id,
-      status: REQUEST_STATUS.PENDING
-    }
+      status: REQUEST_STATUS.PENDING,
+    };
     const result = await RequestModel.create(requestPayload);
-    if(!result){
+    if (!result) {
       throw new AppError(status.NOT_FOUND, 'Failed To create Request');
     }
     return result;
-  }  
+  }
 };
-
 
 // fetch my request
 
@@ -82,104 +92,165 @@ const fetchMyRequest = async (
   user: IAuth,
   query: Record<string, any> = {}
 ): Promise<{
-  meta: { page: number; limit: number; total: number; totalPages: number };
+  meta: { page: number; limit: number; total: number; totalPage: number };
   data: any[];
 }> => {
   const page = Number(query.page) > 0 ? Number(query.page) : 1;
   const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
   const skip = (page - 1) * limit;
 
-  const { page: _p, limit: _l, ...filters } = query;
+  const isArtist = user.role === ROLE.ARTIST;
 
-  // 1️⃣ Resolve user Auth ID to Artist/Business ID
-  let artistId: mongoose.Types.ObjectId | null = null;
-  let businessId: mongoose.Types.ObjectId | null = null;
+  const myId = isArtist
+    ? (await Artist.findOne({ auth: user._id }).select('_id'))?._id
+    : (await Business.findOne({ auth: user._id }).select('_id'))?._id;
 
-  if (user.role === ROLE.ARTIST) {
-    const artist:any = await Artist.findOne({ auth: user._id }).select("_id");
-    artistId = artist?._id || null;
-  } else if (user.role === ROLE.BUSINESS) {
-    const business:any = await Business.findOne({ auth: user._id }).select("_id");
-    businessId = business?._id || null;
-  }
+  if (!myId)
+    return { meta: { total: 0, totalPage: 0, page, limit }, data: [] };
 
-  if (!artistId && !businessId) {
-    return {
-      meta: { page, limit, total: 0, totalPages: 0 },
-      data: [],
-    };
-  }
+  const match: any = isArtist
+    ? { senderType: 'ARTIST', artistId: myId }
+    : { senderType: 'BUSINESS', businessId: myId };
 
-  // 2️⃣ Build match stage
-  const match: Record<string, any> = { $or: [], ...filters };
-  if (artistId) match.$or.push({ artistId: artistId });
-  if (businessId) match.$or.push({ businessId: businessId });
+  const pipeline: any[] = [
+    { $match: match },
+    {
+      $lookup: {
+        from: isArtist ? 'businesses' : 'artists',
+        localField: isArtist ? 'businessId' : 'artistId',
+        foreignField: '_id',
+        as: 'provider',
+      },
+    },
+    { $unwind: '$provider' },
 
-  // Determine role for the lookup
-  const isArtist = !!artistId;
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'provider.auth',
+        foreignField: '_id',
+        as: 'user',
+      },
+    },
 
-  // 3️⃣ Aggregation pipeline
+  { $unwind: '$user' },
+    { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+    {
+      $project: {
+        _id: 0,
+        requestId: "$_id",  
+        status: 1,
+        createdAt: 1,
+        provider: {
+          id: '$provider._id', // provider ID
+          name: '$user.fullName',
+          email: '$user.email',
+          phone: '$user.phoneNumber',
+        },
+      },
+    },
+  ];
+
+  const data = await RequestModel.aggregate(pipeline);
+  const total = await RequestModel.countDocuments(match);
+  const totalPage = Math.ceil(total / limit);
+
+ return {
+    data: data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage,
+    },
+  };
+};
+
+// fetch incoming request
+const fetchIncomingRequest = async (
+  user: IAuth,
+  query: Record<string, any> = {}
+): Promise<{
+  meta: { page: number; limit: number; total: number; totalPage: number };
+  data: any[];
+}> => {
+  const page = Number(query.page) > 0 ? Number(query.page) : 1;
+  const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
+  const skip = (page - 1) * limit;
+
+  const isArtist = user.role === ROLE.ARTIST;
+
+
+  const myId = isArtist
+    ? (await Artist.findOne({ auth: user._id }).select('_id'))?._id
+    : (await Business.findOne({ auth: user._id }).select('_id'))?._id;
+
+  if (!myId)
+    return { meta: { total: 0, totalPage: 0, page, limit }, data: [] };
+
+
+  const match: any = isArtist
+    ? { artistId: myId, senderType: 'BUSINESS' }
+    : { businessId: myId, senderType: 'ARTIST' };
+
+    console.log("match",match)
+
   const pipeline: any[] = [
     { $match: match },
 
-    // Lookup the "other" person
     {
       $lookup: {
-        from: isArtist ? "businesses" : "artists",
-        localField: isArtist ? "businessId" : "artistId",
-        foreignField: "_id",
-        as: "other",
+        from: isArtist ? 'businesses' : 'artists',
+        localField: isArtist ? 'businessId' : 'artistId',
+        foreignField: '_id',
+        as: 'provider',
       },
     },
-    { $unwind: { path: "$other", preserveNullAndEmptyArrays: true } },
+    { $unwind: '$provider' },
 
-    // Lookup auth info of the other person
     {
       $lookup: {
-        from: "auths",
-        localField: "other.auth",
-        foreignField: "_id",
-        as: "other.auth",
+        from: 'auths',
+        localField: 'provider.auth',
+        foreignField: '_id',
+        as: 'authUser',
       },
     },
-    { $unwind: { path: "$other.auth", preserveNullAndEmptyArrays: true } },
+    { $unwind: '$authUser' },
 
     { $sort: { createdAt: -1 } },
+    { $skip: skip },
+    { $limit: limit },
 
-    // Pagination + total count
     {
-      $facet: {
-        data: [
-          { $skip: skip },
-          { $limit: limit },
-          {
-            $project: {
-              status: 1,
-              createdAt: 1,
-              "other._id": 1,
-              "other.auth.fullName": 1,
-              "other.auth.email": 1,
-              "other.auth.image": 1,
-            },
-          },
-        ],
-        meta: [{ $count: "total" }],
+      $project: {
+        _id: 0,
+        requestId: '$_id',
+        status: 1,
+        createdAt: 1,
+        provider: {
+          id: '$provider._id',
+          name: '$authUser.fullName',
+          email: '$authUser.email',
+          phone: '$authUser.phoneNumber',
+        },
       },
     },
-
-    { $unwind: { path: "$meta", preserveNullAndEmptyArrays: true } },
-    { $addFields: { "meta.total": { $ifNull: ["$meta.total", 0] } } },
   ];
 
-  const result = await RequestModel.aggregate(pipeline);
-  const total = result[0]?.meta?.total || 0;
-  const totalPages = Math.ceil(total / limit);
+  const data = await RequestModel.aggregate(pipeline);
+  const total = await RequestModel.countDocuments(match);
+  const totalPage = Math.ceil(total / limit);
 
   return {
-    meta: { page, limit, total, totalPages },
-    data: result[0]?.data || [],
+    data,
+    meta: { page, limit, total, totalPage },
   };
 };
+
+
 
 
 // const fetchMyRequest = async (user: IAuth) => {
@@ -267,4 +338,5 @@ export const RequestService = {
   fetchMyRequest,
   acceptRequestFromArtist,
   removeRequest,
+  fetchIncomingRequest
 };

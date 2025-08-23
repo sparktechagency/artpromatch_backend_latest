@@ -10,13 +10,25 @@ const createRequest = asyncHandler(async (req, res) => {
 });
 
 const fetchMyRequests = asyncHandler(async (req, res) => {
-  const result = await RequestService.fetchMyRequest(req.user,req.query);
+  const {data,meta} = await RequestService.fetchMyRequest(req.user,req.query);
 
   // Send the response
   res
     .status(status.OK)
     .json(
-      new AppResponse(status.OK, result, 'Requests retrieved successfully')
+      new AppResponse(status.OK, data, 'Requests retrieved successfully',meta)
+    );
+});
+
+
+const fetchIncomingRequests = asyncHandler(async (req, res) => {
+  const {data,meta} = await RequestService.fetchIncomingRequest(req.user,req.query);
+
+  // Send the response
+  res
+    .status(status.OK)
+    .json(
+      new AppResponse(status.OK, data, 'Requests retrieved successfully',meta)
     );
 });
 
@@ -46,4 +58,5 @@ export const RequestController = {
   fetchMyRequests,
   acceptRequestFromArtist,
   removeRequest,
+  fetchIncomingRequests
 };
