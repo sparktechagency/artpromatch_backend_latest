@@ -102,44 +102,38 @@ const isValidTimeRange = (time: string) => {
 //   }),
 // });
 
-const timeRegex = /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(am|pm)$/i;
+const timeString = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:mm format"); // 24h format "09:00", "19:30"
 
-export const slotSchema = z.object({
-  startTime: z.string().regex(timeRegex),
-  endTime: z.string().regex(timeRegex),
-}).superRefine((slot, ctx) => {
-  const start = dayjs(slot.startTime.toLowerCase(), "h:mm a");
-  const end = dayjs(slot.endTime.toLowerCase(), "h:mm a");
-
-  if (!start.isValid() || !end.isValid()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Invalid time format",
-    });
-    return;
-  }
-
-  if (!start.isBefore(end)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "End time must be after start time",
-      path: ["endTime"],
-    });
-  }
+const breakSchema = z.object({
+  start: timeString.nullable().optional(),
+  end: timeString.nullable().optional(),
 });
 
-// Availability schema with req.body wrapper
-export const AvailabilitySchema = z.object({
+const dayScheduleSchema = z.object({
+  start: timeString.nullable().optional(),
+  end: timeString.nullable().optional(),
+  breaks: breakSchema.optional().default({ start: null, end: null }),
+  off: z.boolean().default(false),
+});
+
+export const weeklyScheduleSchema = z.object(
+  WEEK_DAYS.reduce((acc, day) => {
+    acc[day] = dayScheduleSchema.nullable().default(null);
+    return acc;
+  }, {} as Record<typeof WEEK_DAYS[number], any>)
+);
+
+export const availabilitySchema = z.object({
   body: z.object({
-    day: z.enum(WEEK_DAYS, { message: "Day must be mon–sun" }),
-    slots: z.array(slotSchema).min(1, "At least one slot is required"),
+    weeklySchedule: weeklyScheduleSchema,
   }),
 });
 
 export const SlotValidation = {
-  slotSchema,
-  AvailabilitySchema,
+  availabilitySchema,
 };
 
-export type TAvailability = z.infer<typeof AvailabilitySchema.shape.body>;
+export type TAvailability = z.infer<typeof availabilitySchema.shape.body>;
 // export type TAvailability = z.infer<typeof createSchema.shape.body>;

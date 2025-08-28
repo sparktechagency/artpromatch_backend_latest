@@ -77,14 +77,14 @@ router
   .route('/availability')
   .post(
     auth(ROLE.ARTIST),
-    validateRequest(SlotValidation.AvailabilitySchema),
+    validateRequest(SlotValidation.availabilitySchema),
     ArtistController.saveAvailability
   );
 
 // Route to manage artist's weekly availability
-router
-  .route('/availability/:id')
-  .get(ArtistController.getAvailabilityExcludingTimeOff)
+// router
+//   .route('/availability/:id')
+//   .get(ArtistController.getAvailabilityExcludingTimeOff)
 
 // Route to manage artist's manually booked hours
 router

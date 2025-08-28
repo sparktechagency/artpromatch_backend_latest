@@ -109,15 +109,12 @@ const updateArtistPersonalInfo = asyncHandler(async (req, res) => {
 
 // save availibility
 const saveAvailability = asyncHandler(async (req, res) => {
+  console.log("access")
   const result = await ArtistService.saveAvailabilityIntoDB(req.user, req.body);
-  const filtered = result[req.body.day].map((slot: any) => ({
-    startTime: slot.startTime,
-    endTime: slot.endTime,
-  }));
 
   res
     .status(status.OK)
-    .json(new AppResponse(status.OK, filtered, 'Save availability successfully'));
+    .json(new AppResponse(status.OK, result, 'Save availability successfully'));
 });
 
 // fetch all artist
@@ -150,22 +147,22 @@ const updateTimeOff = asyncHandler(async (req, res) => {
 });
 
 // get availibility
-const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
-  const artistId = req.params.id;
-  const month = Number(req.query.month);
-  const year = Number(req.query.year);
-  const result = await ArtistService.getAvailabilityExcludingTimeOff(
-    artistId,
-    month,
-    year
-  );
+// const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
+//   const artistId = req.params.id;
+//   const month = Number(req.query.month);
+//   const year = Number(req.query.year);
+//   const result = await ArtistService.getAvailabilityExcludingTimeOff(
+//     artistId,
+//     month,
+//     year
+//   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, result, 'Availability retrieved successfully')
-    );
-});
+//   res
+//     .status(status.OK)
+//     .json(
+//       new AppResponse(status.OK, result, 'Availability retrieved successfully')
+//     );
+// });
 
 export const ArtistController = {
   updateProfile,
@@ -180,5 +177,5 @@ export const ArtistController = {
   fetchAllArtists,
   updateAvailability,
   updateTimeOff,
-  getAvailabilityExcludingTimeOff,
+  // getAvailabilityExcludingTimeOff,
 };

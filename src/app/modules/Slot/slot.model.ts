@@ -1,5 +1,5 @@
 import mongoose, { Schema, model } from 'mongoose';
-import { IArtistSchedule, ISlot } from './slot.interface';
+import { IArtistSchedule} from './slot.interface';
 // import { WEEK_DAYS } from '../Artist/artist.constant';
 // import { ISlot } from './slot.interface';
 
@@ -35,47 +35,48 @@ import { IArtistSchedule, ISlot } from './slot.interface';
 
 // export default Slot;
 
-const SlotSchema = new Schema<ISlot>(
-  {
-    startTime: {
-      type: String,
-      required: true,
-    },
-    endTime: {
-      type: String,
-      required: true,
-    },
-    startDateTime: {
-      type: Date,
-      required: true,
-    },
-    endDateTime: {
-      type: Date,
-      required: true,
-    },
+const BreakSchema = new mongoose.Schema({
+  start: { type: String, required: false }, 
+  end: { type: String, required: false },
+});
+
+const DayScheduleSchema = new mongoose.Schema({
+  start: { type: String, default: null }, 
+  end: { type: String, default: null },
+  breaks: BreakSchema,
+  off: { type: Boolean, default: false },
+});
+
+const ExceptionSchema = new mongoose.Schema({
+  date: { type: Date, required: true },
+  type: { type: String, enum: ["off", "special"], required: true },
+  start: { type: String }, 
+  end: { type: String },
+  breaks: BreakSchema,
+});
+
+
+const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>({
+  artistId: { type: Schema.Types.ObjectId, ref: 'Artist', required: true },
+  weeklySchedule: {
+    monday: {type: DayScheduleSchema , required: false } ,
+    tuesday: {type: DayScheduleSchema , required: false } ,
+    wednesday: {type: DayScheduleSchema , required: false } ,
+    thursday:{type: DayScheduleSchema , required: false } ,
+    friday: {type: DayScheduleSchema , required: false } ,
+    saturday: {type: DayScheduleSchema , required: false } ,
+    sunday: {type: DayScheduleSchema , required: false } ,
   },
-  { timestamps: true }
+  exceptions: [ExceptionSchema],
+},
+
+{
+  timestamps: true,
+  versionKey:false
+}
+
 );
 
-const ArtistScheduleSchema = new Schema<IArtistSchedule>(
-  {
-    artist: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Artist',
-      required: true,
-    },
-
-    mon: [SlotSchema],
-    tue: [SlotSchema],
-    wed: [SlotSchema],
-    thu: [SlotSchema],
-    fri: [SlotSchema],
-    sat: [SlotSchema],
-    sun: [SlotSchema],
-  },
-  { timestamps: true , versionKey: false}
-  
-);
 
 const ArtistSchedule = model<IArtistSchedule>(
   'ArtistSchedule',

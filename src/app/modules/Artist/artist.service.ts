@@ -14,6 +14,7 @@ import Booking from '../Booking/booking.model';
 import Slot from '../Slot/slot.model';
 import {
   hasOverlap,
+  normalizeWeeklySchedule,
   parseSlotTime,
   removeDuplicateSlots,
   splitIntoHourlySlots,
@@ -28,7 +29,8 @@ import {
   TUpdateArtistProfilePayload,
 } from './artist.validation';
 import ArtistSchedule from '../Slot/slot.model';
-import { IArtistSchedule } from '../Slot/slot.interface';
+import { IArtistSchedule, WeeklySchedule } from '../Slot/slot.interface';
+import { IArtist } from './artist.interface';
 
 // update profile
 const updateProfile = async (
@@ -341,55 +343,35 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
 
 //
 
+// save availability
 const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
-  
-  const { day, slots } = payload; 
+  const { weeklySchedule: inputSchedule } = payload;
 
-  // Step 1: Parse incoming slots → with correct weekday
-  const parsedSlots = slots.map(slot => {
-    const start = parseSlotTime(day, slot.startTime);
-    const end = parseSlotTime(day, slot.endTime);
+  const artist: IArtist = await Artist.findOne({ auth: user._id }).select("_id");
+  if (!artist) throw new Error("Artist not found");
 
-    if (!(start instanceof Date) || isNaN(start.getTime()) ||
-        !(end instanceof Date) || isNaN(end.getTime())) {
-      throw new Error(`Invalid time format for slot: ${slot.startTime} - ${slot.endTime}`);
-    }
 
-    return {
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      startDateTime: start,
-      endDateTime: end
-    };
-  });
+  let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
 
-  // Step 2: Fetch or create artist schedule
-  let schedule:any = await ArtistSchedule.findOne({ artist: user._id });
-  if (!schedule) {
-    schedule = new ArtistSchedule({
-      artist: user._id,
-      mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
-    });
+
+  let mergedSchedule: Partial<WeeklySchedule> = {};
+  if (schedule) {
+    mergedSchedule = { ...schedule.weeklySchedule, ...inputSchedule };
+  } else {
+    mergedSchedule = { ...inputSchedule };
   }
 
-  // Step 3: Conflict check against existing slots
-  const existingSlots: typeof parsedSlots = schedule[day] || [];
-  parsedSlots.forEach(newSlot => {
-    const conflict = existingSlots.some(existing =>
-      newSlot.startDateTime < existing.endDateTime &&
-      newSlot.endDateTime > existing.startDateTime
-    );
-    if (conflict) {
-      throw new Error(
-        `Slot ${newSlot.startTime} - ${newSlot.endTime} overlaps with existing schedule`
-      );
-    }
-  });
 
-  // Step 4: Merge + sort
-  schedule[day] = [...existingSlots, ...parsedSlots].sort(
-    (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime()
-  );
+  const normalizedSchedule = normalizeWeeklySchedule(mergedSchedule);
+
+  if (schedule) {
+    schedule.weeklySchedule = normalizedSchedule;
+  } else {
+    schedule = new ArtistSchedule({
+      artistId: artist._id,
+      weeklySchedule: normalizedSchedule,
+    });
+  }
 
   await schedule.save();
   return schedule;
@@ -478,77 +460,77 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
 };
 
 // get availibilty excluding time off
-const getAvailabilityExcludingTimeOff = async (
-  artistId: string,
-  month: number,
-  year: number
-) => {
-  const artist = await Artist.findById(artistId);
+// const getAvailabilityExcludingTimeOff = async (
+//   artistId: string,
+//   month: number,
+//   year: number
+// ) => {
+//   const artist = await Artist.findById(artistId);
 
-  if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
-  }
+//   if (!artist) {
+//     throw new AppError(status.NOT_FOUND, 'Artist not found');
+//   }
 
-  // Fetch the available slots for the artist
-  const availableSlots = await Slot.find({ auth: artist.auth }).select(
-    'day slots'
-  );
+//   // Fetch the available slots for the artist
+//   const availableSlots = await Slot.find({ auth: artist.auth }).select(
+//     'day slots'
+//   );
 
-  // Fetch the artist's time off (days when they are not available)
-  const offDay = artist.timeOff.map((off) => moment(off).format('YYYY-MM-DD'));
+//   // Fetch the artist's time off (days when they are not available)
+//   const offDay = artist.timeOff.map((off) => moment(off).format('YYYY-MM-DD'));
 
-  // Get the total days for the given month and year
+//   // Get the total days for the given month and year
 
-  const totalDays = new Date(
-    new Date().getFullYear(),
-    month, // this is dynamic data from frontend
-    0
-  ).getDate();
+//   const totalDays = new Date(
+//     new Date().getFullYear(),
+//     month, // this is dynamic data from frontend
+//     0
+//   ).getDate();
 
-  // Fetch booking data for the artist for upcoming dates
-  const bookingData = await Booking.find({
-    artist: artist._id,
-    date: { $gt: new Date() },
-    status: { $ne: 'cancelled' },
-  }).populate('slot');
+//   // Fetch booking data for the artist for upcoming dates
+//   const bookingData = await Booking.find({
+//     artist: artist._id,
+//     date: { $gt: new Date() },
+//     status: { $ne: 'cancelled' },
+//   }).populate('slot');
 
-  // Generate the calendar data by iterating through each day of the month
-  const calendarData = [];
+//   // Generate the calendar data by iterating through each day of the month
+//   const calendarData = [];
 
-  for (let day = 1; day <= totalDays; day++) {
-    const currentDate = moment(`${year}-${month}-${day}`, 'YYYY-MM-DD'); // The current date in the loop
-    const dayName = currentDate.format('dddd'); // Name of the day (e.g., Monday, Tuesday)
+//   for (let day = 1; day <= totalDays; day++) {
+//     const currentDate = moment(`${year}-${month}-${day}`, 'YYYY-MM-DD'); // The current date in the loop
+//     const dayName = currentDate.format('dddd'); // Name of the day (e.g., Monday, Tuesday)
 
-    // Check if this day is a time off day for the artist
-    const isOffDay = offDay.includes(currentDate.format('YYYY-MM-DD'));
+//     // Check if this day is a time off day for the artist
+//     const isOffDay = offDay.includes(currentDate.format('YYYY-MM-DD'));
 
-    // Get the available slots for this day
-    const availableSlotsForDay =
-      availableSlots.find((slot) => slot.day === dayName)?.slots || [];
+//     // Get the available slots for this day
+//     const availableSlotsForDay =
+//       availableSlots.find((slot) => slot.day === dayName)?.slots || [];
 
-    // Exclude booked slots for this day
-    const availableTimeSlots = availableSlotsForDay.filter((slot) => {
-      return !bookingData.some((booking) => {
-        // Check if the booking is on the same day and if the slot time matches
-        return (
-          moment(booking.date).isSame(currentDate, 'day') &&
-          booking.slotTimeId.toString() === (slot._id as ObjectId).toString()
-        );
-      });
-    });
+//     // Exclude booked slots for this day
+//     const availableTimeSlots = availableSlotsForDay.filter((slot) => {
+//       return !bookingData.some((booking) => {
+//         // Check if the booking is on the same day and if the slot time matches
+//         return (
+//           moment(booking.date).isSame(currentDate, 'day') &&
+//           booking.slotTimeId.toString() === (slot._id as ObjectId).toString()
+//         );
+//       });
+//     });
 
-    // Add the data for this day to the calendar data
-    calendarData.push({
-      date: currentDate.format('YYYY-MM-DD'),
-      dayName,
-      availableSlots: isOffDay ? [] : availableTimeSlots, // If it's an off day, no available slots
-      isUnavailable: isOffDay || availableTimeSlots.length === 0, // If it's an off day or no available slots, mark it as unavailable
-    });
-  }
+//     // Add the data for this day to the calendar data
+//     calendarData.push({
+//       date: currentDate.format('YYYY-MM-DD'),
+//       dayName,
+//       availableSlots: isOffDay ? [] : availableTimeSlots, // If it's an off day, no available slots
+//       isUnavailable: isOffDay || availableTimeSlots.length === 0, // If it's an off day or no available slots, mark it as unavailable
+//     });
+//   }
 
-  // Return the calendar data
-  return { calendarData };
-};
+//   // Return the calendar data
+//   return { calendarData };
+// };
 
 export const ArtistService = {
   updateProfile,
@@ -563,5 +545,5 @@ export const ArtistService = {
   fetchAllArtistsFromDB,
   updateAvailability,
   updateTimeOff,
-  getAvailabilityExcludingTimeOff,
+ 
 };

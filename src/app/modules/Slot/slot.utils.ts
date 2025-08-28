@@ -74,6 +74,7 @@ export const splitIntoHourlySlots = (
 
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek"; 
+import { DaySchedule, WeeklySchedule } from "./slot.interface";
 dayjs.extend(isoWeek);
 
 // Map Mon–Sun → numeric weekday (ISO: 1 = Monday, 7 = Sunday)
@@ -104,3 +105,41 @@ export function parseSlotTime(day: string, time?: string): Date {
 
   return base.hour(h).minute(minutes).second(0).millisecond(0).toDate();
 }
+
+
+const defaultDaySchedule = (): DaySchedule => ({
+  start: null,
+  end: null,
+  breaks: { start: null, end: null },
+  off: true,
+});
+
+
+export const normalizeWeeklySchedule = (
+  input: Partial<WeeklySchedule>
+): WeeklySchedule => {
+  const days: (keyof WeeklySchedule)[] = [
+    "monday","tuesday","wednesday","thursday","friday","saturday","sunday"
+  ];
+
+  const normalized: WeeklySchedule = {} as WeeklySchedule;
+
+  for (const day of days) {
+    const schedule = input[day];
+
+    if (!schedule || schedule.off) {
+      normalized[day] = defaultDaySchedule();
+    } else {
+      normalized[day] = {
+        start: schedule.start ?? null,
+        end: schedule.end ?? null,
+        breaks: schedule.breaks
+          ? { start: schedule.breaks.start ?? null, end: schedule.breaks.end ?? null }
+          : { start: null, end: null },
+        off: false,
+      };
+    }
+  }
+
+  return normalized;
+};

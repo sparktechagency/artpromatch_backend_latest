@@ -105,13 +105,13 @@ export const cancellationPolicy = {
 } as const;
 
 export const WEEK_DAYS = [
-  'mon',
-  'tue',
-  'wed',
-  'thu',
-  'fri',
-  'sat',
-  'sun',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
 ] as const;
 
 export type TWeekDay = (typeof WEEK_DAYS)[number];
