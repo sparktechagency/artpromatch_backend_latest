@@ -146,3 +146,9 @@ dist
 # End of https://www.toptal.com/developers/gitignore/api/node
 .vercel
 public/
+
+
+package-lock.json
+pnpm-lock.yaml
+bun.lock
+yarn.lock
