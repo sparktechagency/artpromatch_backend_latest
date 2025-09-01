@@ -18,9 +18,8 @@ const servicesSchema = new Schema(
     name: { type: String, required: true },
     price: { type: Number, required: true },
     duration: { type: String, required: true },
+    bufferTime: {type: String, required: false, default:""}
   },
-
-  { _id: false }
 );
 
 // 🔹 Subschema: Portfolio
@@ -33,7 +32,7 @@ const portfolioSchema = new Schema(
     },
     position: { type: Number, default: 0 },
   },
-  { _id: false }
+
 );
 
 // 🔹 Main Artist Schema
