@@ -49,7 +49,7 @@ router
 router
   .route('/connected-account')
   .get(
-    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     AuthController.fetchClientConnectedAccount
   );
 
@@ -72,7 +72,7 @@ router
 router
   .route('/forget-password-verify')
   .post(
-    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     validateRequest(AuthValidation.forgetPasswordVerifySchema),
     AuthController.verifyOtpForForgetPassword
   );
@@ -84,19 +84,18 @@ router
     AuthController.resetPassword
   );
 
-
 router
   .route('/deactive-account')
   .post(
-    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     validateRequest(AuthValidation.userDeactivationSchema),
     AuthController.deactivateUserAccount
   );
 
-  router
+router
   .route('/delete-account')
   .delete(
-    auth(ROLE.CLIENT,ROLE.ARTIST,ROLE.BUSINESS),
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     AuthController.deleteSpecificAccount
   );
 
