@@ -106,24 +106,10 @@ const timeString = z
   .string()
   .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:mm format"); // 24h format "09:00", "19:30"
 
-const breakSchema = z.object({
-  start: timeString.nullable().optional(),
-  end: timeString.nullable().optional(),
-}).refine(
-  (data) =>
-    (data.start === null && data.end === null) ||
-    (data.start === undefined && data.end === undefined) ||
-    (data.start && data.end),
-  {
-    message: "Both start and end are required together",
-    path: ["end"], // point error near `end`
-  }
-);
 
 const dayScheduleSchema = z.object({
   start: timeString.nullable().optional(),
   end: timeString.nullable().optional(),
-  breaks: breakSchema.optional().default({ start: null, end: null }),
   off: z.boolean().default(false),
 }).refine(
   (data) =>

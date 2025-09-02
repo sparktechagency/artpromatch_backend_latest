@@ -110,7 +110,6 @@ export function parseSlotTime(day: string, time?: string): Date {
 const defaultDaySchedule = (): DaySchedule => ({
   start: null,
   end: null,
-  breaks: { start: null, end: null },
   off: true,
 });
 
@@ -133,9 +132,6 @@ export const normalizeWeeklySchedule = (
       normalized[day] = {
         start: schedule.start ?? null,
         end: schedule.end ?? null,
-        breaks: schedule.breaks
-          ? { start: schedule.breaks.start ?? null, end: schedule.breaks.end ?? null }
-          : { start: null, end: null },
         off: false,
       };
     }

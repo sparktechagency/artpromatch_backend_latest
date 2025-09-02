@@ -35,25 +35,14 @@ import { IArtistSchedule } from './slot.interface';
 
 // export default Slot;
 
-const BreakSchema = new mongoose.Schema({
-  start: { type: String, required: false },
-  end: { type: String, required: false },
-});
+
 
 const DayScheduleSchema = new mongoose.Schema({
   start: { type: String, default: null },
   end: { type: String, default: null },
-  breaks: BreakSchema,
   off: { type: Boolean, default: false },
 });
 
-const ExceptionSchema = new mongoose.Schema({
-  date: { type: Date, required: true },
-  type: { type: String, enum: ['off', 'special'], required: true },
-  start: { type: String },
-  end: { type: String },
-  breaks: BreakSchema,
-});
 
 const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
   {
@@ -67,7 +56,6 @@ const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
       saturday: { type: DayScheduleSchema, required: false },
       sunday: { type: DayScheduleSchema, required: false },
     },
-    exceptions: [ExceptionSchema],
   },
 
   {

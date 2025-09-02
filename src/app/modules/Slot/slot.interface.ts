@@ -52,8 +52,7 @@ interface BreakTime {
 
 export interface DaySchedule {
   start: string | null; 
-  end: string | null;   
-  breaks: BreakTime;     
+  end: string | null;     
   off: boolean;         
 }
 
