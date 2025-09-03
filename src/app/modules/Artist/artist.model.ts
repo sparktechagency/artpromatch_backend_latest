@@ -62,7 +62,6 @@ const artistSchema = new Schema<IArtist>(
       enum: Object.values(expertiseTypes),
       required: true,
     },
-
     mainLocation: {
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], required: true }, 

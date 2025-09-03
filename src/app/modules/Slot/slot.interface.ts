@@ -45,14 +45,13 @@ import { Types } from "mongoose";
 
 
 // One break per day, always 7 days in DB
-interface BreakTime {
-  start: string | null; 
-  end: string | null;   
-}
+
 
 export interface DaySchedule {
-  start: string | null; 
-  end: string | null;     
+  startTime: string | null; 
+  endTime: string | null;   
+  startMin: number | null; 
+  endMin: number | null;     
   off: boolean;         
 }
 
@@ -72,11 +71,6 @@ export interface GuestSpots {
   endTime: string;
   startMin: number;
   endMin: number;
-  location: {
-    name: string;
-    lat: number;
-    lon:number;
-  }
 }
 
 export interface offTimes {

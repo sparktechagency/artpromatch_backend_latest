@@ -104,18 +104,21 @@ const isValidTimeRange = (time: string) => {
 
 const timeString = z
   .string()
-  .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:mm format"); // 24h format "09:00", "19:30"
+  .regex(
+    /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(am|pm)$/i,
+    "Time must be in hh:mm am/pm format"
+  );
 
 
 const dayScheduleSchema = z.object({
-  start: timeString.nullable().optional(),
-  end: timeString.nullable().optional(),
+  startTime: timeString.nullable().optional(),
+  endTime: timeString.nullable().optional(),
   off: z.boolean().default(false),
 }).refine(
   (data) =>
-    (data.start === null && data.end === null) ||
-    (data.start === undefined && data.end === undefined) ||
-    (data.start && data.end),
+    (data.startTime === null && data.endTime === null) ||
+    (data.startTime === undefined && data.endTime === undefined) ||
+    (data.startTime && data.endTime),
   {
     message: "Both start and end are required together",
     path: ["end"],

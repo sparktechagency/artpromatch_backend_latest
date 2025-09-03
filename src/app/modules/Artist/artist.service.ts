@@ -15,7 +15,6 @@ import Slot from '../Slot/slot.model';
 import {
   hasOverlap,
   normalizeWeeklySchedule,
-  parseSlotTime,
   removeDuplicateSlots,
   splitIntoHourlySlots,
   toMinutes,
@@ -348,8 +347,10 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   const { weeklySchedule: inputSchedule } = payload;
 
   const artist: IArtist = await Artist.findOne({ auth: user._id }).select("_id");
-  if (!artist) throw new Error("Artist not found");
 
+  if(!artist){
+     throw new AppError(status.NOT_FOUND, 'Artist not found');
+  }
 
   let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
 

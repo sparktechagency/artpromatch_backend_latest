@@ -38,8 +38,10 @@ import { IArtistSchedule } from './slot.interface';
 
 
 const DayScheduleSchema = new mongoose.Schema({
-  start: { type: String, default: null },
-  end: { type: String, default: null },
+  startTime: { type: String,  default: null },
+  endTime: { type: String,  default: null },
+  startMin: { type: Number, default: null },
+  endMin: { type: Number, default: null },
   off: { type: Boolean, default: true},
 });
 
@@ -50,16 +52,11 @@ const GuestSpotSchema = new mongoose.Schema({
   endTime: { type: String, required: true },
   startMin: { type: Number, required: false },
   endMin: { type: Number, required: false },
-  location: {
-    name: { type: String, required: true },
-    lat: { type: Number, required: true },
-    lon: { type: Number, required: true },
-  },
 });
 
 const OffTimeSchema = new mongoose.Schema({
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true },   
+  startDate: { type: Date, required: true , default:null},
+  endDate: { type: Date, required: true , default: null},   
 });
 
 const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
@@ -89,3 +86,50 @@ const ArtistSchedule = model<IArtistSchedule>(
   ArtistScheduleSchema
 );
 export default ArtistSchedule;
+
+
+/*
+
+// function formatMinutesToTime(minutes) {
+//   const hours = Math.floor(minutes / 60);
+//   const mins = minutes % 60;
+//   const ampm = hours >= 12 ? 'PM' : 'AM';
+//   const displayHour = hours % 12 || 12; // 0 → 12
+//   console.log(displayHour)
+//   return `${displayHour}:${String(mins).padStart(2, '0')} ${ampm}`;
+// }
+
+// function formatSlot(start, end) {
+//   return `${formatMinutesToTime(start)} - ${formatMinutesToTime(end)}`;
+// }
+
+// console.log(formatSlot(0, 580)); 
+
+
+function timeToMinutes(timeStr) {
+  const [time, modifier] = timeStr.split(/(AM|PM)/i); // split into "9:00" and "AM"
+  let [hours, minutes] = time.split(":").map(Number);
+
+  if (modifier.toUpperCase() === "PM" && hours !== 12) {
+    hours += 12;
+  }
+  if (modifier.toUpperCase() === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  return hours * 60 + (minutes || 0);
+}
+
+function rangeToMinutes(rangeStr) {
+  const [startStr, endStr] = rangeStr.split(" - ").map(s => s.trim());
+  return {
+    start: timeToMinutes(startStr),
+    end: timeToMinutes(endStr)
+  };
+}
+
+// Example:
+console.log(rangeToMinutes("1:00 AM - 12:00 PM"));
+
+
+*/
