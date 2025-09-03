@@ -13,27 +13,22 @@ const contactSchema = new Schema(
 );
 
 // 🔹 Subschema: Services
-const servicesSchema = new Schema(
-  {
-    name: { type: String, required: true },
-    price: { type: Number, required: true },
-    duration: { type: String, required: true },
-    bufferTime: {type: String, required: false, default:""}
-  },
-);
+const servicesSchema = new Schema({
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  duration: { type: String, required: true },
+  bufferTime: { type: String, required: false, default: '' },
+});
 
 // 🔹 Subschema: Portfolio
-const portfolioSchema = new Schema(
-  {
-    folder: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Folder',
-      required: true,
-    },
-    position: { type: Number, default: 0 },
+const portfolioSchema = new Schema({
+  folder: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Folder',
+    required: true,
   },
-
-);
+  position: { type: Number, default: 0 },
+});
 
 // 🔹 Main Artist Schema
 const artistSchema = new Schema<IArtist>(
@@ -48,12 +43,12 @@ const artistSchema = new Schema<IArtist>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Business',
       required: false,
-      default: null
+      default: null,
     },
-    
-    isConnBusiness:{
+
+    isConnBusiness: {
       type: Boolean,
-      default: false
+      default: false,
     },
 
     type: {
@@ -68,16 +63,14 @@ const artistSchema = new Schema<IArtist>(
       required: true,
     },
 
-    location: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        required: true,
-      },
-      coordinates: {
-        type: [Number],
-        required: true,
-      },
+    mainLocation: {
+      type: { type: String, enum: ['Point'], default: 'Point' },
+      coordinates: { type: [Number], required: true }, 
+    },
+    currentLocation: {
+      type: { type: String, enum: ['Point'], default: 'Point' },
+      coordinates: { type: [Number], required: true }, 
+      currentLocationUntil: { type: Date , default: null}
     },
 
     city: {
@@ -104,7 +97,7 @@ const artistSchema = new Schema<IArtist>(
       type: Number,
       default: 0,
     },
-    
+
     rating: {
       type: Number,
       default: 0,

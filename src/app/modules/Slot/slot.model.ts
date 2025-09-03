@@ -40,9 +40,27 @@ import { IArtistSchedule } from './slot.interface';
 const DayScheduleSchema = new mongoose.Schema({
   start: { type: String, default: null },
   end: { type: String, default: null },
-  off: { type: Boolean, default: false },
+  off: { type: Boolean, default: true},
 });
 
+const GuestSpotSchema = new mongoose.Schema({
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  startMin: { type: Number, required: false },
+  endMin: { type: Number, required: false },
+  location: {
+    name: { type: String, required: true },
+    lat: { type: Number, required: true },
+    lon: { type: Number, required: true },
+  },
+});
+
+const OffTimeSchema = new mongoose.Schema({
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },   
+});
 
 const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
   {
@@ -56,8 +74,10 @@ const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
       saturday: { type: DayScheduleSchema, required: false },
       sunday: { type: DayScheduleSchema, required: false },
     },
+     guestSpots: [GuestSpotSchema],
+     offTimes: [OffTimeSchema],
   },
-
+  
   {
     timestamps: true,
     versionKey: false,

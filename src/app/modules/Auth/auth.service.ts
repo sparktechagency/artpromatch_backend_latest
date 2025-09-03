@@ -24,6 +24,7 @@ import { ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
 import Auth from './auth.model';
 import { AuthValidation, TProfilePayload } from './auth.validation';
+import sendOtpSms from '../../utils/sendOtpSms';
 
 const createAuth = async (payload: IAuth) => {
   const existingUser = await Auth.findOne({ email: payload.email });
@@ -33,7 +34,7 @@ const createAuth = async (payload: IAuth) => {
   }
 
   const otp = generateOtp();
-  // await sendOtpSms(payload.phoneNumber, otp);
+  await sendOtpSms(payload.phoneNumber, otp);
   const token = jwt.sign({ ...payload, otp }, config.jwt_access_secret!, {
     expiresIn: '5m',
   });
