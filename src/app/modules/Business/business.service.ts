@@ -9,7 +9,7 @@ import {
   TUpdateBusinessNotificationPayload,
   TUpdateBusinessSecuritySettingsPayload,
 } from './business.validation';
-import Auth from '../Auth/auth.model';
+import { Auth } from '../Auth/auth.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
 
 // Update Business Profile

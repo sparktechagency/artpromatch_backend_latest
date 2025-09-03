@@ -3,7 +3,7 @@ import status from 'http-status';
 import { AppError } from '../../utils';
 import Artist from '../Artist/artist.model';
 import { IAuth } from '../Auth/auth.interface';
-import Auth from '../Auth/auth.model';
+import { Auth } from '../Auth/auth.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
 import Client from './client.model';
 import {
@@ -268,5 +268,4 @@ export const ClientService = {
   updateNotificationPreferences,
   updatePrivacySecuritySettings,
   fetchDiscoverArtistFromDB,
-  
 };

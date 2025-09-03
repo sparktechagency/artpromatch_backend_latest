@@ -1,38 +1,46 @@
 import httpStatus from 'http-status';
-import { AppError, AppResponse, asyncHandler, options } from '../../utils';
+import { AppResponse, asyncHandler, options } from '../../utils';
 import { AuthService } from './auth.service';
 import { CookieOptions } from 'express';
 import { TProfileFileFields } from '../../types';
 
+// 1. createAuth
 const createAuth = asyncHandler(async (req, res) => {
   const result = await AuthService.createAuth(req.body);
-  console.log(result);
-  res
-    .status(httpStatus.OK)
-    .json(new AppResponse(httpStatus.OK, result, 'OTP send successfully'));
-});
-
-const signupOtpSendAgain = asyncHandler(async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized access!');
-  }
-
-  const result = await AuthService.signupOtpSendAgain(token);
 
   res
     .status(httpStatus.OK)
     .json(
-      new AppResponse(httpStatus.OK, result, 'OTP send again successfully')
+      new AppResponse(
+        httpStatus.OK,
+        result,
+        'OTP sent successfully, verify your account in 5 minutes!'
+      )
     );
 });
 
-const saveAuthData = asyncHandler(async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1] || '';
+// 2. sendSignupOtpAgain
+const sendSignupOtpAgain = asyncHandler(async (req, res) => {
+  const userEmail = req.body.userEmail;
+  const result = await AuthService.sendSignupOtpAgain(userEmail);
+
+  res
+    .status(httpStatus.OK)
+    .json(
+      new AppResponse(
+        httpStatus.OK,
+        result,
+        'OTP sent again successfully, verify in 5 minutes!'
+      )
+    );
+});
+
+// 3. verifySignupOtp
+const verifySignupOtp = asyncHandler(async (req, res) => {
+  const userEmail = req.body.userEmail;
   const otp = req.body.otp;
-  const result = await AuthService.saveAuthIntoDB(token, otp);
-  console.log(result);
+  const result = await AuthService.verifySignupOtpIntoDB(userEmail, otp);
+
   res
     .status(httpStatus.CREATED)
     .cookie('accessToken', result.accessToken, options as CookieOptions)
@@ -46,10 +54,22 @@ const saveAuthData = asyncHandler(async (req, res) => {
     );
 });
 
-const createProfile = asyncHandler(async (req, res) => {
+// 4. signin
+const signin = asyncHandler(async (req, res) => {
+  const result = await AuthService.signinIntoDB(req.body);
+
+  res
+    .status(httpStatus.OK)
+    .cookie('accessToken', result.accessToken, options as CookieOptions)
+    .cookie('refreshToken', result.refreshToken, options as CookieOptions)
+    .json(new AppResponse(httpStatus.OK, result, 'Signin successfully'));
+});
+
+// 5. updateProfile
+const updateProfile = asyncHandler(async (req, res) => {
   const files = (req.files as TProfileFileFields) || {};
   const user = req.user;
-  const result = await AuthService.saveProfileIntoDB(req.body, user, files);
+  const result = await AuthService.updateProfileIntoDB(req.body, user, files);
   res
     .status(httpStatus.CREATED)
     .json(
@@ -61,21 +81,10 @@ const createProfile = asyncHandler(async (req, res) => {
     );
 });
 
-const signin = asyncHandler(async (req, res) => {
-  const result = await AuthService.signinIntoDB(req.body);
-
-  res
-    .status(httpStatus.OK)
-    .cookie('accessToken', result.accessToken, options as CookieOptions)
-    .cookie('refreshToken', result.refreshToken, options as CookieOptions)
-    .json(new AppResponse(httpStatus.OK, result, 'Signin successfully'));
-});
-
+// socialSignin
 const socialSignin = asyncHandler(async (req, res) => {
   const { response, accessToken, refreshToken } =
     await AuthService.socialLoginServices(req.body);
-
-  console.log({ accessToken, refreshToken });
 
   res
     .status(httpStatus.OK)
@@ -84,6 +93,7 @@ const socialSignin = asyncHandler(async (req, res) => {
     .json(new AppResponse(httpStatus.OK, response, 'Signin successfully'));
 });
 
+// updateProfilePhoto
 const updateProfilePhoto = asyncHandler(async (req, res) => {
   const result = await AuthService.updateProfilePhoto(req.user, req.file);
 
@@ -98,6 +108,7 @@ const updateProfilePhoto = asyncHandler(async (req, res) => {
     );
 });
 
+// changePassword
 const changePassword = asyncHandler(async (req, res) => {
   const accessToken =
     req.header('Authorization')?.replace('Bearer ', '') ||
@@ -111,7 +122,7 @@ const changePassword = asyncHandler(async (req, res) => {
     );
 });
 
-// For forget password
+// forgetPassword
 const forgetPassword = asyncHandler(async (req, res) => {
   const email = req.body.email;
 
@@ -128,6 +139,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
     );
 });
 
+// verifyOtpForForgetPassword
 const verifyOtpForForgetPassword = asyncHandler(async (req, res) => {
   const result = await AuthService.verifyOtpForForgetPassword(req.body);
 
@@ -136,6 +148,7 @@ const verifyOtpForForgetPassword = asyncHandler(async (req, res) => {
     .json(new AppResponse(httpStatus.OK, result, 'OTP verified successfully'));
 });
 
+// resetPassword
 const resetPassword = asyncHandler(async (req, res) => {
   const resetPasswordToken =
     req.header('Authorization')?.replace('Bearer ', '') ||
@@ -152,6 +165,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     );
 });
 
+// fetchProfile
 const fetchProfile = asyncHandler(async (req, res) => {
   console.log(req.body);
   const result = await AuthService.fetchProfileFromDB(req.user);
@@ -167,6 +181,7 @@ const fetchProfile = asyncHandler(async (req, res) => {
     );
 });
 
+// fetchClientConnectedAccount
 const fetchClientConnectedAccount = asyncHandler(async (req, res) => {
   console.log(req.user);
   const result = await AuthService.fetchAllConnectedAcount(req.user);
@@ -182,6 +197,7 @@ const fetchClientConnectedAccount = asyncHandler(async (req, res) => {
     );
 });
 
+// deactivateUserAccount
 const deactivateUserAccount = asyncHandler(async (req, res) => {
   const result = await AuthService.deactiveUserCurrentAccount(
     req.user,
@@ -194,6 +210,7 @@ const deactivateUserAccount = asyncHandler(async (req, res) => {
     );
 });
 
+// deleteSpecificAccount
 const deleteSpecificAccount = asyncHandler(async (req, res) => {
   const result = await AuthService.deleteUserAccount(req.user);
   res
@@ -205,10 +222,10 @@ const deleteSpecificAccount = asyncHandler(async (req, res) => {
 
 export const AuthController = {
   createAuth,
-  saveAuthData,
-  signupOtpSendAgain,
-  createProfile,
+  sendSignupOtpAgain,
+  verifySignupOtp,
   signin,
+  updateProfile,
   socialSignin,
   updateProfilePhoto,
   changePassword,

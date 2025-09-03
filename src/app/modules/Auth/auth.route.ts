@@ -8,23 +8,36 @@ import { ROLE } from './auth.constant';
 
 const router = Router();
 
+// 1. createAuth
 router
   .route('/signup')
   .post(
-    validateRequest(AuthValidation.createSchema),
+    validateRequest(AuthValidation.createAuthSchema),
     AuthController.createAuth
   );
 
+// 2. signupOtpSendAgain
+router
+  .route('/send-signup-otp-again')
+  .post(
+    validateRequest(AuthValidation.sendSignupOtpAgainSchema),
+    AuthController.sendSignupOtpAgain
+  );
+
+// 3. saveAuthData
+router
+  .route('/verify-signup-otp')
+  .post(
+    validateRequest(AuthValidation.saveAuthDataSchema),
+    AuthController.verifySignupOtp
+  );
+
+// 4. signin
 router
   .route('/signin')
   .post(validateRequest(AuthValidation.signinSchema), AuthController.signin);
 
-router.route('/verify-signup-otp').post(AuthController.saveAuthData);
-
-router
-  .route('/verify-signup-otp-again')
-  .post(AuthController.signupOtpSendAgain);
-
+// 5. updateProfile
 router.route('/create-profile').post(
   upload.fields([
     { name: 'idFrontPart', maxCount: 1 },
@@ -35,10 +48,11 @@ router.route('/create-profile').post(
     { name: 'studioLicense', maxCount: 1 },
   ]),
   auth(),
-  validateRequestFromFormData(AuthValidation.profileSchema),
-  AuthController.createProfile
+  validateRequestFromFormData(AuthValidation.updateProfileSchema),
+  AuthController.updateProfile
 );
 
+// socialSignin
 router
   .route('/social-signin')
   .post(
@@ -46,6 +60,7 @@ router
     AuthController.socialSignin
   );
 
+// fetchClientConnectedAccount
 router
   .route('/connected-account')
   .get(
@@ -53,6 +68,7 @@ router
     AuthController.fetchClientConnectedAccount
   );
 
+// changePassword
 router
   .route('/change-password')
   .patch(
@@ -69,6 +85,7 @@ router
     AuthController.forgetPassword
   );
 
+// verifyOtpForForgetPassword
 router
   .route('/forget-password-verify')
   .post(
@@ -77,6 +94,7 @@ router
     AuthController.verifyOtpForForgetPassword
   );
 
+// resetPassword
 router
   .route('/reset-password')
   .post(
@@ -84,6 +102,7 @@ router
     AuthController.resetPassword
   );
 
+// deactivateUserAccount
 router
   .route('/deactive-account')
   .post(
@@ -92,6 +111,7 @@ router
     AuthController.deactivateUserAccount
   );
 
+// deleteSpecificAccount
 router
   .route('/delete-account')
   .delete(
@@ -99,10 +119,12 @@ router
     AuthController.deleteSpecificAccount
   );
 
+// updateProfilePhoto
 router
   .route('/profile-image')
   .put(auth(), upload.single('file'), AuthController.updateProfilePhoto);
 
+// fetchProfile
 router.route('/profile').get(auth(), AuthController.fetchProfile);
 
 export const AuthRoutes = router;

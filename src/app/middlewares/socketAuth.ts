@@ -1,9 +1,9 @@
 import { Socket } from 'socket.io';
 import status from 'http-status';
 import { AppError } from '../utils';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import config from '../config';
-import Auth from '../modules/Auth/auth.model';
+import { JwtPayload } from 'jsonwebtoken';
+import { Auth } from '../modules/Auth/auth.model';
+import { verifyToken } from '../lib';
 
 // import { NextFunction } from 'express';
 
@@ -20,10 +20,7 @@ export const socketAuth = async (socket: Socket, next: any) => {
     // Remove Bearer from token if present
     const cleanToken = token.replace('Bearer ', '');
 
-    const verifiedUser = jwt.verify(
-      cleanToken,
-      config.jwt_access_secret!
-    ) as JwtPayload;
+    const verifiedUser = verifyToken(cleanToken) as JwtPayload;
 
     const user = await Auth.findById(verifiedUser.id).select('-password');
 

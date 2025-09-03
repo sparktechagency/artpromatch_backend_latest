@@ -7,7 +7,6 @@ export const serviceTypes = {
   GUEST_SPOTS: 'Guest Spots',
 } as const;
 
-
 export const favoritePiercings = {
   EAR_LOBE: 'Ear Lobe',
   LIP: 'Lip (Labret, Monroe)',
@@ -21,7 +20,6 @@ export const favoritePiercings = {
   TRAGUSS: 'Traguss',
   CONCH: 'Conch',
 } as const;
-
 
 export const favoriteTattoos = {
   //A
@@ -98,7 +96,6 @@ export const favoriteTattoos = {
   WHITE_ON_BLACK: 'White On Black',
   WHITE_TATTOOS: 'White Tattoos',
   WATERCOLOR: 'Watercolor',
-
 } as const;
 
 export const homeViews = {
@@ -133,4 +130,5 @@ export type FavoritePiercing =
 export type ServiceType = (typeof serviceTypes)[keyof typeof serviceTypes];
 export type DateFormat = (typeof dateFormats)[keyof typeof dateFormats];
 export type ArtistType = (typeof artistTypes)[keyof typeof artistTypes];
-export type TNotificationChannel = (typeof notificationChannel)[keyof typeof notificationChannel];
+export type TNotificationChannel =
+  (typeof notificationChannel)[keyof typeof notificationChannel];

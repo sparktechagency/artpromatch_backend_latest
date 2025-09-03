@@ -1,6 +1,6 @@
 import config from '../config';
 import { ROLE } from '../modules/Auth/auth.constant';
-import Auth from '../modules/Auth/auth.model';
+import { Auth } from '../modules/Auth/auth.model';
 
 const seedingAdmin = async () => {
   try {

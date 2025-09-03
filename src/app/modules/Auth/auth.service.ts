@@ -1,13 +1,16 @@
-/* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import status from 'http-status';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import config from '../../config';
-import { generateOtp, verifyToken } from '../../lib';
+import {
+  createAccessToken,
+  createRefreshToken,
+  generateOtp,
+  verifyToken,
+} from '../../lib';
 import {
   TDeactiveAccountPayload,
   TProfileFileFields,
@@ -20,84 +23,190 @@ import Business from '../Business/business.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
 import Client from '../Client/client.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
-import { ROLE } from './auth.constant';
+import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
-import Auth from './auth.model';
+import { Auth } from './auth.model';
 import { AuthValidation, TProfilePayload } from './auth.validation';
+import sendOtpSms from '../../utils/sendOtpSms';
 
+const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
+
+// 1. createAuth
 const createAuth = async (payload: IAuth) => {
   const existingUser = await Auth.findOne({ email: payload.email });
 
-  if (existingUser) {
-    throw new AppError(status.BAD_REQUEST, 'User already exists');
-  }
+  // if user exists but unverified
+  if (existingUser && !existingUser.isVerified) {
+    const now = new Date();
 
-  const otp = generateOtp();
-  // await sendOtpSms(payload.phoneNumber, otp);
-  const token = jwt.sign({ ...payload, otp }, config.jwt_access_secret!, {
-    expiresIn: '5m',
-  });
+    // if Token/OTP expired and sending new otp
+    if (!existingUser.otpExpiry || existingUser.otpExpiry < now) {
+      const otp = generateOtp();
+      await sendOtpSms(payload.phoneNumber, otp);
 
-  return { token, otp };
-};
+      existingUser.otp = otp;
+      existingUser.otpExpiry = new Date(
+        now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000
+      );
+      await existingUser.save();
 
-const signupOtpSendAgain = async (token: string) => {
-  const decoded = jwt.decode(token) as JwtPayload;
+      throw new AppError(
+        status.BAD_REQUEST,
+        'You have an unverified account, verify it with the new OTP sent to you!'
+      );
+    }
 
-  const authData = {
-    email: decoded.email,
-    phoneNumber: decoded.phoneNumber,
-    password: decoded.password,
-  };
-
-  const otp = generateOtp();
-  // await sendOtpSms(decoded.phoneNumber, otp);
-  const newToken = jwt.sign({ ...authData, otp }, config.jwt_access_secret!, {
-    expiresIn: '5m',
-  });
-
-  return { token: newToken, otp };
-};
-
-const saveAuthIntoDB = async (token: string, otp: number) => {
-  const decoded = jwt.verify(token, config.jwt_access_secret!) as JwtPayload;
-
-  const existingUser = await Auth.findOne({ email: decoded.email });
-
-  if (existingUser) {
-    throw new AppError(status.BAD_REQUEST, 'User already exists');
-  }
-
-  if (decoded?.otp !== otp) {
-    throw new AppError(status.BAD_REQUEST, 'Invalid OTP');
-  }
-
-  const result = await Auth.create({
-    fullName: decoded.fullName,
-    phoneNumber: decoded.phoneNumber,
-    email: decoded.email,
-    password: decoded.password,
-    isVerified: true,
-  });
-
-  if (!result) {
+    // if OTP is valid till now
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      'Failed to save user info'
+      status.BAD_REQUEST,
+      'You have an unverified account, verify it now!'
     );
   }
 
-  const accessToken = result.generateAccessToken();
-  const refreshToken = result.generateRefreshToken();
+  // if user is already verified
+  if (existingUser && existingUser.isVerified) {
+    throw new AppError(status.BAD_REQUEST, 'User already exists!');
+  }
 
+  //  OTP generating and sending if user is new
+  const otp = generateOtp();
+  await sendOtpSms(payload.phoneNumber, otp);
+
+  // Save new user as unverified
+  const now = new Date();
+  const newUser = await Auth.create({
+    ...payload,
+    otp,
+    otpExpiry: new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000),
+    isVerified: false,
+  });
+
+  // const token = jwt.sign({ ...payload, otp }, config.jwt.otp_secret!, {
+  //   expiresIn: config.jwt.otp_secret_expires_in!,
+  // } as SignOptions);
+
+  return {
+    userEmail: newUser.email,
+    // token
+  };
+};
+
+// 2. sendSignupOtpAgain
+const sendSignupOtpAgain = async (userEmail: string) => {
+  const user = await Auth.findOne({ email: userEmail });
+
+  if (!user) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      'You must sign up first to get an OTP!'
+    );
+  }
+
+  if (user.isVerified) {
+    throw new AppError(status.BAD_REQUEST, 'This account is already verified!');
+  }
+
+  const now = new Date();
+
+  // sending new OTP if previous one is expired
+  if (!user.otpExpiry || user.otpExpiry < now) {
+    const otp = generateOtp();
+
+    // send OTP via SMS
+    await sendOtpSms(user.phoneNumber, otp);
+
+    user.otp = otp;
+    user.otpExpiry = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+    await user.save();
+
+    // new token (optional, if needed to verify OTP from client side)
+    // const newToken = jwt.sign(
+    //   { email: user.email, phoneNumber: user.phoneNumber },
+    //   config.jwt.otp_secret!,
+    //   { expiresIn: config.jwt.otp_secret_expires_in! } as SignOptions
+    // );
+
+    return {
+      userEmail: user.email,
+      // token: newToken,
+    };
+  }
+
+  // if OTP is still valid
+  // await sendOtpSms(user.phoneNumber, user.otp);
+  throw new AppError(
+    status.BAD_REQUEST,
+    'An OTP was already sent. Please wait until it expires before requesting a new one.'
+  );
+};
+
+// 3. verifySignupOtpIntoDB
+const verifySignupOtpIntoDB = async (userEmail: string, otp: number) => {
+  const user = await Auth.findOne({ email: userEmail });
+
+  if (!user) {
+    throw new AppError(status.NOT_FOUND, 'User not found!');
+  }
+
+  if (user.isVerified) {
+    throw new AppError(status.BAD_REQUEST, 'This account is already verified!');
+  }
+
+  // If OTP is invalid, throw error
+  if (Number(user?.otp) !== otp) {
+    throw new AppError(status.BAD_REQUEST, 'Invalid OTP!');
+  }
+
+  // Check if OTP is expired
+  const now = new Date();
+  if (!user.otpExpiry || user.otpExpiry < now) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      'OTP has expired. Please request a new one!'
+    );
+  }
+
+  // Mark user as verified
+  user.isVerified = true;
+  await user.save();
+
+  // Prepare user payload for tokens
+  const userData = {
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+    image: user?.image || defaultUserImage,
+    fullName: user?.fullName,
+  };
+
+  // Generate access and refresh tokens
+  const accessToken = createAccessToken(userData);
+  const refreshToken = createRefreshToken(userData);
+
+  // Return tokens to client
   return { accessToken, refreshToken };
 };
 
+// 4. signinIntoDB
 const signinIntoDB = async (payload: { email: string; password: string }) => {
-  const user = await Auth.findOne({ email: payload.email }).select('+password');
+  const user = await Auth.findOne({ email: payload.email });
 
   if (!user) {
-    throw new AppError(status.NOT_FOUND, 'User not exists!');
+    throw new AppError(status.NOT_FOUND, 'User does not exist!');
+  }
+
+  if (!user.isVerified) {
+    const otp = generateOtp();
+    await sendOtpSms(user.phoneNumber, otp);
+
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+    await user.save();
+
+    throw new AppError(
+      status.BAD_REQUEST,
+      'Verify your account with the new OTP in your phone!'
+    );
   }
 
   if (user.isSocialLogin) {
@@ -107,30 +216,42 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
     );
   }
 
-  const isPasswordCorrect = await bcrypt.compare(
-    payload.password,
-    user.password
-  );
+  // Validate password
+  const isPasswordCorrect = await user.isPasswordMatched(payload.password); // 🔑 await added
 
   if (!isPasswordCorrect) {
-    throw new AppError(status.UNAUTHORIZED, 'Invalid credentials');
+    throw new AppError(status.UNAUTHORIZED, 'Invalid credentials!');
   }
 
-  const accessToken = user.generateAccessToken();
-  const refreshToken = user.generateRefreshToken();
-
-  return {
-    _id: user._id,
-    fullName: user.fullName,
+  // Prepare user data for tokens
+  const userData = {
+    id: user._id.toString(),
     email: user.email,
-    isProfile: user.isProfile,
     role: user.role,
+    image: user?.image || defaultUserImage,
+    fullName: user?.fullName,
+  };
+
+  // Generate tokens
+  const accessToken = createAccessToken(userData);
+  const refreshToken = createRefreshToken(userData);
+
+  // Return tokens and optionally user info
+  return {
+    // user: {
+    //   id: user._id.toString(),
+    //   fullName: user.fullName,
+    //   email: user.email,
+    //   role: user.role,
+    //   image: user?.image || defaultUserImage,
+    // },
     accessToken,
     refreshToken,
   };
 };
 
-const saveProfileIntoDB = async (
+// 5. updateProfileIntoDB
+const updateProfileIntoDB = async (
   payload: TProfilePayload,
   user: IAuth,
   files: TProfileFileFields
@@ -359,6 +480,7 @@ const saveProfileIntoDB = async (
   }
 };
 
+// socialLoginServices
 const socialLoginServices = async (payload: TSocialLoginPayload) => {
   const { email, fcmToken, image, fullName, address } = payload;
 
@@ -383,8 +505,19 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       );
     }
 
-    const accessToken = authRes.generateAccessToken();
-    const refreshToken = authRes.generateRefreshToken();
+    // const accessToken = authRes.generateAccessToken();
+    // const refreshToken = authRes.generateRefreshToken();
+
+    const userData = {
+      id: authRes._id.toString(),
+      email: authRes.email,
+      role: authRes.role,
+      image: authRes?.image || defaultUserImage,
+      fullName: authRes?.fullName,
+    };
+
+    const accessToken = createAccessToken(userData);
+    const refreshToken = createRefreshToken(userData);
 
     await Auth.findByIdAndUpdate(authRes._id, { refreshToken });
 
@@ -401,8 +534,19 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       refreshToken,
     };
   } else {
-    const accessToken = auth.generateAccessToken();
-    const refreshToken = auth.generateRefreshToken();
+    // const accessToken = auth.generateAccessToken();
+    // const refreshToken = auth.generateRefreshToken();
+
+    const userData = {
+      id: auth._id.toString(),
+      email: auth.email,
+      role: auth.role,
+      image: auth?.image || defaultUserImage,
+      fullName: auth?.fullName,
+    };
+
+    const accessToken = createAccessToken(userData);
+    const refreshToken = createRefreshToken(userData);
 
     auth.refreshToken = refreshToken;
     await auth.save({ validateBeforeSave: false });
@@ -422,6 +566,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
   }
 };
 
+// updateProfilePhoto
 const updateProfilePhoto = async (
   user: IAuth,
   file: Express.Multer.File | undefined
@@ -448,13 +593,13 @@ const updateProfilePhoto = async (
   return res;
 };
 
+// changePasswordIntoDB
 const changePasswordIntoDB = async (
   accessToken: string,
   payload: z.infer<typeof AuthValidation.passwordChangeSchema.shape.body>
 ) => {
-  const { id } = await verifyToken(accessToken);
+  const { id } = verifyToken(accessToken);
 
-  console.log('id');
   const user = await Auth.findOne({ _id: id, isActive: true }).select(
     '+password'
   );
@@ -463,7 +608,7 @@ const changePasswordIntoDB = async (
     throw new AppError(status.NOT_FOUND, 'User not exists');
   }
 
-  const isCredentialsCorrect = await user.isPasswordCorrect(
+  const isCredentialsCorrect = await user.isPasswordMatched(
     payload.oldPassword
   );
 
@@ -477,6 +622,7 @@ const changePasswordIntoDB = async (
   return null;
 };
 
+// forgotPassword
 const forgotPassword = async (email: string) => {
   const user = await Auth.findOne({ email, isActive: true });
 
@@ -494,22 +640,23 @@ const forgotPassword = async (email: string) => {
       verificationCode: otp,
       verificationExpiry: new Date(Date.now() + 5 * 60 * 1000),
     },
-    config.jwt_access_secret!,
+    config.jwt.otp_secret!,
     {
-      expiresIn: '5m',
-    }
+      expiresIn: config.jwt.otp_secret_expires_in!,
+    } as SignOptions
   );
 
   return { token };
 };
 
+// verifyOtpForForgetPassword
 const verifyOtpForForgetPassword = async (payload: {
   token: string;
   otp: string;
 }) => {
-  const { email, verificationCode, verificationExpiry } = (await verifyToken(
+  const { email, verificationCode, verificationExpiry } = verifyToken(
     payload.token
-  )) as any;
+  ) as any;
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
@@ -531,21 +678,21 @@ const verifyOtpForForgetPassword = async (payload: {
       email: user.email,
       isResetPassword: true,
     },
-    config.jwt_access_secret!,
+    config.jwt.otp_secret!,
     {
-      expiresIn: '5d',
-    }
+      expiresIn: config.jwt.otp_secret_expires_in!,
+    } as SignOptions
   );
 
   return { resetPasswordToken };
 };
 
+// resetPasswordIntoDB
 const resetPasswordIntoDB = async (
   resetPasswordToken: string,
   newPassword: string
 ) => {
-  const { email } = (await verifyToken(resetPasswordToken)) as any;
-
+  const { email } = verifyToken(resetPasswordToken) as any;
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
@@ -559,6 +706,7 @@ const resetPasswordIntoDB = async (
   return null;
 };
 
+// fetchProfileFromDB
 const fetchProfileFromDB = async (user: IAuth) => {
   if (user?.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id }).populate([
@@ -618,6 +766,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
   }
 };
 
+// fetchAllConnectedAcount
 const fetchAllConnectedAcount = async (user: IAuth) => {
   let currentUser;
 
@@ -633,7 +782,6 @@ const fetchAllConnectedAcount = async (user: IAuth) => {
     throw new AppError(status.NOT_FOUND, 'profile not found');
   }
 
-  console.log(currentUser);
   const result = await ClientPreferences.findOne(
     { clientId: currentUser._id },
     { connectedAccounts: 1, _id: 0 }
@@ -642,19 +790,17 @@ const fetchAllConnectedAcount = async (user: IAuth) => {
   return result;
 };
 
+// deactiveUserCurrentAccount
 const deactiveUserCurrentAccount = async (
   user: IAuth,
   payload: TDeactiveAccountPayload
 ) => {
-  console.log(user);
   const { email, password, deactivationReason } = payload;
   const currentUser = await Auth.findOne({ _id: user._id, email: email });
 
   if (!currentUser) throw new AppError(status.NOT_FOUND, 'User not found');
-  console.log(currentUser);
-  console.log(currentUser.password, password);
 
-  const isPasswordCorrect = currentUser.isPasswordCorrect(password);
+  const isPasswordCorrect = currentUser.isPasswordMatched(password);
 
   if (!isPasswordCorrect) {
     throw new AppError(status.BAD_REQUEST, 'Invalid credentials');
@@ -674,7 +820,7 @@ const deactiveUserCurrentAccount = async (
   return result;
 };
 
-// delete user
+// deleteUserAccount
 const deleteUserAccount = async (user: IAuth) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -765,10 +911,10 @@ const deleteUserAccount = async (user: IAuth) => {
 
 export const AuthService = {
   createAuth,
-  saveAuthIntoDB,
-  signupOtpSendAgain,
-  saveProfileIntoDB,
+  sendSignupOtpAgain,
+  verifySignupOtpIntoDB,
   signinIntoDB,
+  updateProfileIntoDB,
   socialLoginServices,
   updateProfilePhoto,
   changePasswordIntoDB,

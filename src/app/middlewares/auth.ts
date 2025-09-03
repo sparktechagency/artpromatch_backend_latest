@@ -1,11 +1,10 @@
 import httpStatus from 'http-status';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import config from '../config';
+import { JwtPayload } from 'jsonwebtoken';
 import { AppError, asyncHandler } from '../utils';
 import { TRole } from '../modules/Auth/auth.constant';
-import Auth from '../modules/Auth/auth.model';
+import { Auth } from '../modules/Auth/auth.model';
 import { console } from 'inspector';
-
+import { verifyToken } from '../lib';
 
 const auth = (...requiredRoles: TRole[]) => {
   return asyncHandler(async (req, res, next) => {
@@ -19,10 +18,7 @@ const auth = (...requiredRoles: TRole[]) => {
     }
 
     // checking if the given token is valid
-    const decoded = jwt.verify(
-      token,
-      config.jwt_access_secret as string
-    ) as JwtPayload;
+    const decoded = verifyToken(token) as JwtPayload;
 
     const { id } = decoded;
 
@@ -32,20 +28,23 @@ const auth = (...requiredRoles: TRole[]) => {
     if (!user) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'User not exists!');
     }
-    
-    if(user.isDeleted){
+
+    if (user.isDeleted) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
-    
-    if(user.isDeactivated) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You account is Deactive now!');
+
+    if (user.isDeactivated) {
+      throw new AppError(
+        httpStatus.UNAUTHORIZED,
+        'You account is Deactive now!'
+      );
     }
 
-    if(!user.isActive){
-        throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    if (!user.isActive) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
-    console.log("role",requiredRoles)
+    console.log('role', requiredRoles);
 
     if (requiredRoles.length && !requiredRoles.includes(user.role)) {
       throw new AppError(

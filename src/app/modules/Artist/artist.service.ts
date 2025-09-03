@@ -9,7 +9,7 @@ import { TAvailability } from '../../schema/slotValidation';
 import { AppError } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
-import Auth from '../Auth/auth.model';
+import { Auth } from '../Auth/auth.model';
 import Booking from '../Booking/booking.model';
 import Slot from '../Slot/slot.model';
 import {
@@ -45,16 +45,18 @@ const updateProfile = async (
   }
 
   const updatedArtist = await Auth.findByIdAndUpdate(user._id, payload);
-  
-  console.log("a",updatedArtist)
+
+  console.log('a', updatedArtist);
   if (!updatedArtist?.isModified) {
     throw new AppError(status.NOT_FOUND, 'Failed to update artist!');
   }
 
-  const result = await Artist.findOne({ auth: user._id }).select('_id').populate({
-    path: 'auth',
-    select: 'fullName', 
-  });
+  const result = await Artist.findOne({ auth: user._id })
+    .select('_id')
+    .populate({
+      path: 'auth',
+      select: 'fullName',
+    });
 
   return result;
 };
@@ -310,8 +312,6 @@ const updateArtistPersonalInfoIntoDB = async (
 //   }
 // };
 
-
-
 /* ------ */
 
 // fetch all artist from db
@@ -347,12 +347,12 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
 const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   const { weeklySchedule: inputSchedule } = payload;
 
-  const artist: IArtist = await Artist.findOne({ auth: user._id }).select("_id");
-  if (!artist) throw new Error("Artist not found");
-
+  const artist: IArtist = await Artist.findOne({ auth: user._id }).select(
+    '_id'
+  );
+  if (!artist) throw new Error('Artist not found');
 
   let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
-
 
   let mergedSchedule: Partial<WeeklySchedule> = {};
   if (schedule) {
@@ -360,7 +360,6 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   } else {
     mergedSchedule = { ...inputSchedule };
   }
-
 
   const normalizedSchedule = normalizeWeeklySchedule(mergedSchedule);
 
@@ -545,5 +544,4 @@ export const ArtistService = {
   fetchAllArtistsFromDB,
   updateAvailability,
   updateTimeOff,
- 
 };

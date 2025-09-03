@@ -1,14 +1,16 @@
-/* eslint-disable no-unused-vars */
-import { Document, Model, Types } from 'mongoose';
+import { Document, Model, ObjectId } from 'mongoose';
 import { TRole } from './auth.constant';
 
 export interface IAuth extends Document {
+  _id: ObjectId;
   email: string;
-  fullName?: string;
+  fullName: string;
   phoneNumber: string;
   password: string;
   fcmToken?: string | null;
-  image?: string;
+  image: string;
+  otp: string;
+  otpExpiry: Date;
   role: TRole;
   isSocialLogin: boolean;
   refreshToken?: string | null;
@@ -16,7 +18,7 @@ export interface IAuth extends Document {
   isVerified: boolean;
   stripeAccountId: string;
   isDeactivated: boolean;
-  deactivationReason: String;
+  deactivationReason: string;
   deactivatedAt: Date;
   isActive: boolean;
   isDeleted: boolean;
@@ -24,10 +26,19 @@ export interface IAuth extends Document {
   updatedAt: Date;
 }
 
-export interface IAuthMethods {
-  isPasswordCorrect(password: string): Promise<boolean>;
-  generateAccessToken(): string;
-  generateRefreshToken(): string;
+export interface IAuthMethods extends Model<IAuth> {
+  isUserExistsByEmail(email: string): Promise<IAuth | null>;
+
+  isPasswordMatched(plainTextPassword: string): Promise<boolean>;
+
+  isJWTIssuedBeforePasswordChanged(
+    passwordChangedTimestamp: Date,
+    jwtIssuedTimestamp: number
+  ): boolean;
+
+  // isPasswordCorrect(password: string): Promise<boolean>;
+  // generateAccessToken(): string;
+  // generateRefreshToken(): string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
