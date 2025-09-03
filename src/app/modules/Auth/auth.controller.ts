@@ -1,22 +1,33 @@
 import httpStatus from 'http-status';
-import { AppResponse, asyncHandler, options } from '../../utils';
+import {
+  AppResponse,
+  asyncHandler,
+  // options
+} from '../../utils';
 import { AuthService } from './auth.service';
-import { CookieOptions } from 'express';
+// import { CookieOptions } from 'express';
 import { TProfileFileFields } from '../../types';
+import sendResponse from '../../utils/sendResponse';
 
 // 1. createAuth
 const createAuth = asyncHandler(async (req, res) => {
   const result = await AuthService.createAuth(req.body);
 
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(
-        httpStatus.OK,
-        result,
-        'OTP sent successfully, verify your account in 5 minutes!'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'OTP sent successfully, verify your account in 5 minutes!',
+    data: result,
+  });
+
+  // res
+  //   .status(httpStatus.OK)
+  //   .json(
+  //     new AppResponse(
+  //       httpStatus.OK,
+  //       result,
+  //       'OTP sent successfully, verify your account in 5 minutes!'
+  //     )
+  //   );
 });
 
 // 2. sendSignupOtpAgain
@@ -24,15 +35,21 @@ const sendSignupOtpAgain = asyncHandler(async (req, res) => {
   const userEmail = req.body.userEmail;
   const result = await AuthService.sendSignupOtpAgain(userEmail);
 
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(
-        httpStatus.OK,
-        result,
-        'OTP sent again successfully, verify in 5 minutes!'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'OTP sent again successfully, verify in 5 minutes!',
+    data: result,
+  });
+
+  // res
+  //   .status(httpStatus.OK)
+  //   .json(
+  //     new AppResponse(
+  //       httpStatus.OK,
+  //       result,
+  //       'OTP sent again successfully, verify in 5 minutes!'
+  //     )
+  //   );
 });
 
 // 3. verifySignupOtp
@@ -41,56 +58,81 @@ const verifySignupOtp = asyncHandler(async (req, res) => {
   const otp = req.body.otp;
   const result = await AuthService.verifySignupOtpIntoDB(userEmail, otp);
 
-  res
-    .status(httpStatus.CREATED)
-    .cookie('accessToken', result.accessToken, options as CookieOptions)
-    .cookie('refreshToken', result.refreshToken, options as CookieOptions)
-    .json(
-      new AppResponse(
-        httpStatus.CREATED,
-        { accessToken: result.accessToken },
-        'OTP verified successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'OTP verified successfully!',
+    data: result,
+  });
+
+  // res
+  //   .status(httpStatus.CREATED)
+  //   .cookie('accessToken', result.accessToken, options as CookieOptions)
+  //   .cookie('refreshToken', result.refreshToken, options as CookieOptions)
+  //   .json(
+  //     new AppResponse(
+  //       httpStatus.CREATED,
+  //       { accessToken: result.accessToken },
+  //       'OTP verified successfully!'
+  //     )
+  //   );
 });
 
 // 4. signin
 const signin = asyncHandler(async (req, res) => {
   const result = await AuthService.signinIntoDB(req.body);
 
-  res
-    .status(httpStatus.OK)
-    .cookie('accessToken', result.accessToken, options as CookieOptions)
-    .cookie('refreshToken', result.refreshToken, options as CookieOptions)
-    .json(new AppResponse(httpStatus.OK, result, 'Signin successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Signin successful!',
+    data: result,
+  });
+
+  // res
+  //   .status(httpStatus.OK)
+  //   .cookie('accessToken', result.accessToken, options as CookieOptions)
+  //   .cookie('refreshToken', result.refreshToken, options as CookieOptions)
+  //   .json(new AppResponse(httpStatus.OK, result, 'Signin successful!'));
 });
 
-// 5. updateProfile
-const updateProfile = asyncHandler(async (req, res) => {
+// 5. createProfile
+const createProfile = asyncHandler(async (req, res) => {
   const files = (req.files as TProfileFileFields) || {};
   const user = req.user;
-  const result = await AuthService.updateProfileIntoDB(req.body, user, files);
-  res
-    .status(httpStatus.CREATED)
-    .json(
-      new AppResponse(
-        httpStatus.CREATED,
-        result,
-        'Account created successfully'
-      )
-    );
+  const result = await AuthService.createProfileIntoDB(req.body, user, files);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Profile created successfully!',
+    data: result,
+  });
+
+  // res
+  //   .status(httpStatus.CREATED)
+  //   .json(
+  //     new AppResponse(
+  //       httpStatus.CREATED,
+  //       result,
+  //       'Profile created successfully!'
+  //     )
+  //   );
 });
 
-// socialSignin
+// 6. socialSignin
 const socialSignin = asyncHandler(async (req, res) => {
   const { response, accessToken, refreshToken } =
     await AuthService.socialLoginServices(req.body);
 
-  res
-    .status(httpStatus.OK)
-    .cookie('accessToken', accessToken, options as CookieOptions)
-    .cookie('refreshToken', refreshToken, options as CookieOptions)
-    .json(new AppResponse(httpStatus.OK, response, 'Signin successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Signin successful!',
+    data: { response, accessToken, refreshToken },
+  });
+
+  // res
+  //   .status(httpStatus.OK)
+  //   .cookie('accessToken', accessToken, options as CookieOptions)
+  //   .cookie('refreshToken', refreshToken, options as CookieOptions)
+  //   .json(new AppResponse(httpStatus.OK, response, 'Signin successful'));
 });
 
 // updateProfilePhoto
@@ -225,7 +267,7 @@ export const AuthController = {
   sendSignupOtpAgain,
   verifySignupOtp,
   signin,
-  updateProfile,
+  createProfile,
   socialSignin,
   updateProfilePhoto,
   changePassword,

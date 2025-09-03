@@ -28,7 +28,7 @@ router
 router
   .route('/verify-signup-otp')
   .post(
-    validateRequest(AuthValidation.saveAuthDataSchema),
+    validateRequest(AuthValidation.verifySignupOtpSchema),
     AuthController.verifySignupOtp
   );
 
@@ -37,8 +37,8 @@ router
   .route('/signin')
   .post(validateRequest(AuthValidation.signinSchema), AuthController.signin);
 
-// 5. updateProfile
-router.route('/create-profile').post(
+// 5. createProfile
+router.route('/create-Profile').post(
   upload.fields([
     { name: 'idFrontPart', maxCount: 1 },
     { name: 'idBackPart', maxCount: 1 },
@@ -48,8 +48,8 @@ router.route('/create-profile').post(
     { name: 'studioLicense', maxCount: 1 },
   ]),
   auth(),
-  validateRequestFromFormData(AuthValidation.updateProfileSchema),
-  AuthController.updateProfile
+  validateRequestFromFormData(AuthValidation.createProfileSchema),
+  AuthController.createProfile
 );
 
 // socialSignin

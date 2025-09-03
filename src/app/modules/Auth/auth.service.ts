@@ -141,7 +141,7 @@ const sendSignupOtpAgain = async (userEmail: string) => {
 };
 
 // 3. verifySignupOtpIntoDB
-const verifySignupOtpIntoDB = async (userEmail: string, otp: number) => {
+const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
   const user = await Auth.findOne({ email: userEmail });
 
   if (!user) {
@@ -153,7 +153,7 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: number) => {
   }
 
   // If OTP is invalid, throw error
-  if (Number(user?.otp) !== otp) {
+  if (user?.otp !== otp) {
     throw new AppError(status.BAD_REQUEST, 'Invalid OTP!');
   }
 
@@ -189,7 +189,7 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: number) => {
 
 // 4. signinIntoDB
 const signinIntoDB = async (payload: { email: string; password: string }) => {
-  const user = await Auth.findOne({ email: payload.email });
+  const user = await Auth.findOne({ email: payload.email }).select('+password');
 
   if (!user) {
     throw new AppError(status.NOT_FOUND, 'User does not exist!');
@@ -215,9 +215,8 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
       'This account is registered via social login. Please sign in using your social account.'
     );
   }
-
   // Validate password
-  const isPasswordCorrect = await user.isPasswordMatched(payload.password); // 🔑 await added
+  const isPasswordCorrect = await user.isPasswordMatched(payload.password);
 
   if (!isPasswordCorrect) {
     throw new AppError(status.UNAUTHORIZED, 'Invalid credentials!');
@@ -250,8 +249,8 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
   };
 };
 
-// 5. updateProfileIntoDB
-const updateProfileIntoDB = async (
+// 5. createProfileIntoDB
+const createProfileIntoDB = async (
   payload: TProfilePayload,
   user: IAuth,
   files: TProfileFileFields
@@ -914,7 +913,7 @@ export const AuthService = {
   sendSignupOtpAgain,
   verifySignupOtpIntoDB,
   signinIntoDB,
-  updateProfileIntoDB,
+  createProfileIntoDB,
   socialLoginServices,
   updateProfilePhoto,
   changePasswordIntoDB,

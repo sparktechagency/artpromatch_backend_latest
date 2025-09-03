@@ -12,7 +12,7 @@ import { ROLE } from './auth.constant';
 export const zodEnumFromObject = <T extends Record<string, string>>(obj: T) =>
   z.enum([...Object.values(obj)] as [string, ...string[]]);
 
-// createAuthSchema
+// 1. createAuthSchema
 const createAuthSchema = z.object({
   body: z.object({
     fullName: z
@@ -60,19 +60,7 @@ const createAuthSchema = z.object({
   }),
 });
 
-// saveAuthDataSchema
-const saveAuthDataSchema = z.object({
-  body: z.object({
-    otp: z
-      .string({
-        required_error: 'Password is required',
-      })
-      .min(6, { message: 'Password must be at least 6 characters long' })
-      .max(6, { message: 'Password cannot exceed 6 characters' }),
-  }),
-});
-
-// sendSignupOtpAgainSchema
+// 2. sendSignupOtpAgainSchema
 const sendSignupOtpAgainSchema = z.object({
   body: z.object({
     userEmail: z
@@ -83,7 +71,24 @@ const sendSignupOtpAgainSchema = z.object({
   }),
 });
 
-// signinSchema
+// 3. verifySignupOtpSchema
+const verifySignupOtpSchema = z.object({
+  body: z.object({
+    userEmail: z
+      .string({
+        required_error: 'Email is required',
+      })
+      .email({ message: 'Invalid email format' }),
+    otp: z
+      .string({
+        required_error: 'Password is required',
+      })
+      .min(6, { message: 'Password must be at least 6 characters long' })
+      .max(6, { message: 'Password cannot exceed 6 characters' }),
+  }),
+});
+
+// 4. signinSchema
 const signinSchema = z.object({
   body: z.object({
     email: z
@@ -110,8 +115,8 @@ const signinSchema = z.object({
   }),
 });
 
-// updateProfileSchema
-const updateProfileSchema = z.object({
+// 5. createProfileSchema
+const createProfileSchema = z.object({
   body: z
     .object({
       role: z.enum(['CLIENT', 'ARTIST', 'BUSINESS'], {
@@ -435,14 +440,14 @@ const socialSchema = z.object({
   }),
 });
 
-export type TProfilePayload = z.infer<typeof updateProfileSchema.shape.body>;
+export type TProfilePayload = z.infer<typeof createProfileSchema.shape.body>;
 
 export const AuthValidation = {
   createAuthSchema,
-  saveAuthDataSchema,
   sendSignupOtpAgainSchema,
+  verifySignupOtpSchema,
   signinSchema,
-  updateProfileSchema,
+  createProfileSchema,
   passwordChangeSchema,
   otpSchema,
   forgetPasswordSchema,
