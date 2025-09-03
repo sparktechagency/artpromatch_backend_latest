@@ -12,7 +12,8 @@ export interface IArtist extends Document {
   type: TArtistType;
   expertise: ExpertiseType[];
   image?: string;
-  location: { type: 'Point'; coordinates: [number, number] };
+  mainLocation: { type: 'Point'; coordinates: [number, number] };
+  currentLocation: { type: 'Point'; coordinates: [number, number] };
   city: string;
   isConnBusiness: boolean;
   idCardFront: string;

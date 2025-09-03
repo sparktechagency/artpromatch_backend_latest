@@ -35,24 +35,31 @@ import { IArtistSchedule } from './slot.interface';
 
 // export default Slot;
 
-const BreakSchema = new mongoose.Schema({
-  start: { type: String, required: false },
-  end: { type: String, required: false },
-});
+
 
 const DayScheduleSchema = new mongoose.Schema({
   start: { type: String, default: null },
   end: { type: String, default: null },
-  breaks: BreakSchema,
-  off: { type: Boolean, default: false },
+  off: { type: Boolean, default: true},
 });
 
-const ExceptionSchema = new mongoose.Schema({
-  date: { type: Date, required: true },
-  type: { type: String, enum: ['off', 'special'], required: true },
-  start: { type: String },
-  end: { type: String },
-  breaks: BreakSchema,
+const GuestSpotSchema = new mongoose.Schema({
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  startMin: { type: Number, required: false },
+  endMin: { type: Number, required: false },
+  location: {
+    name: { type: String, required: true },
+    lat: { type: Number, required: true },
+    lon: { type: Number, required: true },
+  },
+});
+
+const OffTimeSchema = new mongoose.Schema({
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },   
 });
 
 const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
@@ -67,9 +74,10 @@ const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
       saturday: { type: DayScheduleSchema, required: false },
       sunday: { type: DayScheduleSchema, required: false },
     },
-    exceptions: [ExceptionSchema],
+     guestSpots: [GuestSpotSchema],
+     offTimes: [OffTimeSchema],
   },
-
+  
   {
     timestamps: true,
     versionKey: false,
