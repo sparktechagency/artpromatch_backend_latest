@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { ARTIST_TYPE, expertiseTypes } from './artist.constant';
 import { IArtist } from './artist.interface';
 
@@ -13,47 +13,54 @@ const contactSchema = new Schema(
 );
 
 // 🔹 Subschema: Services
-const servicesSchema = new Schema(
-  {
-    name: { type: String, required: true },
-    price: { type: Number, required: true },
-    duration: { type: String, required: true },
-    bufferTime: {type: String, required: false, default:""}
-  },
-);
+const servicesSchema = new Schema({
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  duration: { type: String, required: true },
+  bufferTime: { type: String, default: '' },
+});
 
 // 🔹 Subschema: Portfolio
-const portfolioSchema = new Schema(
-  {
-    folder: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Folder',
-      required: true,
-    },
-    position: { type: Number, default: 0 },
+const portfolioSchema = new Schema({
+  folder: {
+    type: Schema.Types.ObjectId,
+    ref: 'Folder',
+    required: true,
   },
-
-);
+  position: { type: Number, default: 0 },
+});
 
 // 🔹 Main Artist Schema
 const artistSchema = new Schema<IArtist>(
   {
     auth: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Auth',
       required: true,
     },
 
-    business: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Business',
-      required: false,
-      default: null
+    location: {
+      type: {
+        type: String,
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
     },
-    
-    isConnBusiness:{
+
+    business: {
+      type: Schema.Types.ObjectId,
+      ref: 'Business',
+      default: null,
+    },
+
+    isConnBusiness: {
       type: Boolean,
-      default: false
+      default: false,
     },
 
     type: {
@@ -66,18 +73,6 @@ const artistSchema = new Schema<IArtist>(
       type: [String],
       enum: Object.values(expertiseTypes),
       required: true,
-    },
-
-    location: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        required: true,
-      },
-      coordinates: {
-        type: [Number],
-        required: true,
-      },
     },
 
     city: {
@@ -104,7 +99,7 @@ const artistSchema = new Schema<IArtist>(
       type: Number,
       default: 0,
     },
-    
+
     rating: {
       type: Number,
       default: 0,
@@ -117,12 +112,10 @@ const artistSchema = new Schema<IArtist>(
 
     contact: {
       type: contactSchema,
-      required: false,
     },
 
     description: {
       type: String,
-      required: false,
     },
     flashes: [
       {
@@ -137,16 +130,12 @@ const artistSchema = new Schema<IArtist>(
       },
     ],
     preferences: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'ArtistPreferences',
-      required: false,
     },
     timeOff: [{ type: Date }],
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 artistSchema.index({ location: '2dsphere' });

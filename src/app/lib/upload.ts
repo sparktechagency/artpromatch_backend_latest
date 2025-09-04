@@ -2,11 +2,11 @@ import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../utils';
-import status from 'http-status';
+import httpStatus from 'http-status';
 import fs from 'fs';
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req, file, callback) => {
     let folderPath = './public';
 
     if (file.mimetype.startsWith('image')) {
@@ -14,8 +14,11 @@ const storage = multer.diskStorage({
     } else if (file.mimetype.startsWith('video')) {
       folderPath = './public/videos';
     } else {
-      cb(
-        new AppError(status.BAD_REQUEST, 'Only images and videos are allowed'),
+      callback(
+        new AppError(
+          httpStatus.BAD_REQUEST,
+          'Only images and videos are allowed'
+        ),
         './public'
       );
       return;
@@ -26,10 +29,10 @@ const storage = multer.diskStorage({
       fs.mkdirSync(folderPath, { recursive: true });
     }
 
-    cb(null, folderPath);
+    callback(null, folderPath);
   },
 
-  filename(_req, file, cb) {
+  filename(_req, file, callback) {
     const fileExt = path.extname(file.originalname);
     const fileName = `${file.originalname
       .replace(fileExt, '')
@@ -37,7 +40,7 @@ const storage = multer.diskStorage({
       .split(' ')
       .join('-')}-${uuidv4()}`;
 
-    cb(null, fileName + fileExt);
+    callback(null, fileName + fileExt);
   },
 });
 

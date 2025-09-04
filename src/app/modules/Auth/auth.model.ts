@@ -23,6 +23,9 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: String,
       select: 0,
     },
+    passwordChangedAt: {
+      type: Date,
+    },
     fcmToken: {
       type: String,
       default: null,
@@ -52,6 +55,10 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: String,
       default: null,
     },
+    stripeAccountId: {
+      type: String,
+      default: null,
+    },
     isProfile: {
       type: Boolean,
       default: false,
@@ -60,10 +67,7 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: Boolean,
       default: false,
     },
-    stripeAccountId: {
-      type: String,
-      default: null,
-    },
+
     isActive: {
       type: Boolean,
       default: true,
@@ -120,12 +124,10 @@ authSchema.methods.isPasswordMatched = async function (
 };
 
 // isJWTIssuedBeforePasswordChanged
-authSchema.statics.isJWTIssuedBeforePasswordChanged = function (
-  passwordChangedTimestamp: Date,
+authSchema.methods.isJWTIssuedBeforePasswordChanged = function (
   jwtIssuedTimestamp: number
 ): boolean {
-  const passwordChangedTime =
-    new Date(passwordChangedTimestamp).getTime() / 1000;
+  const passwordChangedTime = new Date(this.passwordChangedAt).getTime() / 1000;
   return passwordChangedTime > jwtIssuedTimestamp;
 };
 

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const logsDir = path.join(__dirname, "../../../", 'logs');
+const logsDir = path.join(__dirname, '../../../', 'logs');
 
 // Create logs directory if not exists
 if (!fs.existsSync(logsDir)) {
@@ -33,7 +33,6 @@ const logError = (message: string, error?: unknown) => {
   const logLine = `[ERROR] ${getTimestamp()} - ${message}${details}\n\n`;
   fs.appendFileSync(path.join(logsDir, 'error.txt'), logLine, 'utf8');
 };
-
 
 // ℹ️ Optional info log to success.txt
 const logInfo = (message: string) => {

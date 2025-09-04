@@ -7,6 +7,7 @@ export interface IAuth extends Document {
   fullName: string;
   phoneNumber: string;
   password: string;
+  passwordChangedAt?: Date;
   fcmToken?: string | null;
   image: string;
   otp: string;
@@ -31,10 +32,7 @@ export interface IAuthMethods extends Model<IAuth> {
 
   isPasswordMatched(plainTextPassword: string): Promise<boolean>;
 
-  isJWTIssuedBeforePasswordChanged(
-    passwordChangedTimestamp: Date,
-    jwtIssuedTimestamp: number
-  ): boolean;
+  isJWTIssuedBeforePasswordChanged(jwtIssuedTimestamp: number): boolean;
 
   // isPasswordCorrect(password: string): Promise<boolean>;
   // generateAccessToken(): string;

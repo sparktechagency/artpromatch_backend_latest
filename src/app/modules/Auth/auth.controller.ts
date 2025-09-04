@@ -1,6 +1,5 @@
 import httpStatus from 'http-status';
 import {
-  AppResponse,
   asyncHandler,
   // options
 } from '../../utils';
@@ -18,16 +17,6 @@ const createAuth = asyncHandler(async (req, res) => {
     message: 'OTP sent successfully, verify your account in 5 minutes!',
     data: result,
   });
-
-  // res
-  //   .status(httpStatus.OK)
-  //   .json(
-  //     new AppResponse(
-  //       httpStatus.OK,
-  //       result,
-  //       'OTP sent successfully, verify your account in 5 minutes!'
-  //     )
-  //   );
 });
 
 // 2. sendSignupOtpAgain
@@ -40,16 +29,6 @@ const sendSignupOtpAgain = asyncHandler(async (req, res) => {
     message: 'OTP sent again successfully, verify in 5 minutes!',
     data: result,
   });
-
-  // res
-  //   .status(httpStatus.OK)
-  //   .json(
-  //     new AppResponse(
-  //       httpStatus.OK,
-  //       result,
-  //       'OTP sent again successfully, verify in 5 minutes!'
-  //     )
-  //   );
 });
 
 // 3. verifySignupOtp
@@ -59,22 +38,10 @@ const verifySignupOtp = asyncHandler(async (req, res) => {
   const result = await AuthService.verifySignupOtpIntoDB(userEmail, otp);
 
   sendResponse(res, {
-    statusCode: httpStatus.OK,
+    statusCode: httpStatus.CREATED,
     message: 'OTP verified successfully!',
     data: result,
   });
-
-  // res
-  //   .status(httpStatus.CREATED)
-  //   .cookie('accessToken', result.accessToken, options as CookieOptions)
-  //   .cookie('refreshToken', result.refreshToken, options as CookieOptions)
-  //   .json(
-  //     new AppResponse(
-  //       httpStatus.CREATED,
-  //       { accessToken: result.accessToken },
-  //       'OTP verified successfully!'
-  //     )
-  //   );
 });
 
 // 4. signin
@@ -86,36 +53,66 @@ const signin = asyncHandler(async (req, res) => {
     message: 'Signin successful!',
     data: result,
   });
-
-  // res
-  //   .status(httpStatus.OK)
-  //   .cookie('accessToken', result.accessToken, options as CookieOptions)
-  //   .cookie('refreshToken', result.refreshToken, options as CookieOptions)
-  //   .json(new AppResponse(httpStatus.OK, result, 'Signin successful!'));
 });
 
 // 5. createProfile
 const createProfile = asyncHandler(async (req, res) => {
-  const files = (req.files as TProfileFileFields) || {};
+  const body = req.body;
   const user = req.user;
-  const result = await AuthService.createProfileIntoDB(req.body, user, files);
+  const files = (req.files as TProfileFileFields) || {};
+  const result = await AuthService.createProfileIntoDB(body, user, files);
 
   sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Profile created successfully!',
+    statusCode: httpStatus.CREATED,
+    message: 'Applied for the profile, have patience for Admin approval!',
     data: result,
   });
-
-  // res
-  //   .status(httpStatus.CREATED)
-  //   .json(
-  //     new AppResponse(
-  //       httpStatus.CREATED,
-  //       result,
-  //       'Profile created successfully!'
-  //     )
-  //   );
 });
+
+// // clientCreateProfile
+// const clientCreateProfile = asyncHandler(async (req, res) => {
+//   const body = req.body;
+//   const user = req.user;
+//   const result = await AuthService.clientCreateProfileIntoDB(body, user);
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.CREATED,
+//     message: 'Applied for the profile, have patience for Admin approval!',
+//     data: result,
+//   });
+// });
+
+// // artistCreateProfile
+// const artistCreateProfile = asyncHandler(async (req, res) => {
+//   const body = req.body;
+//   const user = req.user;
+//   const files = (req.files as TProfileFileFields) || {};
+//   const result = await AuthService.artistCreateProfileIntoDB(body, user, files);
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     message: 'Applied for the profile, have patience for Admin approval!',
+//     data: result,
+//   });
+// });
+
+// // businessCreateProfile
+// const businessCreateProfile = asyncHandler(async (req, res) => {
+//   const body = req.body;
+//   const user = req.user;
+//   const files = (req.files as TProfileFileFields) || {};
+//   const result = await AuthService.businessCreateProfileIntoDB(
+//     body,
+//     user,
+//     files
+//   );
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.CREATED,
+//     message: 'Applied for the profile, have patience for Admin approval!',
+//     data: result,
+//   });
+// });
 
 // 6. socialSignin
 const socialSignin = asyncHandler(async (req, res) => {
@@ -127,67 +124,55 @@ const socialSignin = asyncHandler(async (req, res) => {
     message: 'Signin successful!',
     data: { response, accessToken, refreshToken },
   });
-
-  // res
-  //   .status(httpStatus.OK)
-  //   .cookie('accessToken', accessToken, options as CookieOptions)
-  //   .cookie('refreshToken', refreshToken, options as CookieOptions)
-  //   .json(new AppResponse(httpStatus.OK, response, 'Signin successful'));
 });
 
-// updateProfilePhoto
+// 7. updateProfilePhoto
 const updateProfilePhoto = asyncHandler(async (req, res) => {
-  const result = await AuthService.updateProfilePhoto(req.user, req.file);
+  const result = await AuthService.updateProfilePhotoIntoDB(req.user, req.file);
 
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(
-        httpStatus.OK,
-        result,
-        'Profile photo update successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Photo updated successfully!',
+    data: result,
+  });
 });
 
-// changePassword
+// 8. changePassword
 const changePassword = asyncHandler(async (req, res) => {
   const accessToken =
     req.header('Authorization')?.replace('Bearer ', '') ||
     req.cookies.accessToken;
-  console.log('accessToken', accessToken);
   const result = await AuthService.changePasswordIntoDB(accessToken, req.body);
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(httpStatus.OK, result, 'Password change successfully')
-    );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Password changed successfully!',
+    data: result,
+  });
 });
 
 // forgetPassword
 const forgetPassword = asyncHandler(async (req, res) => {
   const email = req.body.email;
-
   const result = await AuthService.forgotPassword(email);
 
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(
-        httpStatus.OK,
-        result,
-        'Your OTP has been successfully sent to your email. If you do not find the email in your inbox, please check your spam or junk folder.'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message:
+      'Your OTP has been successfully sent to your email. If you do not find the email in your inbox, please check your spam or junk folder!',
+    data: result,
+  });
 });
 
 // verifyOtpForForgetPassword
 const verifyOtpForForgetPassword = asyncHandler(async (req, res) => {
   const result = await AuthService.verifyOtpForForgetPassword(req.body);
 
-  res
-    .status(httpStatus.OK)
-    .json(new AppResponse(httpStatus.OK, result, 'OTP verified successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'OTP verified successfully!',
+    data: result,
+  });
 });
 
 // resetPassword
@@ -200,43 +185,33 @@ const resetPassword = asyncHandler(async (req, res) => {
     req.body.newPassword
   );
 
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(httpStatus.OK, result, 'Reset password successfully')
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Reset password successfully!',
+    data: result,
+  });
 });
 
 // fetchProfile
 const fetchProfile = asyncHandler(async (req, res) => {
-  console.log(req.body);
   const result = await AuthService.fetchProfileFromDB(req.user);
 
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(
-        httpStatus.OK,
-        result,
-        'Profile data retrieved successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Profile data retrieved successfully!',
+    data: result,
+  });
 });
 
 // fetchClientConnectedAccount
 const fetchClientConnectedAccount = asyncHandler(async (req, res) => {
-  console.log(req.user);
   const result = await AuthService.fetchAllConnectedAcount(req.user);
 
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(
-        httpStatus.OK,
-        result,
-        'Discover artists retrieved successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Discover artists retrieved successfully!',
+    data: result,
+  });
 });
 
 // deactivateUserAccount
@@ -245,21 +220,23 @@ const deactivateUserAccount = asyncHandler(async (req, res) => {
     req.user,
     req.body
   );
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(httpStatus.OK, result, 'Account Deactivate successfully!')
-    );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Account Deactivate successfully!',
+    data: result,
+  });
 });
 
 // deleteSpecificAccount
 const deleteSpecificAccount = asyncHandler(async (req, res) => {
   const result = await AuthService.deleteUserAccount(req.user);
-  res
-    .status(httpStatus.OK)
-    .json(
-      new AppResponse(httpStatus.OK, result, 'Account Deleted successfully!')
-    );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Account Deleted successfully!',
+    data: result,
+  });
 });
 
 export const AuthController = {
@@ -268,6 +245,9 @@ export const AuthController = {
   verifySignupOtp,
   signin,
   createProfile,
+  // clientCreateProfile,
+  // artistCreateProfile,
+  // businessCreateProfile,
   socialSignin,
   updateProfilePhoto,
   changePassword,

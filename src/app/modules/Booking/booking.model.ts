@@ -63,7 +63,6 @@ const bookingSchema = new Schema<IBooking>(
     },
     referralImage: {
       type: String,
-      required: false,
     },
   },
   { timestamps: true }

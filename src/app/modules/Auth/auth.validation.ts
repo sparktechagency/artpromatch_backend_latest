@@ -124,70 +124,77 @@ const createProfileSchema = z.object({
         invalid_type_error: 'Role must be CLIENT, ARTIST or BUSINESS',
       }),
 
-      location: z.object({
-        type: z.literal('Point').default('Point'), // Type must be 'Point'
-        coordinates: z
-          .array(z.number()) // Coordinates should be an array of numbers
-          .length(2) // There should be exactly two numbers (longitude, latitude)
-          .refine(
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            ([longitude, latitude]) => longitude >= -180 && longitude <= 180,
-            {
-              message: 'Longitude must be between -180 and 180',
-            }
-          )
-          .refine(
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            ([longitude, latitude]) => latitude >= -90 && latitude <= 90,
-            {
-              message: 'Latitude must be between -90 and 90',
-            }
-          ),
-      }), // The entire location object is optional
-      radius: z.number().min(0),
-      lookingFor: z.array(zodEnumFromObject(serviceTypes)),
-      favoriteTattoos: z.array(zodEnumFromObject(favoriteTattoos)),
-
-      notificationPreferences: z
-        .union([z.literal('app'), z.literal('email'), z.literal('sms')])
-        .array(),
-      artistType: zodEnumFromObject(ARTIST_TYPE),
-      expertise: z.array(zodEnumFromObject(expertiseTypes)),
-      studioName: z.string(),
-      city: z.string(),
-
-      // NEW for BUSINESS
-      businessType: z.enum(['Studio', 'Event Organizer', 'Both']),
-      servicesOffered: z.array(zodEnumFromObject(SERVICES_OFFERED)),
-      contactNumber: z.string(),
-      contactEmail: z.string().email('Invalid email address'),
-
-      // Operating Hours (Weekly)
-      operatingHours: z.record(
-        zodEnumFromObject(OPERATING_DAYS),
-        z.array(
-          z
-            .object({
-              start: z.string().regex(/^\d{2}:\d{2}$/, {
-                message: 'Invalid time format. Use HH:MM.',
-              }),
-              end: z.string().regex(/^\d{2}:\d{2}$/, {
-                message: 'Invalid time format. Use HH:MM.',
-              }),
-            })
+      location: z
+        .object({
+          // type: z.literal('Point').default('Point'), // Type must be 'Point'
+          coordinates: z
+            .array(z.number()) // Coordinates should be an array of numbers
+            .length(2) // There should be exactly two numbers (longitude, latitude)
             .refine(
-              (val) => {
-                const [sh, sm] = val.start.split(':').map(Number);
-                const [eh, em] = val.end.split(':').map(Number);
-                return eh > sh || (eh === sh && em > sm);
-              },
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              ([longitude, latitude]) => longitude >= -180 && longitude <= 180,
               {
-                message: 'End time must be after start time.',
-                path: ['end'],
+                message: 'Longitude must be between -180 and 180',
               }
             )
+            .refine(
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              ([longitude, latitude]) => latitude >= -90 && latitude <= 90,
+              {
+                message: 'Latitude must be between -90 and 90',
+              }
+            ),
+        })
+        .optional(),
+
+      // For CLIENT
+      radius: z.number().min(0).optional(),
+      lookingFor: z.array(zodEnumFromObject(serviceTypes)).optional(),
+      favoriteTattoos: z.array(zodEnumFromObject(favoriteTattoos)).optional(),
+      notificationPreferences: z
+        .union([z.literal('app'), z.literal('email'), z.literal('sms')])
+        .array()
+        .optional(),
+
+      // For ARTIST
+      artistType: zodEnumFromObject(ARTIST_TYPE).optional(),
+      expertise: z.array(zodEnumFromObject(expertiseTypes)).optional(),
+      studioName: z.string().optional(),
+      city: z.string().optional(),
+
+      // For BUSINESS
+      businessType: z.enum(['Studio', 'Event Organizer', 'Both']).optional(),
+      servicesOffered: z.array(zodEnumFromObject(SERVICES_OFFERED)).optional(),
+      contactNumber: z.string().optional(),
+      contactEmail: z.string().email('Invalid email address').optional(),
+      // Operating Hours (Weekly)
+      operatingHours: z
+        .record(
+          zodEnumFromObject(OPERATING_DAYS),
+          z.array(
+            z
+              .object({
+                start: z.string().regex(/^\d{2}:\d{2}$/, {
+                  message: 'Invalid time format. Use HH:MM.',
+                }),
+                end: z.string().regex(/^\d{2}:\d{2}$/, {
+                  message: 'Invalid time format. Use HH:MM.',
+                }),
+              })
+              .refine(
+                (val) => {
+                  const [sh, sm] = val.start.split(':').map(Number);
+                  const [eh, em] = val.end.split(':').map(Number);
+                  return eh > sh || (eh === sh && em > sm);
+                },
+                {
+                  message: 'End time must be after start time.',
+                  path: ['end'],
+                }
+              )
+          )
         )
-      ),
+        .optional(),
     })
     .strict()
     .superRefine((data, ctx) => {
@@ -285,6 +292,21 @@ const createProfileSchema = z.object({
     }),
 });
 
+// 6. socialSchema
+const socialSchema = z.object({
+  body: z.object({
+    email: z
+      .string()
+      .email('Invalid email address')
+      .nonempty('Email is required'),
+    fcmToken: z.string().nonempty('FCM Token is required'),
+    image: z.string().url('Image URL must be a valid URL'),
+    fullName: z.string(),
+    phoneNumber: z.string(),
+    address: z.string(),
+  }),
+});
+
 // passwordChangeSchema
 const passwordChangeSchema = z.object({
   body: z.object({
@@ -335,6 +357,17 @@ const otpSchema = z.object({
   }),
 });
 
+// forgetPasswordSchema
+const forgetPasswordSchema = z.object({
+  body: z.object({
+    email: z
+      .string({
+        required_error: 'Email is required',
+      })
+      .email({ message: 'Invalid email format' }),
+  }),
+});
+
 // forgetPasswordVerifySchema
 const forgetPasswordVerifySchema = z.object({
   body: z.object({
@@ -345,17 +378,6 @@ const forgetPasswordVerifySchema = z.object({
       })
       .regex(/^\d+$/, { message: 'OTP must be a number' })
       .length(6, { message: 'OTP must be exactly 6 digits' }),
-  }),
-});
-
-// forgetPasswordSchema
-const forgetPasswordSchema = z.object({
-  body: z.object({
-    email: z
-      .string({
-        required_error: 'Email is required',
-      })
-      .email({ message: 'Invalid email format' }),
   }),
 });
 
@@ -425,21 +447,6 @@ const accessTokenSchema = z.object({
   }),
 });
 
-// socialSchema
-const socialSchema = z.object({
-  body: z.object({
-    email: z
-      .string()
-      .email('Invalid email address')
-      .nonempty('Email is required'),
-    fcmToken: z.string().nonempty('FCM Token is required'),
-    image: z.string().url('Image URL must be a valid URL'),
-    fullName: z.string(),
-    phoneNumber: z.string(),
-    address: z.string(),
-  }),
-});
-
 export type TProfilePayload = z.infer<typeof createProfileSchema.shape.body>;
 
 export const AuthValidation = {
@@ -448,6 +455,7 @@ export const AuthValidation = {
   verifySignupOtpSchema,
   signinSchema,
   createProfileSchema,
+  socialSchema,
   passwordChangeSchema,
   otpSchema,
   forgetPasswordSchema,
@@ -455,7 +463,6 @@ export const AuthValidation = {
   resendOtpSchema,
   refreshTokenSchema,
   accessTokenSchema,
-  socialSchema,
   forgetPasswordVerifySchema,
   userDeactivationSchema,
 };

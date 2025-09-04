@@ -45,8 +45,9 @@ const businessSchema = new Schema<IBusiness>(
     location: {
       type: {
         type: String,
-        enum: ['Point'],
-        required: true,
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
       },
       coordinates: {
         type: [Number],

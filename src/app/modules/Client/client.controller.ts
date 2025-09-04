@@ -1,29 +1,26 @@
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { ClientService } from './client.service';
+import sendResponse from '../../utils/sendResponse';
 
 const updateProfile = asyncHandler(async (req, res) => {
   const result = await ClientService.updateProfile(req.user, req.body);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Profile information update successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Profile information updated successfully!',
+    data: result,
+  });
 });
 
 const updatePreferences = asyncHandler(async (req, res) => {
   const result = await ClientService.updatePreferences(req.user, req.body);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, result, 'Preferences updated successfully')
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Preferences updated successfully!',
+    data: result,
+  });
 });
 
 const updateNotificationPreferences = asyncHandler(async (req, res) => {
@@ -32,15 +29,11 @@ const updateNotificationPreferences = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Notification preferences updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Notification preferences updated successfully!',
+    data: result,
+  });
 });
 
 const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
@@ -49,35 +42,25 @@ const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Privacy and security settings updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Privacy and security settings updated successfully!',
+    data: result,
+  });
 });
 
-
-
 const fetchDiscoverArtists = asyncHandler(async (req, res) => {
-  const { data, meta } = await ClientService.fetchDiscoverArtistFromDB(
+  const result = await ClientService.fetchDiscoverArtistFromDB(
     req.user,
     req.query
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        data,
-        'Discover artists retrieved successfully',
-        meta
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Discover artists retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
 export const ClientController = {

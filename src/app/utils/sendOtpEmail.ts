@@ -1,4 +1,4 @@
-import status from 'http-status';
+import httpStatus from 'http-status';
 import nodemailer from 'nodemailer';
 import config from '../config';
 import AppError from './AppError';
@@ -132,7 +132,7 @@ const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log(error);
-    throw new AppError(status.INTERNAL_SERVER_ERROR, 'Failed to send email');
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to send email');
   }
 };
 

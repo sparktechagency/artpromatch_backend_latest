@@ -1,15 +1,14 @@
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import { AppError, asyncHandler } from '../utils';
-import { TRole } from '../modules/Auth/auth.constant';
+import { ROLE, TRole } from '../modules/Auth/auth.constant';
 import { Auth } from '../modules/Auth/auth.model';
-import { console } from 'inspector';
 import { verifyToken } from '../lib';
 
 const auth = (...requiredRoles: TRole[]) => {
   return asyncHandler(async (req, res, next) => {
     const token =
-      req.header('Authorization')?.replace('Bearer ', '') ||
+      req.headers.authorization?.replace('Bearer ', '') ||
       req.cookies?.accessToken;
 
     // checking if the token is missing
@@ -20,7 +19,7 @@ const auth = (...requiredRoles: TRole[]) => {
     // checking if the given token is valid
     const decoded = verifyToken(token) as JwtPayload;
 
-    const { id } = decoded;
+    const { id, iat } = decoded;
 
     // checking if the user is exist
     const user = await Auth.findById(id);
@@ -40,11 +39,25 @@ const auth = (...requiredRoles: TRole[]) => {
       );
     }
 
-    if (!user.isActive) {
+    // checking if any hacker using a token even-after the user changed the password
+    if (
+      user.passwordChangedAt &&
+      user.isJWTIssuedBeforePasswordChanged(iat as number)
+    ) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
-    console.log('role', requiredRoles);
+    if (
+      (user.role === ROLE.ARTIST || user.role === ROLE.BUSINESS) &&
+      !user.isActive
+    ) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Your profile is not activated by admin yet'
+      );
+    } else if (user.role === ROLE.CLIENT && !user.isActive) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    }
 
     if (requiredRoles.length && !requiredRoles.includes(user.role)) {
       throw new AppError(

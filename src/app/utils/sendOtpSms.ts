@@ -1,7 +1,7 @@
 import twilio from 'twilio';
 import config from '../config';
 import AppError from './AppError';
-import status from 'http-status';
+import httpStatus from 'http-status';
 
 const client = twilio(config.twilio.accountSid, config.twilio.authToken);
 
@@ -21,7 +21,7 @@ const sendOtpSms = async (phoneNumber: string, otp: string) => {
 
     // eslint-disable-next-line no-console
     console.error('Twilio error:', error);
-    throw new AppError(status.INTERNAL_SERVER_ERROR, message);
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, message);
   }
 };
 

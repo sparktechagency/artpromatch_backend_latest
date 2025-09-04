@@ -1,35 +1,38 @@
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { RequestService } from './request.service';
+import sendResponse from '../../utils/sendResponse';
 
 const createRequest = asyncHandler(async (req, res) => {
   const result = await RequestService.createRequestIntoDB(req.user, req.body);
-  res
-    .status(status.CREATED)
-    .json(new AppResponse(status.CREATED, result, 'Request send successfully'));
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Request send successfully!',
+    data: result,
+  });
 });
 
 const fetchMyRequests = asyncHandler(async (req, res) => {
-  const {data,meta} = await RequestService.fetchMyRequest(req.user,req.query);
+  const result = await RequestService.fetchMyRequest(req.user, req.query);
 
-  // Send the response
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, data, 'Requests retrieved successfully',meta)
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Requests retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
-
 const fetchIncomingRequests = asyncHandler(async (req, res) => {
-  const {data,meta} = await RequestService.fetchIncomingRequest(req.user,req.query);
+  const result = await RequestService.fetchIncomingRequest(req.user, req.query);
 
-  // Send the response
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, data, 'Requests retrieved successfully',meta)
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Requests retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
 const acceptRequestFromArtist = asyncHandler(async (req, res) => {
@@ -38,19 +41,21 @@ const acceptRequestFromArtist = asyncHandler(async (req, res) => {
     req.params.id
   );
 
-  // Send the response
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Requests accepted successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Requests accepted successfully!',
+    data: result,
+  });
 });
 
 const removeRequest = asyncHandler(async (req, res) => {
   const result = await RequestService.removeRequest(req.params.id);
 
-  // Send the response
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Requests removed successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Requests removed successfully!',
+    data: result,
+  });
 });
 
 export const RequestController = {
@@ -58,5 +63,5 @@ export const RequestController = {
   fetchMyRequests,
   acceptRequestFromArtist,
   removeRequest,
-  fetchIncomingRequests
+  fetchIncomingRequests,
 };

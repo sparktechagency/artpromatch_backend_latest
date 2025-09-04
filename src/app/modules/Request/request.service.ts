@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import status from 'http-status';
+import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import { AppError } from '../../utils';
 import Artist from '../Artist/artist.model';
@@ -14,17 +14,16 @@ const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
   // Artist send the request to business studios
   if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
-    console.log('artist', artist);
     const business = await Business.findOne({ _id: payload.receiverId });
     if (!artist) {
-      throw new AppError(status.NOT_FOUND, 'Artist not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
     }
     if (!business) {
-      throw new AppError(status.NOT_FOUND, 'business not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'business not found');
     }
     if (artist.business?.toString() === payload.receiverId) {
       throw new AppError(
-        status.NOT_FOUND,
+        httpStatus.NOT_FOUND,
         'This Artist Already Join Your Studio'
       );
     }
@@ -33,7 +32,7 @@ const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
     });
     if (isExistRequest) {
       throw new AppError(
-        status.BAD_REQUEST,
+        httpStatus.BAD_REQUEST,
         'Request already sent by you or business'
       );
     }
@@ -45,7 +44,7 @@ const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
     };
     const result = await RequestModel.create(requestPayload);
     if (!result) {
-      throw new AppError(status.NOT_FOUND, 'Failed To create Request');
+      throw new AppError(httpStatus.NOT_FOUND, 'Failed To create Request');
     }
     return result;
   }
@@ -54,21 +53,20 @@ const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
   if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user._id });
     if (!business) {
-      throw new AppError(status.NOT_FOUND, 'business not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'business not found');
     }
 
     const artist = await Artist.findOne({ _id: payload.receiverId });
     if (!artist) {
-      throw new AppError(status.NOT_FOUND, 'artist not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
     }
-    console.log(artist);
 
     const isExistRequest = await RequestModel.findOne({
       $and: [{ artistId: payload.receiverId }, { businessId: business._id }],
     });
     if (isExistRequest) {
       throw new AppError(
-        status.BAD_REQUEST,
+        httpStatus.BAD_REQUEST,
         'Request already sent by you or Artist!'
       );
     }
@@ -80,7 +78,7 @@ const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
     };
     const result = await RequestModel.create(requestPayload);
     if (!result) {
-      throw new AppError(status.NOT_FOUND, 'Failed To create Request');
+      throw new AppError(httpStatus.NOT_FOUND, 'Failed To create Request');
     }
     return result;
   }
@@ -105,8 +103,7 @@ const fetchMyRequest = async (
     ? (await Artist.findOne({ auth: user._id }).select('_id'))?._id
     : (await Business.findOne({ auth: user._id }).select('_id'))?._id;
 
-  if (!myId)
-    return { meta: { total: 0, totalPage: 0, page, limit }, data: [] };
+  if (!myId) return { meta: { total: 0, totalPage: 0, page, limit }, data: [] };
 
   const match: any = isArtist
     ? { senderType: 'ARTIST', artistId: myId }
@@ -133,14 +130,14 @@ const fetchMyRequest = async (
       },
     },
 
-  { $unwind: '$user' },
+    { $unwind: '$user' },
     { $sort: { createdAt: -1 } },
     { $skip: skip },
     { $limit: limit },
     {
       $project: {
         _id: 0,
-        requestId: "$_id",  
+        requestId: '$_id',
         status: 1,
         createdAt: 1,
         provider: {
@@ -157,7 +154,7 @@ const fetchMyRequest = async (
   const total = await RequestModel.countDocuments(match);
   const totalPage = Math.ceil(total / limit);
 
- return {
+  return {
     data: data,
     meta: {
       page,
@@ -182,20 +179,15 @@ const fetchIncomingRequest = async (
 
   const isArtist = user.role === ROLE.ARTIST;
 
-
   const myId = isArtist
     ? (await Artist.findOne({ auth: user._id }).select('_id'))?._id
     : (await Business.findOne({ auth: user._id }).select('_id'))?._id;
 
-  if (!myId)
-    return { meta: { total: 0, totalPage: 0, page, limit }, data: [] };
-
+  if (!myId) return { meta: { total: 0, totalPage: 0, page, limit }, data: [] };
 
   const match: any = isArtist
     ? { artistId: myId, senderType: 'BUSINESS' }
     : { businessId: myId, senderType: 'ARTIST' };
-
-    console.log("match",match)
 
   const pipeline: any[] = [
     { $match: match },
@@ -250,9 +242,6 @@ const fetchIncomingRequest = async (
   };
 };
 
-
-
-
 // const fetchMyRequest = async (user: IAuth) => {
 //   const requests = await RequestModel.find({
 //     $or: [{ artistId: user._id }, { businessId: user._id }],
@@ -283,7 +272,7 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
   const artist = await Artist.findOne({ auth: user._id });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
 
   const request = await RequestModel.findOne({
@@ -292,13 +281,13 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
   });
 
   if (!request) {
-    throw new AppError(status.NOT_FOUND, 'Request not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Request not found');
   }
 
   const business = await Business.findById(request.businessId);
 
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
   }
 
   const session = await mongoose.startSession();
@@ -323,7 +312,7 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
     await session.abortTransaction();
     await session.endSession();
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       `Something went wrong when accept request: ${error?.message}`
     );
   }
@@ -338,5 +327,5 @@ export const RequestService = {
   fetchMyRequest,
   acceptRequestFromArtist,
   removeRequest,
-  fetchIncomingRequest
+  fetchIncomingRequest,
 };

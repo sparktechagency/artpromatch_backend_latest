@@ -16,7 +16,7 @@ router
     AuthController.createAuth
   );
 
-// 2. signupOtpSendAgain
+// 2. sendSignupOtpAgain
 router
   .route('/send-signup-otp-again')
   .post(
@@ -24,7 +24,7 @@ router
     AuthController.sendSignupOtpAgain
   );
 
-// 3. saveAuthData
+// 3. verifySignupOtp
 router
   .route('/verify-signup-otp')
   .post(
@@ -47,12 +47,43 @@ router.route('/create-Profile').post(
     { name: 'taxIdOrEquivalent', maxCount: 1 },
     { name: 'studioLicense', maxCount: 1 },
   ]),
-  auth(),
+  auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
   validateRequestFromFormData(AuthValidation.createProfileSchema),
   AuthController.createProfile
 );
 
-// socialSignin
+// // clientCreateProfile
+// router.route('/client-create-Profile').post(
+//   auth(ROLE.CLIENT),
+//   validateRequestFromFormData(AuthValidation.createProfileSchema),
+//   AuthController.clientCreateProfile
+// );
+
+// // artistCreateProfile
+// router.route('/artist-create-Profile').post(
+//   upload.fields([
+//     { name: 'idFrontPart', maxCount: 1 },
+//     { name: 'idBackPart', maxCount: 1 },
+//     { name: 'selfieWithId', maxCount: 1 },
+//   ]),
+//   auth(ROLE.CLIENT),
+//   validateRequestFromFormData(AuthValidation.createProfileSchema),
+//   AuthController.artistCreateProfile
+// );
+
+// // businessCreateProfile
+// router.route('/business-create-Profile').post(
+//   upload.fields([
+//     { name: 'registrationCertificate', maxCount: 1 },
+//     { name: 'taxIdOrEquivalent', maxCount: 1 },
+//     { name: 'studioLicense', maxCount: 1 },
+//   ]),
+//   auth(ROLE.CLIENT, ROLE.ARTIST),
+//   validateRequestFromFormData(AuthValidation.createProfileSchema),
+//   AuthController.businessCreateProfile
+// );
+
+// 6. socialSignin
 router
   .route('/social-signin')
   .post(
@@ -60,19 +91,16 @@ router
     AuthController.socialSignin
   );
 
-// fetchClientConnectedAccount
+// 7. updateProfilePhoto
 router
-  .route('/connected-account')
-  .get(
-    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
-    AuthController.fetchClientConnectedAccount
-  );
+  .route('/update-profile-photo')
+  .put(auth(), upload.single('file'), AuthController.updateProfilePhoto);
 
-// changePassword
+// 8. changePassword
 router
   .route('/change-password')
   .patch(
-    auth(),
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS, ROLE.ADMIN, ROLE.SUPER_ADMIN),
     validateRequest(AuthValidation.passwordChangeSchema),
     AuthController.changePassword
   );
@@ -87,7 +115,7 @@ router
 
 // verifyOtpForForgetPassword
 router
-  .route('/forget-password-verify')
+  .route('/verify-forget-password')
   .post(
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     validateRequest(AuthValidation.forgetPasswordVerifySchema),
@@ -100,6 +128,17 @@ router
   .post(
     validateRequest(AuthValidation.resetPasswordSchema),
     AuthController.resetPassword
+  );
+
+// fetchProfile
+router.route('/profile').get(auth(), AuthController.fetchProfile);
+
+// fetchClientConnectedAccount
+router
+  .route('/connected-account')
+  .get(
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
+    AuthController.fetchClientConnectedAccount
   );
 
 // deactivateUserAccount
@@ -118,13 +157,5 @@ router
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     AuthController.deleteSpecificAccount
   );
-
-// updateProfilePhoto
-router
-  .route('/profile-image')
-  .put(auth(), upload.single('file'), AuthController.updateProfilePhoto);
-
-// fetchProfile
-router.route('/profile').get(auth(), AuthController.fetchProfile);
 
 export const AuthRoutes = router;
