@@ -103,6 +103,27 @@ authSchema.pre('save', async function (next) {
   next();
 });
 
+// User Query middleware #1 (for find)
+authSchema.pre('find', function (next) {
+  // while we are getting all data by using find method we want to exclude the data that has isDeleted: true
+  this.find({ isDeleted: { $ne: true } });
+  next();
+});
+
+// User Query middleware #2 (for findOne)
+authSchema.pre('findOne', function (next) {
+  // while we are getting single data by using findOne method we want to exclude the data that has isDeleted: true
+  this.find({ isDeleted: { $ne: true } });
+  next();
+});
+
+// User Query middleware #3 (for aggregate)
+authSchema.pre('aggregate', function (next) {
+  // while we are getting all data by using aggregate(find) method we want to exclude the data that has isDeleted: true
+  this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+  next();
+});
+
 authSchema.post('save', function (doc, next) {
   // Hiding the Hashed password from returned data
   doc.password = '';
