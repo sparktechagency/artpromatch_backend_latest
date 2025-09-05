@@ -131,36 +131,7 @@ authSchema.methods.isJWTIssuedBeforePasswordChanged = function (
   return passwordChangedTime > jwtIssuedTimestamp;
 };
 
-// // For generating access token
-// authSchema.methods.generateAccessToken = function () {
-//   return jwt.sign(
-//     {
-//       id: this._id,
-//       email: this.email,
-//       role: this.role,
-//       image: this.image || defaultUserImage,
-//     },
-//     config.jwt.access_secret!,
-//     {
-//       expiresIn: config.jwt.access_expires_in as any,
-//     }
-//   );
-// };
-
-// // For generating refresh token
-// authSchema.methods.generateRefreshToken = function () {
-//   return jwt.sign(
-//     {
-//       id: this._id,
-//     },
-//     config.jwt.refresh_secret!,
-//     {
-//       expiresIn: config.jwt.refresh_expires_in as any,
-//     }
-//   );
-// };
-
-// For check the password is correct
+// For checking if password is correct
 authSchema.methods.isPasswordCorrect = async function (password: string) {
   return await bcrypt.compare(password, this.password);
 };

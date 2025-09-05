@@ -241,7 +241,8 @@ const deleteSpecificUserAccount = asyncHandler(async (req, res) => {
 
 // 16. getAccessToken
 const getAccessToken = asyncHandler(async (req, res) => {
-  const result = await AuthService.getAccessTokenFromServer(req.user);
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const result = await AuthService.getAccessTokenFromServer(token!);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

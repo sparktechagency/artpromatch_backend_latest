@@ -158,11 +158,10 @@ router
     AuthController.deleteSpecificUserAccount
   );
 
-// 15. getAccessTokenSchema
+// 15. getAccessToken
 router
   .route('/access-token')
-  .delete(
-    auth(),
+  .patch(
     validateRequest(AuthValidation.getAccessTokenSchema),
     AuthController.getAccessToken
   );

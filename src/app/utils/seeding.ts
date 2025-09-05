@@ -1,5 +1,5 @@
 import config from '../config';
-import { ROLE } from '../modules/Auth/auth.constant';
+import { defaultUserImage, ROLE } from '../modules/Auth/auth.constant';
 import { Auth } from '../modules/Auth/auth.model';
 
 const seedingAdmin = async () => {
@@ -15,7 +15,7 @@ const seedingAdmin = async () => {
         role: ROLE.SUPER_ADMIN,
         email: config.super_admin.email,
         password: config.super_admin.password,
-        image: config.super_admin.profile_photo,
+        image: config.super_admin.profile_photo || defaultUserImage,
         isVerified: true,
       });
     }

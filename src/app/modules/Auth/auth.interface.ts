@@ -1,6 +1,7 @@
 import { Document, Model, ObjectId } from 'mongoose';
 import { TRole } from './auth.constant';
 
+// Instance methods
 export interface IAuth extends Document {
   _id: ObjectId;
   email: string;
@@ -25,20 +26,14 @@ export interface IAuth extends Document {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-}
 
-export interface IAuthMethods extends Model<IAuth> {
-  isUserExistsByEmail(email: string): Promise<IAuth | null>;
-
+  // Instance methods
   isPasswordMatched(plainTextPassword: string): Promise<boolean>;
-
   isJWTIssuedBeforePasswordChanged(jwtIssuedTimestamp: number): boolean;
-
-  // isPasswordCorrect(password: string): Promise<boolean>;
-  // generateAccessToken(): string;
-  // generateRefreshToken(): string;
+  isPasswordCorrect(password: string): Promise<boolean>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface IAuthModel
-  extends Model<IAuth, Record<string, never>, IAuthMethods> {}
+// Static methods
+export interface IAuthModel extends Model<IAuth> {
+  isUserExistsByEmail(email: string): Promise<IAuth | null>;
+}

@@ -33,7 +33,8 @@ const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
 
 // 1. createAuth
 const createAuth = async (payload: IAuth) => {
-  const existingUser = await Auth.findOne({ email: payload.email });
+  // const existingUser = await Auth.findOne({ email: payload.email });
+  const existingUser = await Auth.isUserExistsByEmail(payload.email);
 
   // if user exists but unverified
   if (existingUser && !existingUser.isVerified) {
@@ -93,7 +94,8 @@ const createAuth = async (payload: IAuth) => {
 
 // 2. sendSignupOtpAgain
 const sendSignupOtpAgain = async (userEmail: string) => {
-  const user = await Auth.findOne({ email: userEmail });
+  // const user = await Auth.findOne({ email: userEmail });
+  const user = await Auth.isUserExistsByEmail(userEmail);
 
   if (!user) {
     throw new AppError(
@@ -145,7 +147,8 @@ const sendSignupOtpAgain = async (userEmail: string) => {
 
 // 3. verifySignupOtpIntoDB
 const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
-  const user = await Auth.findOne({ email: userEmail });
+  // const user = await Auth.findOne({ email: userEmail });
+  const user = await Auth.isUserExistsByEmail(userEmail);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -199,7 +202,8 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
 
 // 4. signinIntoDB
 const signinIntoDB = async (payload: { email: string; password: string }) => {
-  const user = await Auth.findOne({ email: payload.email }).select('+password');
+  // const user = await Auth.findOne({ email: payload.email }).select('+password');
+  const user = await Auth.isUserExistsByEmail(payload.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User does not exist!');
@@ -814,9 +818,10 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
   const { email, fcmToken, image, fullName, phoneNumber, address } = payload;
 
   // Check if user exists
-  const auth = await Auth.findOne({ email });
+  // const user = await Auth.findOne({ email });
+  const user = await Auth.isUserExistsByEmail(email);
 
-  if (!auth) {
+  if (!user) {
     const authRes = await Auth.create({
       email,
       fcmToken,
@@ -868,27 +873,27 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
     // const refreshToken = auth.generateRefreshToken();
 
     const userData = {
-      id: auth._id.toString(),
-      email: auth.email,
-      role: auth.role,
-      image: auth?.image || defaultUserImage,
-      fullName: auth?.fullName,
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      image: user?.image || defaultUserImage,
+      fullName: user?.fullName,
     };
 
     const accessToken = createAccessToken(userData);
     const refreshToken = createRefreshToken(userData);
 
-    auth.refreshToken = refreshToken;
-    await auth.save({ validateBeforeSave: false });
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
     return {
       response: {
-        fullName: auth.fullName,
-        email: auth.email,
-        phoneNumber: auth.phoneNumber,
-        role: auth.role,
-        image: auth.image,
-        isProfile: auth.isProfile,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        image: user.image,
+        isProfile: user.isProfile,
       },
       accessToken,
       refreshToken,
@@ -1294,6 +1299,48 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
   }
 };
 
+// 16. getAccessTokenFromServer
+const getAccessTokenFromServer = async (refreshToken: string) => {
+  // checking if the given token is valid
+  const decoded = verifyToken(refreshToken, config.jwt.refresh_secret!) as any;
+
+  const { email, iat } = decoded;
+
+  // checking if the user is exist
+  const user = await Auth.isUserExistsByEmail(email);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  // checking if the user is already deleted
+  const isDeleted = user?.isDeleted;
+  if (isDeleted) {
+    throw new AppError(httpStatus.FORBIDDEN, 'This account is deleted!');
+  }
+
+  // checking if the any hacker using a token even-after the user changed the password
+  if (
+    user.passwordChangedAt &&
+    user.isJWTIssuedBeforePasswordChanged(iat as number)
+  ) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+  }
+
+  const jwtPayload = {
+    id: user._id.toString(),
+    fullName: user.fullName,
+    email: user.email,
+    image: user.image || defaultUserImage,
+    role: user.role,
+  };
+
+  const accessToken = createAccessToken(jwtPayload);
+
+  return {
+    accessToken,
+  };
+};
+
 export const AuthService = {
   createAuth,
   sendSignupOtpAgain,
@@ -1313,4 +1360,5 @@ export const AuthService = {
   fetchAllConnectedAcount,
   deactivateUserAccountFromDB,
   deleteSpecificUserAccount,
+  getAccessTokenFromServer,
 };
