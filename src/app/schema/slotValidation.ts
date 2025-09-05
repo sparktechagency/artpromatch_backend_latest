@@ -2,10 +2,10 @@ import { z } from 'zod';
 import { WEEK_DAYS } from '../modules/Artist/artist.constant';
 
 import dayjs from 'dayjs';
-import customParseFormat from "dayjs/plugin/customParseFormat";
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 dayjs.extend(customParseFormat);
 // Helper function to validate time format and convert to minutes for comparison
-const timeFormat = /^\d{2}:\d{2}$/;
+// const timeFormat = /^\d{2}:\d{2}$/;
 
 // Function to compare start and end time
 const validateTimeSlot = (startTime: string, endTime: string) => {
@@ -106,30 +106,31 @@ const timeString = z
   .string()
   .regex(
     /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(am|pm)$/i,
-    "Time must be in hh:mm am/pm format"
+    'Time must be in hh:mm am/pm format'
   );
 
-
-const dayScheduleSchema = z.object({
-  startTime: timeString.nullable().optional(),
-  endTime: timeString.nullable().optional(),
-  off: z.boolean().default(false),
-}).refine(
-  (data) =>
-    (data.startTime === null && data.endTime === null) ||
-    (data.startTime === undefined && data.endTime === undefined) ||
-    (data.startTime && data.endTime),
-  {
-    message: "Both start and end are required together",
-    path: ["end"],
-  }
-);
+const dayScheduleSchema = z
+  .object({
+    startTime: timeString.nullable().optional(),
+    endTime: timeString.nullable().optional(),
+    off: z.boolean().default(false),
+  })
+  .refine(
+    (data) =>
+      (data.startTime === null && data.endTime === null) ||
+      (data.startTime === undefined && data.endTime === undefined) ||
+      (data.startTime && data.endTime),
+    {
+      message: 'Both start and end are required together',
+      path: ['end'],
+    }
+  );
 
 export const weeklyScheduleSchema = z.object(
   WEEK_DAYS.reduce((acc, day) => {
     acc[day] = dayScheduleSchema.nullable().default(null);
     return acc;
-  }, {} as Record<typeof WEEK_DAYS[number], any>)
+  }, {} as Record<(typeof WEEK_DAYS)[number], any>)
 );
 
 export const availabilitySchema = z.object({

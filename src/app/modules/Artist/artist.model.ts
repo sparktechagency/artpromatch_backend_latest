@@ -39,19 +39,6 @@ const artistSchema = new Schema<IArtist>(
       required: true,
     },
 
-    location: {
-      type: {
-        type: String,
-        default: 'Point',
-        // enum: ['Point'],
-        // required: true,
-      },
-      coordinates: {
-        type: [Number],
-        required: true,
-      },
-    },
-
     business: {
       type: Schema.Types.ObjectId,
       ref: 'Business',
@@ -75,13 +62,25 @@ const artistSchema = new Schema<IArtist>(
       required: true,
     },
     mainLocation: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], required: true }, 
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
+      },
+      coordinates: { type: [Number], required: true },
     },
     currentLocation: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], required: true }, 
-      currentLocationUntil: { type: Date , default: null}
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
+      },
+      coordinates: { type: [Number], required: true },
+      currentLocationUntil: { type: Date, default: null },
     },
 
     city: {

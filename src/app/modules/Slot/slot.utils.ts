@@ -1,9 +1,8 @@
-import { DaySchedule, WeeklySchedule } from "./slot.interface";
+import { DaySchedule, WeeklySchedule } from './slot.interface';
 
 // Convert HH:mm to total minutes
 export const toMinutes = (time: string) => {
   const [h, m] = time.split(':').map(Number);
-  console.log(h,m)
   return h * 60 + m;
 };
 
@@ -70,8 +69,6 @@ export const splitIntoHourlySlots = (
   return result;
 };
 
-
-
 // parsed slots
 
 function timeToMinutes(timeStr: string) {
@@ -85,31 +82,35 @@ function timeToMinutes(timeStr: string) {
   const minutes = parseInt(match[2], 10);
   const modifier = match[3].toLowerCase();
 
-  if (modifier === "pm" && hours !== 12) {
+  if (modifier === 'pm' && hours !== 12) {
     hours += 12;
   }
-  if (modifier === "am" && hours === 12) {
+  if (modifier === 'am' && hours === 12) {
     hours = 0;
   }
 
   return hours * 60 + minutes;
 }
 
-
 const defaultDaySchedule = (): DaySchedule => ({
   startTime: null,
   endTime: null,
   startMin: null,
-  endMin:null,
+  endMin: null,
   off: true,
 });
-
 
 export const normalizeWeeklySchedule = (
   input: Partial<WeeklySchedule>
 ): WeeklySchedule => {
   const days: (keyof WeeklySchedule)[] = [
-    "monday","tuesday","wednesday","thursday","friday","saturday","sunday"
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
   ];
 
   const normalized: WeeklySchedule = {} as WeeklySchedule;
