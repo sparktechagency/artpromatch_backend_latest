@@ -79,10 +79,7 @@ const businessSchema = new Schema<IBusiness>(
     residentArtists: [{ type: Schema.Types.ObjectId, ref: 'Artist' }],
     timeOff: [{ type: Date }],
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 businessSchema.index({ location: '2dsphere' });

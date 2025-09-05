@@ -5,10 +5,10 @@ import { IRequest } from './request.interface';
 // Define the request schema
 const requestSchema = new mongoose.Schema<IRequest>(
   {
-    senderType:{
+    senderType: {
       type: String,
-      enum: ["ARTIST","BUSINESS"],
-      required:true
+      enum: ['ARTIST', 'BUSINESS'],
+      required: true,
     },
     artistId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -26,7 +26,7 @@ const requestSchema = new mongoose.Schema<IRequest>(
       default: REQUEST_STATUS.PENDING,
     },
   },
-  { timestamps: true,versionKey:false }
+  { timestamps: true, versionKey: false }
 );
 
 const RequestModel = mongoose.model<IRequest>('Request', requestSchema);

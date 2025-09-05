@@ -55,12 +55,7 @@ export const MessageSchema: Schema<IMessage> = new Schema<IMessage>(
       default: false,
     },
   },
-  {
-    timestamps: true,
-    toJSON: {
-      virtuals: true,
-    },
-  }
+  { timestamps: true, versionKey: false, toJSON: { virtuals: true } }
 );
 
 export const MessageModel = model<IMessage>('Message', MessageSchema);

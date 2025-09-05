@@ -151,7 +151,7 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
-// forgetPassword
+// 9. forgetPassword
 const forgetPassword = asyncHandler(async (req, res) => {
   const email = req.body.email;
   const result = await AuthService.forgotPassword(email);
@@ -164,7 +164,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-// verifyOtpForForgetPassword
+// 10. verifyOtpForForgetPassword
 const verifyOtpForForgetPassword = asyncHandler(async (req, res) => {
   const result = await AuthService.verifyOtpForForgetPassword(req.body);
 
@@ -175,7 +175,7 @@ const verifyOtpForForgetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-// resetPassword
+// 11. resetPassword
 const resetPassword = asyncHandler(async (req, res) => {
   const resetPasswordToken =
     req.header('Authorization')?.replace('Bearer ', '') ||
@@ -187,12 +187,12 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Reset password successfully!',
+    message: 'Password has been reset successfully!',
     data: result,
   });
 });
 
-// fetchProfile
+// 12. fetchProfile
 const fetchProfile = asyncHandler(async (req, res) => {
   const result = await AuthService.fetchProfileFromDB(req.user);
 
@@ -203,7 +203,7 @@ const fetchProfile = asyncHandler(async (req, res) => {
   });
 });
 
-// fetchClientConnectedAccount
+// 13. fetchClientConnectedAccount
 const fetchClientConnectedAccount = asyncHandler(async (req, res) => {
   const result = await AuthService.fetchAllConnectedAcount(req.user);
 
@@ -214,9 +214,9 @@ const fetchClientConnectedAccount = asyncHandler(async (req, res) => {
   });
 });
 
-// deactivateUserAccount
+// 14. deactivateUserAccount
 const deactivateUserAccount = asyncHandler(async (req, res) => {
-  const result = await AuthService.deactiveUserCurrentAccount(
+  const result = await AuthService.deactivateUserAccountFromDB(
     req.user,
     req.body
   );
@@ -228,13 +228,24 @@ const deactivateUserAccount = asyncHandler(async (req, res) => {
   });
 });
 
-// deleteSpecificAccount
-const deleteSpecificAccount = asyncHandler(async (req, res) => {
-  const result = await AuthService.deleteUserAccount(req.user);
+// 15. deleteSpecificAccount
+const deleteSpecificUserAccount = asyncHandler(async (req, res) => {
+  const result = await AuthService.deleteSpecificUserAccount(req.user);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Account Deleted successfully!',
+    data: result,
+  });
+});
+
+// 16. getAccessToken
+const getAccessToken = asyncHandler(async (req, res) => {
+  const result = await AuthService.getAccessTokenFromServer(req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Access Token given successfully!',
     data: result,
   });
 });
@@ -257,5 +268,6 @@ export const AuthController = {
   fetchProfile,
   fetchClientConnectedAccount,
   deactivateUserAccount,
-  deleteSpecificAccount,
+  deleteSpecificUserAccount,
+  getAccessToken,
 };

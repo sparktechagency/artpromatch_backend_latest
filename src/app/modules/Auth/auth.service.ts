@@ -926,16 +926,19 @@ const updateProfilePhotoIntoDB = async (
 // 8. changePasswordIntoDB
 const changePasswordIntoDB = async (
   accessToken: string,
-  payload: z.infer<typeof AuthValidation.passwordChangeSchema.shape.body>
+  payload: z.infer<typeof AuthValidation.changePasswordSchema.shape.body>
 ) => {
-  const { id, iat } = verifyToken(accessToken) as JwtPayload;
+  const { id, iat } = verifyToken(
+    accessToken,
+    config.jwt.access_secret!
+  ) as JwtPayload;
 
   const user = await Auth.findOne({ _id: id, isActive: true }).select(
     '+password'
   );
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not exists');
+    throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
   }
 
   if (
@@ -964,91 +967,125 @@ const changePasswordIntoDB = async (
   return null;
 };
 
-// forgotPassword
+// 9. forgotPassword
 const forgotPassword = async (email: string) => {
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
 
-  const otp = generateOtp();
-  await user.save();
-  await sendOtpEmail(email, otp, user.fullName || 'Guest');
+  const now = new Date();
 
-  const token = jwt.sign(
-    {
-      email,
-      verificationCode: otp,
-      verificationExpiry: new Date(Date.now() + 5 * 60 * 1000),
-    },
-    config.jwt.otp_secret!,
-    {
-      expiresIn: config.jwt.otp_secret_expires_in!,
-    } as SignOptions
-  );
+  // If OTP exists and not expired, reuse it
+  if (user.otp && user.otpExpiry && now < user.otpExpiry) {
+    // Do nothing, just reuse existing OTP
+    const remainingMs = user.otpExpiry.getTime() - now.getTime();
+    const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+
+    // await sendOtpEmail(email, user.otp, user.fullName || 'Guest');
+
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      `Last OTP is valid till now, use that in ${remainingMinutes} minutes!`
+    );
+  } else {
+    // Generate new OTP
+    const otp = generateOtp();
+    const otpExpiry = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+    await user.save();
+
+    // Send OTP
+    await sendOtpEmail(email, otp, user.fullName || 'Guest');
+  }
+
+  // Issue token (just with email)
+  const token = jwt.sign({ email }, config.jwt.otp_secret!, {
+    expiresIn: config.jwt.otp_secret_expires_in!,
+  } as SignOptions);
 
   return { token };
 };
 
-// verifyOtpForForgetPassword
+// 10. verifyOtpForForgetPassword
 const verifyOtpForForgetPassword = async (payload: {
   token: string;
   otp: string;
 }) => {
-  const { email, verificationCode, verificationExpiry } = verifyToken(
-    payload.token
-  ) as any;
+  const { email } = verifyToken(payload.token, config.jwt.otp_secret!) as any;
+
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  // Check if the OTP matches
-  if (verificationCode !== payload.otp || !verificationExpiry) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP');
+  // Check if OTP expired
+  if (!user.otp || !user.otpExpiry || Date.now() > user.otpExpiry.getTime()) {
+    // Generate and send new OTP
+    const newOtp = generateOtp();
+    const newExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    user.otp = newOtp;
+    user.otpExpiry = newExpiry;
+    await user.save();
+
+    await sendOtpEmail(email, newOtp, user.fullName || 'Guest');
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'OTP expired. A new OTP has been sent!'
+    );
   }
 
-  // Check if OTP has expired
-  if (Date.now() > new Date(verificationExpiry).getTime()) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'OTP has expired');
+  // Check if OTP matches
+  if (user.otp !== payload.otp) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP!');
   }
 
+  // ✅ OTP verified → issue reset password token
   const resetPasswordToken = jwt.sign(
     {
       email: user.email,
       isResetPassword: true,
     },
     config.jwt.otp_secret!,
-    {
-      expiresIn: config.jwt.otp_secret_expires_in!,
-    } as SignOptions
+    { expiresIn: config.jwt.otp_secret_expires_in! } as SignOptions
   );
 
   return { resetPasswordToken };
 };
 
-// resetPasswordIntoDB
+// 11. resetPasswordIntoDB
 const resetPasswordIntoDB = async (
   resetPasswordToken: string,
   newPassword: string
 ) => {
-  const { email } = verifyToken(resetPasswordToken) as any;
-  const user = await Auth.findOne({ email, isActive: true });
+  const payload = verifyToken(resetPasswordToken, config.jwt.otp_secret!) as {
+    email: string;
+    isResetPassword?: boolean;
+  };
 
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  if (!payload?.isResetPassword) {
+    throw new AppError(httpStatus.FORBIDDEN, 'Invalid reset password token');
   }
 
-  // Update the user's password
+  const user = await Auth.findOne({ email: payload.email, isActive: true });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
   user.password = newPassword;
-  await user.save();
+  await user.save({ validateBeforeSave: true });
 
   return null;
 };
 
-// fetchProfileFromDB
+// 12. fetchProfileFromDB
 const fetchProfileFromDB = async (user: IAuth) => {
   if (user?.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id }).populate([
@@ -1057,11 +1094,14 @@ const fetchProfileFromDB = async (user: IAuth) => {
         select: 'fullName image email phoneNumber isProfile',
       },
     ]);
+    // .lean();
 
     const preference = await ClientPreferences.findOne({
       clientId: client?._id,
-    }).select('-clientId -updatedAt -createdAt -__v');
+    }).select('-clientId -updatedAt -createdAt');
+    // .lean();
 
+    // return { ...client, preference };
     return { ...client?.toObject(), preference };
   } else if (user?.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id }).populate([
@@ -1079,7 +1119,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
 
     const preference = await ArtistPreferences.findOne({
       artistId: artist?._id,
-    }).select('-artistId -updatedAt -createdAt -__v');
+    }).select('-artistId -updatedAt -createdAt');
 
     return { ...artist?.toObject(), preference };
   } else if (user?.role === ROLE.BUSINESS) {
@@ -1100,7 +1140,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
 
     const preference = await BusinessPreferences.findOne({
       businessId: business?._id,
-    }).select('-businessId -updatedAt -createdAt -__v');
+    }).select('-businessId -updatedAt -createdAt');
 
     return { ...business?.toObject(), preference };
   } else if (user?.role === ROLE.ADMIN || user?.role === ROLE.SUPER_ADMIN) {
@@ -1108,7 +1148,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
   }
 };
 
-// fetchAllConnectedAcount
+// 13. fetchAllConnectedAcount
 const fetchAllConnectedAcount = async (user: IAuth) => {
   let currentUser;
 
@@ -1126,21 +1166,22 @@ const fetchAllConnectedAcount = async (user: IAuth) => {
 
   const result = await ClientPreferences.findOne(
     { clientId: currentUser._id },
-    { connectedAccounts: 1, _id: 0 }
+    { connectedAccounts: 1, _id: 0 } // projection
   );
 
   return result;
 };
 
-// deactiveUserCurrentAccount
-const deactiveUserCurrentAccount = async (
+// 14. deactivateUserAccountFromDB
+const deactivateUserAccountFromDB = async (
   user: IAuth,
   payload: TDeactiveAccountPayload
 ) => {
   const { email, password, deactivationReason } = payload;
+
   const currentUser = await Auth.findOne({ _id: user._id, email: email });
 
-  if (!currentUser) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  if (!currentUser) throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
 
   const isPasswordCorrect = currentUser.isPasswordMatched(password);
 
@@ -1159,11 +1200,12 @@ const deactiveUserCurrentAccount = async (
     },
     { new: true, select: 'email fullName isDeactivated deactivationReason' }
   );
+
   return result;
 };
 
-// deleteUserAccount
-const deleteUserAccount = async (user: IAuth) => {
+// 15. deleteSpecificUserAccount
+const deleteSpecificUserAccount = async (user: IAuth) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -1192,14 +1234,14 @@ const deleteUserAccount = async (user: IAuth) => {
       if (client) {
         const result = await Client.deleteOne({ _id: client._id }, { session });
         if (result.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Client deletion failed!');
 
         const prefResult = await ClientPreferences.deleteOne(
           { clientId: client._id },
           { session }
         );
         if (prefResult.deletedCount === 0)
-          throw new Error('Client deletion failed here');
+          throw new Error('Client deletion failed here!');
       }
     } else if (user.role === ROLE.ARTIST) {
       const artist = await Artist.findOne({ auth: user._id })
@@ -1209,13 +1251,13 @@ const deleteUserAccount = async (user: IAuth) => {
       if (artist) {
         const result = await Artist.deleteOne({ _id: artist._id }, { session });
         if (result.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Artist deletion failed!');
         const prefResult = await ArtistPreferences.deleteOne(
           { artistId: artist._id },
           { session }
         );
         if (prefResult.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Artist deletion failed here!');
       }
     } else if (user.role === ROLE.BUSINESS) {
       const business = await Business.findOne({ auth: user._id })
@@ -1228,13 +1270,13 @@ const deleteUserAccount = async (user: IAuth) => {
           { session }
         );
         if (result.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Business deletion failed!');
         const prefResult = await Business.deleteOne(
           { _id: business._id },
           { session }
         );
         if (prefResult.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Business deletion failed here!');
       }
     }
 
@@ -1269,6 +1311,6 @@ export const AuthService = {
   resetPasswordIntoDB,
   fetchProfileFromDB,
   fetchAllConnectedAcount,
-  deactiveUserCurrentAccount,
-  deleteUserAccount,
+  deactivateUserAccountFromDB,
+  deleteSpecificUserAccount,
 };

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable no-undef */
 import Booking from './booking.model';
 import Slot from '../Slot/slot.model';
 import { IAuth } from '../Auth/auth.interface';

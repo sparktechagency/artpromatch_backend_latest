@@ -53,10 +53,7 @@ const artistPreferencesSchema = new Schema(
     // Connected Accounts
     connectedAccounts: [connectedAccountSchema],
   },
-  {
-    timestamps: true,
-    versionKey: false, // ✅ Disable __v field
-  }
+  { timestamps: true, versionKey: false }
 );
 
 const ArtistPreferences = mongoose.model(

@@ -292,8 +292,8 @@ const createProfileSchema = z.object({
     }),
 });
 
-// 6. socialSchema
-const socialSchema = z.object({
+// 6. socialSigninSchema
+const socialSigninSchema = z.object({
   body: z.object({
     email: z
       .string()
@@ -307,8 +307,8 @@ const socialSchema = z.object({
   }),
 });
 
-// passwordChangeSchema
-const passwordChangeSchema = z.object({
+// 8. changePasswordSchema
+const changePasswordSchema = z.object({
   body: z.object({
     oldPassword: z
       .string({
@@ -345,19 +345,7 @@ const passwordChangeSchema = z.object({
   }),
 });
 
-// otpSchema
-const otpSchema = z.object({
-  body: z.object({
-    otp: z
-      .string({
-        required_error: 'OTP is required',
-      })
-      .regex(/^\d+$/, { message: 'OTP must be a number' })
-      .length(6, { message: 'OTP must be exactly 6 digits' }),
-  }),
-});
-
-// forgetPasswordSchema
+// 9. forgetPasswordSchema
 const forgetPasswordSchema = z.object({
   body: z.object({
     email: z
@@ -368,8 +356,8 @@ const forgetPasswordSchema = z.object({
   }),
 });
 
-// forgetPasswordVerifySchema
-const forgetPasswordVerifySchema = z.object({
+// 10. verifyOtpForForgetPasswordSchema
+const verifyOtpForForgetPasswordSchema = z.object({
   body: z.object({
     token: z.string({ required_error: 'Token is required' }),
     otp: z
@@ -381,7 +369,7 @@ const forgetPasswordVerifySchema = z.object({
   }),
 });
 
-// resetPasswordSchema
+// 11. resetPasswordSchema
 const resetPasswordSchema = z.object({
   body: z.object({
     newPassword: z
@@ -405,28 +393,8 @@ const resetPasswordSchema = z.object({
   }),
 });
 
-// resendOtpSchema
-const resendOtpSchema = z.object({
-  body: z.object({
-    email: z
-      .string({
-        required_error: 'Email is required',
-      })
-      .email({ message: 'Invalid email format' }),
-  }),
-});
-
-// refreshTokenSchema
-const refreshTokenSchema = z.object({
-  cookies: z.object({
-    refreshToken: z.string({
-      required_error: 'Refresh token is required!',
-    }),
-  }),
-});
-
-// userDeactivationSchema
-const userDeactivationSchema = z.object({
+// 14. deactivateUserAccountSchema
+const deactivateUserAccountSchema = z.object({
   body: z
     .object({
       email: z.string().email('Invalid email'),
@@ -438,14 +406,46 @@ const userDeactivationSchema = z.object({
     .strict(),
 });
 
-// accessTokenSchema
-const accessTokenSchema = z.object({
+// getAccessTokenSchema
+const getAccessTokenSchema = z.object({
   cookies: z.object({
-    accessToken: z.string({
+    refreshToken: z.string({
       required_error: 'Refresh token is required!',
     }),
   }),
 });
+
+// // resendOtpSchema
+// const resendOtpSchema = z.object({
+//   body: z.object({
+//     email: z
+//       .string({
+//         required_error: 'Email is required',
+//       })
+//       .email({ message: 'Invalid email format' }),
+//   }),
+// });
+
+// // accessTokenSchema
+// const accessTokenSchema = z.object({
+//   cookies: z.object({
+//     accessToken: z.string({
+//       required_error: 'Refresh token is required!',
+//     }),
+//   }),
+// });
+
+// // otpSchema
+// const otpSchema = z.object({
+//   body: z.object({
+//     otp: z
+//       .string({
+//         required_error: 'OTP is required',
+//       })
+//       .regex(/^\d+$/, { message: 'OTP must be a number' })
+//       .length(6, { message: 'OTP must be exactly 6 digits' }),
+//   }),
+// });
 
 export type TProfilePayload = z.infer<typeof createProfileSchema.shape.body>;
 
@@ -455,14 +455,14 @@ export const AuthValidation = {
   verifySignupOtpSchema,
   signinSchema,
   createProfileSchema,
-  socialSchema,
-  passwordChangeSchema,
-  otpSchema,
+  socialSigninSchema,
+  changePasswordSchema,
   forgetPasswordSchema,
+  verifyOtpForForgetPasswordSchema,
   resetPasswordSchema,
-  resendOtpSchema,
-  refreshTokenSchema,
-  accessTokenSchema,
-  forgetPasswordVerifySchema,
-  userDeactivationSchema,
+  deactivateUserAccountSchema,
+  getAccessTokenSchema,
+  // resendOtpSchema,
+  // accessTokenSchema,
+  // otpSchema,
 };

@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import config from '../config';
 import { AppError } from '../utils';
 
@@ -37,12 +37,9 @@ export interface ITokenUser {
   role: string;
 }
 
-export const verifyToken = (token: string) => {
+export const verifyToken = (token: string, secret: Secret) => {
   try {
-    const decoded = jwt.verify(
-      token,
-      config.jwt.access_secret as string
-    ) as ITokenUser;
+    const decoded = jwt.verify(token, secret) as ITokenUser;
 
     return decoded;
   } catch {

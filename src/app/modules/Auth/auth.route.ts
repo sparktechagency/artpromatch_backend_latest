@@ -87,7 +87,7 @@ router.route('/create-Profile').post(
 router
   .route('/social-signin')
   .post(
-    validateRequest(AuthValidation.socialSchema),
+    validateRequest(AuthValidation.socialSigninSchema),
     AuthController.socialSignin
   );
 
@@ -101,11 +101,11 @@ router
   .route('/change-password')
   .patch(
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS, ROLE.ADMIN, ROLE.SUPER_ADMIN),
-    validateRequest(AuthValidation.passwordChangeSchema),
+    validateRequest(AuthValidation.changePasswordSchema),
     AuthController.changePassword
   );
 
-// For forget password
+// 9. forgetPassword
 router
   .route('/forget-password')
   .post(
@@ -113,16 +113,16 @@ router
     AuthController.forgetPassword
   );
 
-// verifyOtpForForgetPassword
+// 10. verifyOtpForForgetPassword
 router
   .route('/verify-forget-password')
   .post(
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
-    validateRequest(AuthValidation.forgetPasswordVerifySchema),
+    validateRequest(AuthValidation.verifyOtpForForgetPasswordSchema),
     AuthController.verifyOtpForForgetPassword
   );
 
-// resetPassword
+// 11. resetPassword
 router
   .route('/reset-password')
   .post(
@@ -130,10 +130,10 @@ router
     AuthController.resetPassword
   );
 
-// fetchProfile
+// 12. fetchProfile
 router.route('/profile').get(auth(), AuthController.fetchProfile);
 
-// fetchClientConnectedAccount
+// 13. fetchClientConnectedAccount
 router
   .route('/connected-account')
   .get(
@@ -141,21 +141,30 @@ router
     AuthController.fetchClientConnectedAccount
   );
 
-// deactivateUserAccount
+// 14. deactivateUserAccount
 router
   .route('/deactive-account')
   .post(
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
-    validateRequest(AuthValidation.userDeactivationSchema),
+    validateRequest(AuthValidation.deactivateUserAccountSchema),
     AuthController.deactivateUserAccount
   );
 
-// deleteSpecificAccount
+// 15. deleteSpecificUserAccount
 router
   .route('/delete-account')
   .delete(
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
-    AuthController.deleteSpecificAccount
+    AuthController.deleteSpecificUserAccount
+  );
+
+// 15. getAccessTokenSchema
+router
+  .route('/access-token')
+  .delete(
+    auth(),
+    validateRequest(AuthValidation.getAccessTokenSchema),
+    AuthController.getAccessToken
   );
 
 export const AuthRoutes = router;

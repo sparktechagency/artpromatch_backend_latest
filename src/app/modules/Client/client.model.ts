@@ -79,10 +79,7 @@ const clientSchema = new Schema<IClient>(
       enum: Object.values(dateFormats),
     },
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 clientSchema.index({ location: '2dsphere' });

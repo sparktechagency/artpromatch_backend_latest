@@ -4,6 +4,7 @@ import { AppError, asyncHandler } from '../utils';
 import { ROLE, TRole } from '../modules/Auth/auth.constant';
 import { Auth } from '../modules/Auth/auth.model';
 import { verifyToken } from '../lib';
+import config from '../config';
 
 const auth = (...requiredRoles: TRole[]) => {
   return asyncHandler(async (req, res, next) => {
@@ -17,7 +18,7 @@ const auth = (...requiredRoles: TRole[]) => {
     }
 
     // checking if the given token is valid
-    const decoded = verifyToken(token) as JwtPayload;
+    const decoded = verifyToken(token, config.jwt.access_secret!) as JwtPayload;
 
     const { id, iat } = decoded;
 
