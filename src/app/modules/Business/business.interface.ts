@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { Document, Types } from 'mongoose';
 import { TContact } from '../Artist/artist.constant';
 import {
