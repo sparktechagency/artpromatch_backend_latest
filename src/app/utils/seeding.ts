@@ -4,11 +4,11 @@ import { Auth } from '../modules/Auth/auth.model';
 
 const seedingAdmin = async () => {
   try {
-    // at first check if the admin exist of not
     const admin = await Auth.findOne({
       role: ROLE.SUPER_ADMIN,
       email: config.super_admin.email,
     });
+
     if (!admin) {
       await Auth.create({
         fullName: 'Super Admin',
@@ -20,6 +20,7 @@ const seedingAdmin = async () => {
       });
     }
   } catch {
+    // eslint-disable-next-line no-console
     console.log('Error seeding super admin');
   }
 };
