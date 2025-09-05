@@ -1,32 +1,28 @@
-/* eslint-disable no-undef */
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { ArtistService } from './artist.service';
+import sendResponse from '../../utils/sendResponse';
 
 // update profile
 const updateProfile = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateProfile(req.user, req.body);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, result, 'Artist profile updated successfully')
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist profile updated successfully!',
+    data: result,
+  });
 });
 
 // update preferrence
 const updatePreferences = asyncHandler(async (req, res) => {
   const result = await ArtistService.updatePreferences(req.user, req.body);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Artist preferences updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist preferences updated successfully!',
+    data: result,
+  });
 });
 
 // update notification prefereence
@@ -36,15 +32,11 @@ const updateNotificationPreferences = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Artist notification preferences updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist notification preferences updated successfully!',
+    data: result,
+  });
 });
 
 // update Privacy security settings
@@ -54,15 +46,11 @@ const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Artist privacy and security settings updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist privacy and security settings updated successfully!',
+    data: result,
+  });
 });
 
 // update artist flashes
@@ -70,19 +58,23 @@ const updateArtistFlashes = asyncHandler(async (req, res) => {
   const files = req.files as Express.Multer.File[] | undefined;
   const result = await ArtistService.addFlashesIntoDB(req.user, files);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Flashes update successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Flashes updated successfully!',
+    data: result,
+  });
 });
 
-//update artist 
+//update artist
 const updateArtistPortfolio = asyncHandler(async (req, res) => {
   const files = req.files as Express.Multer.File[] | undefined;
   const result = await ArtistService.addPortfolioImages(req.user, files);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Flashes update successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Portfolio updated successfully!',
+    data: result,
+  });
 });
 
 // remove image
@@ -90,9 +82,11 @@ const removeImage = asyncHandler(async (req, res) => {
   const filePath = req.body.filePath;
   const result = await ArtistService.removeImage(req.user, filePath);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Flash remove successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Flash removed successfully!',
+    data: result,
+  });
 });
 
 // update artist personal info
@@ -102,48 +96,56 @@ const updateArtistPersonalInfo = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Update profile successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Updated profile successfully!',
+    data: result,
+  });
 });
 
 // save availibility
 const saveAvailability = asyncHandler(async (req, res) => {
-  console.log("access")
   const result = await ArtistService.saveAvailabilityIntoDB(req.user, req.body);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Save availability successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Saved availability successfully!',
+    data: result,
+  });
 });
 
 // fetch all artist
 const fetchAllArtists = asyncHandler(async (req, res) => {
-  const { data, meta } = await ArtistService.fetchAllArtistsFromDB(req.query);
+  const result = await ArtistService.fetchAllArtistsFromDB(req.query);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, data, 'Artists retrieved successfully', meta)
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artists retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
 // For availability
 const updateAvailability = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateAvailability(req.user, req.body);
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, result, 'Availability updated successfully')
-    );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Availability updated successfully!',
+    data: result,
+  });
 });
 
 // update timeoff
 const updateTimeOff = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateTimeOff(req.user, req.body);
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Time off updated successfully'));
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Time off updated successfully!',
+    data: result,
+  });
 });
 
 // get availibility
@@ -157,11 +159,11 @@ const updateTimeOff = asyncHandler(async (req, res) => {
 //     year
 //   );
 
-//   res
-//     .status(status.OK)
-//     .json(
-//       new AppResponse(status.OK, result, 'Availability retrieved successfully')
-//     );
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     message: 'Availability retrieved successfully!',
+//     data: result,
+//   });
 // });
 
 export const ArtistController = {

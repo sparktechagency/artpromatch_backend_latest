@@ -25,10 +25,7 @@ import { IArtistSchedule } from './slot.interface';
 //       required: true,
 //     },
 //   },
-//   {
-//     timestamps: true,
-//     versionKey: false,
-//   }
+// { timestamps: true, versionKey: false }
 // );
 
 // const Slot = model<ISlot>('Slot', slotSchema);
@@ -74,11 +71,7 @@ const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
      guestSpots: [GuestSpotSchema],
      offTimes: [OffTimeSchema],
   },
-  
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 const ArtistSchedule = model<IArtistSchedule>(

@@ -7,22 +7,6 @@ export const serviceTypes = {
   GUEST_SPOTS: 'Guest Spots',
 } as const;
 
-
-export const favoritePiercings = {
-  EAR_LOBE: 'Ear Lobe',
-  LIP: 'Lip (Labret, Monroe)',
-  TRIPLE_HELIX: 'Triple Helix',
-  INDUSTRIAL: 'Industrial',
-  SEPTUM: 'Septum',
-  NOSE_NOSTRIL: 'Nose Nostril',
-  TONGUE: 'Tongue',
-  NASALLANG: 'Nasallang',
-  BLACKWORK: 'Blackwork',
-  TRAGUSS: 'Traguss',
-  CONCH: 'Conch',
-} as const;
-
-
 export const favoriteTattoos = {
   //A
   AMERICAN_TRADITIONAL: 'American Traditional',
@@ -98,7 +82,20 @@ export const favoriteTattoos = {
   WHITE_ON_BLACK: 'White On Black',
   WHITE_TATTOOS: 'White Tattoos',
   WATERCOLOR: 'Watercolor',
+} as const;
 
+export const favoritePiercings = {
+  EAR_LOBE: 'Ear Lobe',
+  LIP: 'Lip (Labret, Monroe)',
+  TRIPLE_HELIX: 'Triple Helix',
+  INDUSTRIAL: 'Industrial',
+  SEPTUM: 'Septum',
+  NOSE_NOSTRIL: 'Nose Nostril',
+  TONGUE: 'Tongue',
+  NASALLANG: 'Nasallang',
+  BLACKWORK: 'Blackwork',
+  TRAGUSS: 'Traguss',
+  CONCH: 'Conch',
 } as const;
 
 export const homeViews = {
@@ -133,4 +130,5 @@ export type FavoritePiercing =
 export type ServiceType = (typeof serviceTypes)[keyof typeof serviceTypes];
 export type DateFormat = (typeof dateFormats)[keyof typeof dateFormats];
 export type ArtistType = (typeof artistTypes)[keyof typeof artistTypes];
-export type TNotificationChannel = (typeof notificationChannel)[keyof typeof notificationChannel];
+export type TNotificationChannel =
+  (typeof notificationChannel)[keyof typeof notificationChannel];

@@ -1,7 +1,7 @@
-import { AppResponse } from '../../utils';
-import status from 'http-status';
+import httpStatus from 'http-status';
 import { asyncHandler } from '../../utils';
 import { PaymentService } from './payment.service';
+import sendResponse from '../../utils/sendResponse';
 
 const createSubscription = asyncHandler(async (req, res) => {
   const result = await PaymentService.createSubscriptionIntoDB(
@@ -9,9 +9,11 @@ const createSubscription = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Payment url send successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Payment url sent successfully!',
+    data: result,
+  });
 });
 
 const handlePaymentSuccess = asyncHandler(async (req, res) => {
@@ -20,7 +22,11 @@ const handlePaymentSuccess = asyncHandler(async (req, res) => {
     req.query.session_id as string
   );
 
-  res.status(status.OK).json(new AppResponse(status.OK, null, message));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Payment handled successfully!',
+    data: message,
+  });
 });
 
 export const PaymentController = {

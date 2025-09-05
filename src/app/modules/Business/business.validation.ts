@@ -48,14 +48,17 @@ const businessSecuritySettingsSchema = z.object({
   }),
 });
 
+// guestSpotsSchema
 const guestSpotsSchema = z.object({
   body: z.object({
-    guestSpots: z.array(
-      z.object({
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
-        location: z.string(),
-      })
-    ).nonempty('At least one guest spot is required'),
+    guestSpots: z
+      .array(
+        z.object({
+          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
+          location: z.string(),
+        })
+      )
+      .nonempty('At least one guest spot is required'),
   }),
 });
 
@@ -72,7 +75,7 @@ export const BusinessValidation = {
   businessNotificationSchema,
   businessSecuritySettingsSchema,
   guestSpotsSchema,
-  timeOffSchema
+  timeOffSchema,
 };
 
 // Type definitions for payloads

@@ -2,14 +2,14 @@
 import Business from './business.model';
 import { IAuth } from '../Auth/auth.interface';
 import { AppError } from '../../utils';
-import status from 'http-status';
+import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import {
   TUpdateBusinessProfilePayload,
   TUpdateBusinessNotificationPayload,
   TUpdateBusinessSecuritySettingsPayload,
 } from './business.validation';
-import Auth from '../Auth/auth.model';
+import { Auth } from '../Auth/auth.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
 
 // Update Business Profile
@@ -20,7 +20,7 @@ const updateBusinessProfile = async (
   const business = await Business.findOne({ auth: user._id });
 
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
   }
 
   const session = await mongoose.startSession();
@@ -54,7 +54,7 @@ const updateBusinessProfile = async (
     await session.abortTransaction();
     session.endSession();
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       'Something went wrong while updating business profile data'
     );
   }
@@ -68,7 +68,7 @@ const updateBusinessPreferences = async (
   // Find the business using the auth user_id
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
   }
 
   // Find and update business preferences, or create new ones if not found
@@ -80,7 +80,7 @@ const updateBusinessPreferences = async (
 
   if (!preferences) {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       'Error updating business preferences'
     );
   }
@@ -96,7 +96,7 @@ const updateBusinessNotificationPreferences = async (
   // Step 1: Find the business
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
   }
 
   // Step 2: Find and update the business's notification preferences
@@ -108,7 +108,7 @@ const updateBusinessNotificationPreferences = async (
 
   if (!preferences) {
     throw new AppError(
-      status.NOT_FOUND,
+      httpStatus.NOT_FOUND,
       'Preferences not found for this business'
     );
   }
@@ -125,7 +125,7 @@ const updateBusinessSecuritySettings = async (
   // Step 1: Find the business
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
   }
 
   // Step 2: Find and update the business's notification preferences
@@ -137,7 +137,7 @@ const updateBusinessSecuritySettings = async (
 
   if (!preferences) {
     throw new AppError(
-      status.NOT_FOUND,
+      httpStatus.NOT_FOUND,
       'Preferences not found for this business'
     );
   }
@@ -150,7 +150,7 @@ const updateGuestSpots = async (user: IAuth, data: any) => {
   // Find the business
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
   }
 
   // Update guest spots logic
@@ -168,7 +168,7 @@ const updateTimeOff = async (user: IAuth, data: any) => {
 
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
   }
 
   // Add the time-off logic
@@ -182,7 +182,7 @@ const removeArtistFromDB = async (user: IAuth, artistId: string) => {
   const business = await Business.findOne({ auth: user._id });
 
   if (!business) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found!');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   return await Business.findByIdAndUpdate(

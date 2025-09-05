@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MessageModel } from './message.model';
 import mongoose from 'mongoose';
-import status from 'http-status';
+import httpStatus from 'http-status';
 import { AppError } from '../../utils';
 import { IMessage } from './message.interface';
 
 const fetchMessagesByRoomId = async (roomId: string): Promise<IMessage[]> => {
   if (!roomId) {
-    throw new AppError(status.BAD_REQUEST, 'Room ID is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Room ID is required');
   }
 
   // Simple fetch, no transaction needed as no writes happen
@@ -22,19 +22,19 @@ const fetchMessagesByRoomId = async (roomId: string): Promise<IMessage[]> => {
 
 const createMessage = async (payload: Partial<IMessage>): Promise<IMessage> => {
   if (!payload.senderId) {
-    throw new AppError(status.BAD_REQUEST, 'Sender id is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Sender id is required');
   }
 
   if (!payload.receiverId) {
-    throw new AppError(status.BAD_REQUEST, 'Receiver id is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Receiver id is required');
   }
 
   if (!payload.message) {
-    throw new AppError(status.BAD_REQUEST, 'Message id is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message id is required');
   }
 
   if (!payload.roomId) {
-    throw new AppError(status.BAD_REQUEST, 'Room id is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Room id is required');
   }
 
   return await MessageModel.create(payload);
@@ -42,7 +42,7 @@ const createMessage = async (payload: Partial<IMessage>): Promise<IMessage> => {
 
 const deleteMessage = async (messageId: string): Promise<IMessage | null> => {
   if (!messageId) {
-    throw new AppError(status.BAD_REQUEST, 'Message ID is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message ID is required');
   }
 
   const mongoSession = await mongoose.startSession();
@@ -57,7 +57,7 @@ const deleteMessage = async (messageId: string): Promise<IMessage | null> => {
     );
 
     if (!message) {
-      throw new AppError(status.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
     }
 
     await mongoSession.commitTransaction();
@@ -68,7 +68,7 @@ const deleteMessage = async (messageId: string): Promise<IMessage | null> => {
     await mongoSession.abortTransaction();
     mongoSession.endSession();
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       `Failed to delete message: ${error.message}`
     );
   }
@@ -78,7 +78,7 @@ const markMessageAsRead = async (
   messageId: string
 ): Promise<IMessage | null> => {
   if (!messageId) {
-    throw new AppError(status.BAD_REQUEST, 'Message ID is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message ID is required');
   }
 
   try {
@@ -89,13 +89,13 @@ const markMessageAsRead = async (
     );
 
     if (!message) {
-      throw new AppError(status.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
     }
 
     return message;
   } catch (error: any) {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       `Failed to mark message as read: ${error.message}`
     );
   }
@@ -106,7 +106,7 @@ const pinMessage = async (
   pin: boolean
 ): Promise<IMessage | null> => {
   if (!messageId) {
-    throw new AppError(status.BAD_REQUEST, 'Message ID is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message ID is required');
   }
 
   try {
@@ -117,13 +117,13 @@ const pinMessage = async (
     );
 
     if (!message) {
-      throw new AppError(status.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
     }
 
     return message;
   } catch (error: any) {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       `Failed to update pin status: ${error.message}`
     );
   }
@@ -134,11 +134,11 @@ const updateMessagePriority = async (
   priority: 'low' | 'normal' | 'high'
 ): Promise<IMessage | null> => {
   if (!messageId) {
-    throw new AppError(status.BAD_REQUEST, 'Message ID is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message ID is required');
   }
 
   if (!['low', 'normal', 'high'].includes(priority)) {
-    throw new AppError(status.BAD_REQUEST, 'Invalid priority level');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid priority level');
   }
 
   try {
@@ -149,13 +149,13 @@ const updateMessagePriority = async (
     );
 
     if (!message) {
-      throw new AppError(status.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
     }
 
     return message;
   } catch (error: any) {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       `Failed to update priority: ${error.message}`
     );
   }

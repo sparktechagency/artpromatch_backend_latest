@@ -1,6 +1,6 @@
 import { AppError } from '../../utils';
 import { IAuth } from '../Auth/auth.interface';
-import status from 'http-status';
+import httpStatus from 'http-status';
 import Folder from './folder.model';
 import { TFolderPayload } from './folder.validation';
 import fs from 'fs';
@@ -12,14 +12,14 @@ const saveFolderIntoDB = async (
   files: Express.Multer.File[] | undefined
 ) => {
   if (!files || !files?.length) {
-    throw new AppError(status.BAD_REQUEST, 'Files are required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Files are required');
   }
 
   const folder = await Folder.findOne({ name: payload.name, auth: user._id });
 
   if (folder) {
     files?.forEach((file) => fs.unlink(file.path, () => {}));
-    throw new AppError(status.BAD_REQUEST, 'Folder name already exists!');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Folder name already exists!');
   }
 
   return await Folder.create({
@@ -33,13 +33,13 @@ const removeFolderFromDB = async (folderId: string) => {
   const folder = await Folder.findByIdAndDelete(folderId);
 
   if (!folder) {
-    throw new AppError(status.NOT_FOUND, 'Folder not exists');
+    throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists');
   }
 
   const artist = await Artist.findOne({ auth: folder.auth });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
 
   return await Artist.findByIdAndUpdate(

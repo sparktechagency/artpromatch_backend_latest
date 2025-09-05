@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
@@ -69,9 +68,10 @@ const globalErrorHandler = (
 
   return res.status(err?.status || statusCode).json({
     success: false,
+    statusCode: err?.status || statusCode,
     message,
     errorMessages: errors,
-    ...(process.env.NODE_ENV === "development" && { stack: err?.stack }),
+    ...(process.env.NODE_ENV === 'development' && { stack: err?.stack }),
   });
 };
 

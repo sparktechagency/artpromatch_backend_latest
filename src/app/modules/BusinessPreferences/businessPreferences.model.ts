@@ -63,10 +63,7 @@ const businessPreferencesSchema = new Schema(
     // Connected Accounts
     connectedAccounts: [connectedAccountSchema],
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 const BusinessPreferences = mongoose.model(

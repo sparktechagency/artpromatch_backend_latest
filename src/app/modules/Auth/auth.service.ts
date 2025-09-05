@@ -1,13 +1,16 @@
-/* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import bcrypt from 'bcryptjs';
 import fs from 'fs';
-import status from 'http-status';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import httpStatus from 'http-status';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import config from '../../config';
-import { generateOtp, verifyToken } from '../../lib';
+import {
+  createAccessToken,
+  createRefreshToken,
+  generateOtp,
+  verifyToken,
+} from '../../lib';
 import {
   TDeactiveAccountPayload,
   TProfileFileFields,
@@ -20,150 +23,277 @@ import Business from '../Business/business.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
 import Client from '../Client/client.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
-import { ROLE } from './auth.constant';
+import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
-import Auth from './auth.model';
+import { Auth } from './auth.model';
 import { AuthValidation, TProfilePayload } from './auth.validation';
 import sendOtpSms from '../../utils/sendOtpSms';
 
-const createAuth = async (payload: IAuth) => {
-  const existingUser = await Auth.findOne({ email: payload.email });
+const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
 
-  if (existingUser) {
-    throw new AppError(status.BAD_REQUEST, 'User already exists');
+// 1. createAuth
+const createAuth = async (payload: IAuth) => {
+  // const existingUser = await Auth.findOne({ email: payload.email });
+  const existingUser = await Auth.isUserExistsByEmail(payload.email);
+
+  // if user exists but unverified
+  if (existingUser && !existingUser.isVerified) {
+    const now = new Date();
+
+    // if Token/OTP expired and sending new otp
+    if (!existingUser.otpExpiry || existingUser.otpExpiry < now) {
+      const otp = generateOtp();
+      await sendOtpSms(payload.phoneNumber, otp);
+
+      existingUser.otp = otp;
+      existingUser.otpExpiry = new Date(
+        now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000
+      );
+      await existingUser.save();
+
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'You have an unverified account, verify it with the new OTP sent to you!'
+      );
+    }
+
+    // if OTP is valid till now
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You have an unverified account, verify it now!'
+    );
   }
 
+  // if user is already verified
+  if (existingUser && existingUser.isVerified) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'User already exists!');
+  }
+
+  //  OTP generating and sending if user is new
   const otp = generateOtp();
   await sendOtpSms(payload.phoneNumber, otp);
-  const token = jwt.sign({ ...payload, otp }, config.jwt_access_secret!, {
-    expiresIn: '5m',
+
+  // Save new user as unverified
+  const now = new Date();
+  const newUser = await Auth.create({
+    ...payload,
+    otp,
+    otpExpiry: new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000),
+    isVerified: false,
   });
 
-  return { token, otp };
-};
-
-const signupOtpSendAgain = async (token: string) => {
-  const decoded = jwt.decode(token) as JwtPayload;
-
-  const authData = {
-    email: decoded.email,
-    phoneNumber: decoded.phoneNumber,
-    password: decoded.password,
-  };
-
-  const otp = generateOtp();
-  // await sendOtpSms(decoded.phoneNumber, otp);
-  const newToken = jwt.sign({ ...authData, otp }, config.jwt_access_secret!, {
-    expiresIn: '5m',
-  });
-
-  return { token: newToken, otp };
-};
-
-const saveAuthIntoDB = async (token: string, otp: number) => {
-  const decoded = jwt.verify(token, config.jwt_access_secret!) as JwtPayload;
-
-  const existingUser = await Auth.findOne({ email: decoded.email });
-
-  if (existingUser) {
-    throw new AppError(status.BAD_REQUEST, 'User already exists');
-  }
-
-  if (decoded?.otp !== otp) {
-    throw new AppError(status.BAD_REQUEST, 'Invalid OTP');
-  }
-
-  const result = await Auth.create({
-    fullName: decoded.fullName,
-    phoneNumber: decoded.phoneNumber,
-    email: decoded.email,
-    password: decoded.password,
-    isVerified: true,
-  });
-
-  if (!result) {
-    throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
-      'Failed to save user info'
-    );
-  }
-
-  const accessToken = result.generateAccessToken();
-  const refreshToken = result.generateRefreshToken();
-
-  return { accessToken, refreshToken };
-};
-
-const signinIntoDB = async (payload: { email: string; password: string }) => {
-  const user = await Auth.findOne({ email: payload.email }).select('+password');
-
-  if (!user) {
-    throw new AppError(status.NOT_FOUND, 'User not exists!');
-  }
-
-  if (user.isSocialLogin) {
-    throw new AppError(
-      status.BAD_REQUEST,
-      'This account is registered via social login. Please sign in using your social account.'
-    );
-  }
-
-  const isPasswordCorrect = await bcrypt.compare(
-    payload.password,
-    user.password
-  );
-
-  if (!isPasswordCorrect) {
-    throw new AppError(status.UNAUTHORIZED, 'Invalid credentials');
-  }
-
-  const accessToken = user.generateAccessToken();
-  const refreshToken = user.generateRefreshToken();
+  // const token = jwt.sign({ ...payload, otp }, config.jwt.otp_secret!, {
+  //   expiresIn: config.jwt.otp_secret_expires_in!,
+  // } as SignOptions);
 
   return {
-    _id: user._id,
-    fullName: user.fullName,
+    userEmail: newUser.email,
+    // token
+  };
+};
+
+// 2. sendSignupOtpAgain
+const sendSignupOtpAgain = async (userEmail: string) => {
+  // const user = await Auth.findOne({ email: userEmail });
+  const user = await Auth.isUserExistsByEmail(userEmail);
+
+  if (!user) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You must sign up first to get an OTP!'
+    );
+  }
+
+  if (user.isVerified) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This account is already verified!'
+    );
+  }
+
+  const now = new Date();
+
+  // sending new OTP if previous one is expired
+  if (!user.otpExpiry || user.otpExpiry < now) {
+    const otp = generateOtp();
+
+    // send OTP via SMS
+    await sendOtpSms(user.phoneNumber, otp);
+
+    user.otp = otp;
+    user.otpExpiry = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+    await user.save();
+
+    // new token (optional, if needed to verify OTP from client side)
+    // const newToken = jwt.sign(
+    //   { email: user.email, phoneNumber: user.phoneNumber },
+    //   config.jwt.otp_secret!,
+    //   { expiresIn: config.jwt.otp_secret_expires_in! } as SignOptions
+    // );
+
+    return {
+      userEmail: user.email,
+      // token: newToken,
+    };
+  }
+
+  // if OTP is still valid
+  await sendOtpSms(user.phoneNumber, user.otp);
+  throw new AppError(
+    httpStatus.BAD_REQUEST,
+    'An OTP was already sent. Please wait until it expires before requesting a new one.'
+  );
+};
+
+// 3. verifySignupOtpIntoDB
+const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
+  // const user = await Auth.findOne({ email: userEmail });
+  const user = await Auth.isUserExistsByEmail(userEmail);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  if (user.isVerified) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This account is already verified!'
+    );
+  }
+
+  // If OTP is invalid, throw error
+  if (user?.otp !== otp) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP!');
+  }
+
+  // Check if OTP is expired
+  const now = new Date();
+  if (!user.otpExpiry || user.otpExpiry < now) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'OTP has expired. Please request a new one!'
+    );
+  }
+
+  // Mark user as verified
+  user.isVerified = true;
+  await user.save();
+
+  // Prepare user payload for tokens
+  const userData = {
+    id: user._id.toString(),
     email: user.email,
-    isProfile: user.isProfile,
     role: user.role,
+    image: user?.image || defaultUserImage,
+    fullName: user?.fullName,
+  };
+
+  // Generate access and refresh tokens
+  const accessToken = createAccessToken(userData);
+  const refreshToken = createRefreshToken(userData);
+
+  // Return tokens to client
+  return {
+    // user: userData,
     accessToken,
     refreshToken,
   };
 };
 
-const saveProfileIntoDB = async (
+// 4. signinIntoDB
+const signinIntoDB = async (payload: { email: string; password: string }) => {
+  // const user = await Auth.findOne({ email: payload.email }).select('+password');
+  const user = await Auth.isUserExistsByEmail(payload.email);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User does not exist!');
+  }
+
+  if (!user.isVerified) {
+    const otp = generateOtp();
+    await sendOtpSms(user.phoneNumber, otp);
+
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+    await user.save();
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Verify your account with the new OTP in your phone!'
+    );
+  }
+
+  if (user.isSocialLogin) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This account is registered via social login. Please sign in using your social account.'
+    );
+  }
+  // Validate password
+  const isPasswordCorrect = await user.isPasswordMatched(payload.password);
+
+  if (!isPasswordCorrect) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid credentials!');
+  }
+
+  // Prepare user data for tokens
+  const userData = {
+    id: user._id.toString(),
+    fullName: user?.fullName,
+    email: user.email,
+    role: user.role,
+    image: user?.image || defaultUserImage,
+  };
+
+  // Generate tokens
+  const accessToken = createAccessToken(userData);
+  const refreshToken = createRefreshToken(userData);
+
+  // Return tokens and optionally user info
+  return {
+    // user: userData,
+    accessToken,
+    refreshToken,
+  };
+};
+
+// 5. createProfileIntoDB
+const createProfileIntoDB = async (
   payload: TProfilePayload,
   user: IAuth,
   files: TProfileFileFields
 ) => {
-  // 🔐 Prevent creating multiple profiles for same user
+  // Prevent creating multiple profiles for same user
   if (user.isProfile) {
     throw new AppError(
-      status.BAD_REQUEST,
-      'Profile already saved for this user'
+      httpStatus.BAD_REQUEST,
+      'Your profile is already saved!'
     );
   }
 
-  // 🔍 Destructure relevant fields from the payload
+  // Destructure relevant fields from the payload
   const {
     role,
-    favoriteTattoos,
     location,
+
     radius,
     lookingFor,
+    favoriteTattoos,
     notificationPreferences,
+
     artistType,
-    city,
     expertise,
     studioName,
+    city,
+
     businessType,
     servicesOffered,
-    operatingHours,
     contactNumber,
     contactEmail,
+    operatingHours,
   } = payload;
 
-  // 📂 Extract file paths for ID verification images and business documents
+  // Extract file paths for ID verification images and business documents
   const idCardFront = files.idFrontPart?.[0]?.path || '';
   const idCardBack = files.idBackPart?.[0]?.path || '';
   const selfieWithId = files.selfieWithId?.[0]?.path || '';
@@ -174,32 +304,28 @@ const saveProfileIntoDB = async (
   const taxIdOrEquivalent = files.taxIdOrEquivalent?.[0]?.path || '';
   const studioLicense = files.studioLicense?.[0]?.path || '';
 
-  // 🧾 Start a MongoDB session for transaction
+  // Start a MongoDB session for transaction
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    /**
-     * ==========================
-     * 📌 CLIENT PROFILE CREATION
-     * ==========================
-     */
+    // CLIENT PROFILE CREATION
     if (role === ROLE.CLIENT) {
       const isExistClient = await Client.findOne({ auth: user._id });
       if (isExistClient) {
         throw new AppError(
-          status.BAD_REQUEST,
+          httpStatus.BAD_REQUEST,
           'Client data already saved in database'
         );
       }
 
       const clientPayload = {
+        auth: user._id,
         role,
-        favoriteTattoos,
         location,
         radius,
         lookingFor,
-        auth: user._id,
+        favoriteTattoos,
       };
 
       const [client] = await Client.create([clientPayload], { session });
@@ -231,10 +357,11 @@ const saveProfileIntoDB = async (
 
       return client;
     } else if (role === ROLE.ARTIST) {
+      // ARTIST PROFILE CREATION
       const isExistArtist = await Artist.findOne({ auth: user._id });
       if (isExistArtist) {
         throw new AppError(
-          status.BAD_REQUEST,
+          httpStatus.BAD_REQUEST,
           'Artist profile already exists.'
         );
       }
@@ -274,10 +401,11 @@ const saveProfileIntoDB = async (
 
       return artist;
     } else if (role === ROLE.BUSINESS) {
+      // BUSINESS PROFILE CREATION
       const isExistBusiness = await Business.findOne({ auth: user._id });
       if (isExistBusiness) {
         throw new AppError(
-          status.BAD_REQUEST,
+          httpStatus.BAD_REQUEST,
           'Business profile already exists.'
         );
       }
@@ -337,6 +465,7 @@ const saveProfileIntoDB = async (
               fs.unlinkSync(file.path);
             }
           } catch (deleteErr) {
+            // eslint-disable-next-line no-console
             console.warn(
               'Failed to delete uploaded file:',
               file.path,
@@ -347,31 +476,358 @@ const saveProfileIntoDB = async (
       });
     }
 
-    // 🧾 Re-throw application-specific errors
+    // Re-throw application-specific errors
     if (error instanceof AppError) {
       throw error;
     }
 
-    // 🧾 Throw generic internal server error
+    // Throw generic internal server error
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       error?.message || 'Failed to create profile. Please try again.'
     );
   }
 };
 
+// // clientCreateProfileIntoDB
+// const clientCreateProfileIntoDB = async (
+//   payload: TProfilePayload,
+//   user: IAuth
+// ) => {
+//   // Prevent creating multiple profiles for same user
+//   if (user.isProfile) {
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       'Your profile is already saved!'
+//     );
+//   }
+
+//   // Destructure relevant fields from the payload
+//   const {
+//     role,
+//     location,
+//     radius,
+//     lookingFor,
+//     favoriteTattoos,
+//     notificationPreferences,
+//   } = payload;
+
+//   // Start a MongoDB session for transaction
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     // CLIENT PROFILE CREATION
+//     const isExistClient = await Client.findOne({ auth: user._id });
+//     if (isExistClient) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         'Client data already saved in database'
+//       );
+//     }
+
+//     const clientPayload = {
+//       auth: user._id,
+//       role,
+//       location,
+//       radius,
+//       lookingFor,
+//       favoriteTattoos,
+//     };
+
+//     const [client] = await Client.create([clientPayload], { session });
+
+//     const clientPreferenceData: any = {
+//       clientId: client._id,
+//       notificationPreferences,
+//     };
+
+//     if (user?.isSocialLogin) {
+//       clientPreferenceData.connectedAccounts = [
+//         {
+//           provider: 'google',
+//           connectedOn: user?.createdAt || new Date(),
+//         },
+//       ];
+//     }
+
+//     await Auth.findByIdAndUpdate(
+//       user._id,
+//       { role: ROLE.CLIENT, isProfile: true },
+//       { session }
+//     );
+
+//     await ClientPreferences.create([clientPreferenceData], { session });
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     return client;
+//   } catch (error: any) {
+//     // ❌ Roll back transaction in case of any error
+//     await session.abortTransaction();
+//     await session.endSession();
+
+//     // Re-throw application-specific errors
+//     if (error instanceof AppError) {
+//       throw error;
+//     }
+
+//     // Throw generic internal server error
+//     throw new AppError(
+//       httpStatus.INTERNAL_SERVER_ERROR,
+//       error?.message || 'Failed to create profile. Please try again.'
+//     );
+//   }
+// };
+
+// // artistCreateProfileIntoDB
+// const artistCreateProfileIntoDB = async (
+//   payload: TProfilePayload,
+//   user: IAuth,
+//   files: TProfileFileFields
+// ) => {
+//   // Prevent creating multiple profiles for same user
+//   if (user.isProfile) {
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       'Your profile is already saved!'
+//     );
+//   }
+
+//   // Destructure relevant fields from the payload
+//   const { location, artistType, expertise, city } = payload;
+
+//   // Extract file paths for ID verification images and business documents
+//   const idCardFront = files.idFrontPart?.[0]?.path || '';
+//   const idCardBack = files.idBackPart?.[0]?.path || '';
+//   const selfieWithId = files.selfieWithId?.[0]?.path || '';
+
+//   // Start a MongoDB session for transaction
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     // ARTIST PROFILE CREATION
+//     const isExistArtist = await Artist.findOne({ auth: user._id });
+//     if (isExistArtist) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         'Artist profile already exists.'
+//       );
+//     }
+
+//     const artistPayload = {
+//       auth: user._id,
+//       type: artistType,
+//       expertise,
+//       location,
+//       city,
+//       idCardFront,
+//       idCardBack,
+//       selfieWithId,
+//     };
+
+//     const [artist] = await Artist.create([artistPayload], { session });
+
+//     const [artistPreferences] = await ArtistPreferences.create(
+//       [{ artistId: artist._id }],
+//       { session }
+//     );
+
+//     await Auth.findByIdAndUpdate(
+//       user._id,
+//       { role: ROLE.ARTIST, isActive: false, isProfile: true },
+//       { session }
+//     );
+
+//     await Artist.findByIdAndUpdate(
+//       artist._id,
+//       { preferences: artistPreferences._id },
+//       { session }
+//     );
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     return artist;
+//   } catch (error: any) {
+//     // ❌ Roll back transaction in case of any error
+//     await session.abortTransaction();
+//     await session.endSession();
+
+//     // 🧼 Cleanup: Delete uploaded files to avoid storage bloat
+//     if (files && typeof files === 'object' && !Array.isArray(files)) {
+//       Object.values(files).forEach((fileArray) => {
+//         fileArray.forEach((file) => {
+//           try {
+//             if (file?.path && fs.existsSync(file.path)) {
+//               fs.unlinkSync(file.path);
+//             }
+//           } catch (deleteErr) {
+//             // eslint-disable-next-line no-console
+//             console.warn(
+//               'Failed to delete uploaded file:',
+//               file.path,
+//               deleteErr
+//             );
+//           }
+//         });
+//       });
+//     }
+
+//     // Re-throw application-specific errors
+//     if (error instanceof AppError) {
+//       throw error;
+//     }
+
+//     // Throw generic internal server error
+//     throw new AppError(
+//       httpStatus.INTERNAL_SERVER_ERROR,
+//       error?.message || 'Failed to create profile. Please try again.'
+//     );
+//   }
+// };
+
+// // businessCreateProfileIntoDB
+// const businessCreateProfileIntoDB = async (
+//   payload: TProfilePayload,
+//   user: IAuth,
+//   files: TProfileFileFields
+// ) => {
+//   // Prevent creating multiple profiles for same user
+//   if (user.isProfile) {
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       'Your profile is already saved!'
+//     );
+//   }
+
+//   // Destructure relevant fields from the payload
+//   const {
+//     location,
+//     studioName,
+//     city,
+//     businessType,
+//     servicesOffered,
+//     contactNumber,
+//     contactEmail,
+//     operatingHours,
+//   } = payload;
+
+//   // Business-specific file extractions
+//   const registrationCertificate =
+//     files.registrationCertificate?.[0]?.path || '';
+//   const taxIdOrEquivalent = files.taxIdOrEquivalent?.[0]?.path || '';
+//   const studioLicense = files.studioLicense?.[0]?.path || '';
+
+//   // Start a MongoDB session for transaction
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     // BUSINESS PROFILE CREATION
+//     const isExistBusiness = await Business.findOne({ auth: user._id });
+//     if (isExistBusiness) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         'Business profile already exists.'
+//       );
+//     }
+
+//     const businessPayload = {
+//       auth: user._id,
+//       studioName,
+//       businessType,
+//       servicesOffered,
+//       location,
+//       city,
+//       contact: {
+//         phone: contactNumber,
+//         email: contactEmail,
+//       },
+//       operatingHours,
+//       registrationCertificate,
+//       taxIdOrEquivalent,
+//       studioLicense,
+//     };
+
+//     const [business] = await Business.create([businessPayload], { session });
+
+//     const [businessPreferences] = await BusinessPreferences.create(
+//       [{ businessId: business._id }],
+//       { session }
+//     );
+
+//     await Auth.findByIdAndUpdate(
+//       user._id,
+//       { role: ROLE.BUSINESS, isActive: false, isProfile: true },
+//       { session }
+//     );
+
+//     await Business.findByIdAndUpdate(
+//       business._id,
+//       { preferences: businessPreferences._id },
+//       { session }
+//     );
+
+//     await session.commitTransaction();
+//     await session.endSession();
+
+//     return business;
+//   } catch (error: any) {
+//     // ❌ Roll back transaction in case of any error
+//     await session.abortTransaction();
+//     await session.endSession();
+
+//     // 🧼 Cleanup: Delete uploaded files to avoid storage bloat
+//     if (files && typeof files === 'object' && !Array.isArray(files)) {
+//       Object.values(files).forEach((fileArray) => {
+//         fileArray.forEach((file) => {
+//           try {
+//             if (file?.path && fs.existsSync(file.path)) {
+//               fs.unlinkSync(file.path);
+//             }
+//           } catch (deleteErr) {
+//             // eslint-disable-next-line no-console
+//             console.warn(
+//               'Failed to delete uploaded file:',
+//               file.path,
+//               deleteErr
+//             );
+//           }
+//         });
+//       });
+//     }
+
+//     // Re-throw application-specific errors
+//     if (error instanceof AppError) {
+//       throw error;
+//     }
+
+//     // Throw generic internal server error
+//     throw new AppError(
+//       httpStatus.INTERNAL_SERVER_ERROR,
+//       error?.message || 'Failed to create profile. Please try again.'
+//     );
+//   }
+// };
+
+// 6. socialLoginServices
 const socialLoginServices = async (payload: TSocialLoginPayload) => {
-  const { email, fcmToken, image, fullName, address } = payload;
+  const { email, fcmToken, image, fullName, phoneNumber, address } = payload;
 
   // Check if user exists
-  const auth = await Auth.findOne({ email });
+  // const user = await Auth.findOne({ email });
+  const user = await Auth.isUserExistsByEmail(email);
 
-  if (!auth) {
+  if (!user) {
     const authRes = await Auth.create({
       email,
       fcmToken,
       image,
       fullName,
+      phoneNumber,
       address,
       isSocialLogin: true,
       isVerified: true,
@@ -379,13 +835,24 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
 
     if (!authRes) {
       throw new AppError(
-        status.INTERNAL_SERVER_ERROR,
-        'Fail to create user into database'
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to create user into database!'
       );
     }
 
-    const accessToken = authRes.generateAccessToken();
-    const refreshToken = authRes.generateRefreshToken();
+    // const accessToken = authRes.generateAccessToken();
+    // const refreshToken = authRes.generateRefreshToken();
+
+    const userData = {
+      id: authRes._id.toString(),
+      email: authRes.email,
+      role: authRes.role,
+      image: authRes?.image || defaultUserImage,
+      fullName: authRes?.fullName,
+    };
+
+    const accessToken = createAccessToken(userData);
+    const refreshToken = createRefreshToken(userData);
 
     await Auth.findByIdAndUpdate(authRes._id, { refreshToken });
 
@@ -402,20 +869,31 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       refreshToken,
     };
   } else {
-    const accessToken = auth.generateAccessToken();
-    const refreshToken = auth.generateRefreshToken();
+    // const accessToken = auth.generateAccessToken();
+    // const refreshToken = auth.generateRefreshToken();
 
-    auth.refreshToken = refreshToken;
-    await auth.save({ validateBeforeSave: false });
+    const userData = {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      image: user?.image || defaultUserImage,
+      fullName: user?.fullName,
+    };
+
+    const accessToken = createAccessToken(userData);
+    const refreshToken = createRefreshToken(userData);
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
     return {
       response: {
-        fullName: auth.fullName,
-        email: auth.email,
-        phoneNumber: auth.phoneNumber,
-        role: auth.role,
-        image: auth.image,
-        isProfile: auth.isProfile,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        image: user.image,
+        isProfile: user.isProfile,
       },
       accessToken,
       refreshToken,
@@ -423,12 +901,13 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
   }
 };
 
-const updateProfilePhoto = async (
+// 7. updateProfilePhotoIntoDB
+const updateProfilePhotoIntoDB = async (
   user: IAuth,
   file: Express.Multer.File | undefined
 ) => {
   if (!file?.path) {
-    throw new AppError(status.BAD_REQUEST, 'File is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'File is required!');
   }
 
   // Delete the previous image if exists
@@ -449,117 +928,169 @@ const updateProfilePhoto = async (
   return res;
 };
 
+// 8. changePasswordIntoDB
 const changePasswordIntoDB = async (
   accessToken: string,
-  payload: z.infer<typeof AuthValidation.passwordChangeSchema.shape.body>
+  payload: z.infer<typeof AuthValidation.changePasswordSchema.shape.body>
 ) => {
-  const { id } = await verifyToken(accessToken);
+  const { id, iat } = verifyToken(
+    accessToken,
+    config.jwt.access_secret!
+  ) as JwtPayload;
 
-  console.log('id');
   const user = await Auth.findOne({ _id: id, isActive: true }).select(
     '+password'
   );
 
   if (!user) {
-    throw new AppError(status.NOT_FOUND, 'User not exists');
+    throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
   }
 
-  const isCredentialsCorrect = await user.isPasswordCorrect(
+  if (
+    user.passwordChangedAt &&
+    user.isJWTIssuedBeforePasswordChanged(iat as number)
+  ) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+  }
+
+  const isCredentialsCorrect = await user.isPasswordMatched(
     payload.oldPassword
   );
 
   if (!isCredentialsCorrect) {
-    throw new AppError(status.UNAUTHORIZED, 'Current password is not correct');
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      'Current password is not correct!'
+    );
   }
 
   user.password = payload.newPassword;
+  user.passwordChangedAt = new Date();
+
   await user.save();
 
   return null;
 };
 
+// 9. forgotPassword
 const forgotPassword = async (email: string) => {
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
-    throw new AppError(status.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
 
-  const otp = generateOtp();
-  await user.save();
-  await sendOtpEmail(email, otp, user.fullName || 'Guest');
+  const now = new Date();
 
-  const token = jwt.sign(
-    {
-      email,
-      verificationCode: otp,
-      verificationExpiry: new Date(Date.now() + 5 * 60 * 1000),
-    },
-    config.jwt_access_secret!,
-    {
-      expiresIn: '5m',
-    }
-  );
+  // If OTP exists and not expired, reuse it
+  if (user.otp && user.otpExpiry && now < user.otpExpiry) {
+    // Do nothing, just reuse existing OTP
+    const remainingMs = user.otpExpiry.getTime() - now.getTime();
+    const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+
+    // await sendOtpEmail(email, user.otp, user.fullName || 'Guest');
+
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      `Last OTP is valid till now, use that in ${remainingMinutes} minutes!`
+    );
+  } else {
+    // Generate new OTP
+    const otp = generateOtp();
+    const otpExpiry = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+    await user.save();
+
+    // Send OTP
+    await sendOtpEmail(email, otp, user.fullName || 'Guest');
+  }
+
+  // Issue token (just with email)
+  const token = jwt.sign({ email }, config.jwt.otp_secret!, {
+    expiresIn: config.jwt.otp_secret_expires_in!,
+  } as SignOptions);
 
   return { token };
 };
 
+// 10. verifyOtpForForgetPassword
 const verifyOtpForForgetPassword = async (payload: {
   token: string;
   otp: string;
 }) => {
-  const { email, verificationCode, verificationExpiry } = (await verifyToken(
-    payload.token
-  )) as any;
+  const { email } = verifyToken(payload.token, config.jwt.otp_secret!) as any;
+
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
-    throw new AppError(status.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  // Check if the OTP matches
-  if (verificationCode !== payload.otp || !verificationExpiry) {
-    throw new AppError(status.BAD_REQUEST, 'Invalid OTP');
+  // Check if OTP expired
+  if (!user.otp || !user.otpExpiry || Date.now() > user.otpExpiry.getTime()) {
+    // Generate and send new OTP
+    const newOtp = generateOtp();
+    const newExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    user.otp = newOtp;
+    user.otpExpiry = newExpiry;
+    await user.save();
+
+    await sendOtpEmail(email, newOtp, user.fullName || 'Guest');
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'OTP expired. A new OTP has been sent!'
+    );
   }
 
-  // Check if OTP has expired
-  if (Date.now() > new Date(verificationExpiry).getTime()) {
-    throw new AppError(status.BAD_REQUEST, 'OTP has expired');
+  // Check if OTP matches
+  if (user.otp !== payload.otp) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP!');
   }
 
+  // ✅ OTP verified → issue reset password token
   const resetPasswordToken = jwt.sign(
     {
       email: user.email,
       isResetPassword: true,
     },
-    config.jwt_access_secret!,
-    {
-      expiresIn: '5d',
-    }
+    config.jwt.otp_secret!,
+    { expiresIn: config.jwt.otp_secret_expires_in! } as SignOptions
   );
 
   return { resetPasswordToken };
 };
 
+// 11. resetPasswordIntoDB
 const resetPasswordIntoDB = async (
   resetPasswordToken: string,
   newPassword: string
 ) => {
-  const { email } = (await verifyToken(resetPasswordToken)) as any;
+  const payload = verifyToken(resetPasswordToken, config.jwt.otp_secret!) as {
+    email: string;
+    isResetPassword?: boolean;
+  };
 
-  const user = await Auth.findOne({ email, isActive: true });
-
-  if (!user) {
-    throw new AppError(status.NOT_FOUND, 'User not found');
+  if (!payload?.isResetPassword) {
+    throw new AppError(httpStatus.FORBIDDEN, 'Invalid reset password token');
   }
 
-  // Update the user's password
+  const user = await Auth.findOne({ email: payload.email, isActive: true });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
   user.password = newPassword;
-  await user.save();
+  await user.save({ validateBeforeSave: true });
 
   return null;
 };
 
+// 12. fetchProfileFromDB
 const fetchProfileFromDB = async (user: IAuth) => {
   if (user?.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id }).populate([
@@ -568,11 +1099,14 @@ const fetchProfileFromDB = async (user: IAuth) => {
         select: 'fullName image email phoneNumber isProfile',
       },
     ]);
+    // .lean();
 
     const preference = await ClientPreferences.findOne({
       clientId: client?._id,
-    }).select('-clientId -updatedAt -createdAt -__v');
+    }).select('-clientId -updatedAt -createdAt');
+    // .lean();
 
+    // return { ...client, preference };
     return { ...client?.toObject(), preference };
   } else if (user?.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id }).populate([
@@ -590,7 +1124,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
 
     const preference = await ArtistPreferences.findOne({
       artistId: artist?._id,
-    }).select('-artistId -updatedAt -createdAt -__v');
+    }).select('-artistId -updatedAt -createdAt');
 
     return { ...artist?.toObject(), preference };
   } else if (user?.role === ROLE.BUSINESS) {
@@ -611,7 +1145,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
 
     const preference = await BusinessPreferences.findOne({
       businessId: business?._id,
-    }).select('-businessId -updatedAt -createdAt -__v');
+    }).select('-businessId -updatedAt -createdAt');
 
     return { ...business?.toObject(), preference };
   } else if (user?.role === ROLE.ADMIN || user?.role === ROLE.SUPER_ADMIN) {
@@ -619,6 +1153,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
   }
 };
 
+// 13. fetchAllConnectedAcount
 const fetchAllConnectedAcount = async (user: IAuth) => {
   let currentUser;
 
@@ -631,34 +1166,32 @@ const fetchAllConnectedAcount = async (user: IAuth) => {
   }
 
   if (!currentUser) {
-    throw new AppError(status.NOT_FOUND, 'profile not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'profile not found');
   }
 
-  console.log(currentUser);
   const result = await ClientPreferences.findOne(
     { clientId: currentUser._id },
-    { connectedAccounts: 1, _id: 0 }
+    { connectedAccounts: 1, _id: 0 } // projection
   );
 
   return result;
 };
 
-const deactiveUserCurrentAccount = async (
+// 14. deactivateUserAccountFromDB
+const deactivateUserAccountFromDB = async (
   user: IAuth,
   payload: TDeactiveAccountPayload
 ) => {
-  console.log(user);
   const { email, password, deactivationReason } = payload;
+
   const currentUser = await Auth.findOne({ _id: user._id, email: email });
 
-  if (!currentUser) throw new AppError(status.NOT_FOUND, 'User not found');
-  console.log(currentUser);
-  console.log(currentUser.password, password);
+  if (!currentUser) throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
 
-  const isPasswordCorrect = currentUser.isPasswordCorrect(password);
+  const isPasswordCorrect = currentUser.isPasswordMatched(password);
 
   if (!isPasswordCorrect) {
-    throw new AppError(status.BAD_REQUEST, 'Invalid credentials');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials');
   }
 
   const result = await Auth.findByIdAndUpdate(
@@ -672,17 +1205,19 @@ const deactiveUserCurrentAccount = async (
     },
     { new: true, select: 'email fullName isDeactivated deactivationReason' }
   );
+
   return result;
 };
 
-// delete user
-const deleteUserAccount = async (user: IAuth) => {
+// 15. deleteSpecificUserAccount
+const deleteSpecificUserAccount = async (user: IAuth) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const currentUser = await Auth.findById(user._id).session(session);
-    if (!currentUser) throw new AppError(status.NOT_FOUND, 'User not found');
+    if (!currentUser)
+      throw new AppError(httpStatus.NOT_FOUND, 'User not found');
 
     currentUser.isDeleted = true;
     currentUser.isDeactivated = false;
@@ -704,14 +1239,14 @@ const deleteUserAccount = async (user: IAuth) => {
       if (client) {
         const result = await Client.deleteOne({ _id: client._id }, { session });
         if (result.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Client deletion failed!');
 
         const prefResult = await ClientPreferences.deleteOne(
           { clientId: client._id },
           { session }
         );
         if (prefResult.deletedCount === 0)
-          throw new Error('Client deletion failed here');
+          throw new Error('Client deletion failed here!');
       }
     } else if (user.role === ROLE.ARTIST) {
       const artist = await Artist.findOne({ auth: user._id })
@@ -721,13 +1256,13 @@ const deleteUserAccount = async (user: IAuth) => {
       if (artist) {
         const result = await Artist.deleteOne({ _id: artist._id }, { session });
         if (result.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Artist deletion failed!');
         const prefResult = await ArtistPreferences.deleteOne(
           { artistId: artist._id },
           { session }
         );
         if (prefResult.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Artist deletion failed here!');
       }
     } else if (user.role === ROLE.BUSINESS) {
       const business = await Business.findOne({ auth: user._id })
@@ -740,13 +1275,13 @@ const deleteUserAccount = async (user: IAuth) => {
           { session }
         );
         if (result.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Business deletion failed!');
         const prefResult = await Business.deleteOne(
           { _id: business._id },
           { session }
         );
         if (prefResult.deletedCount === 0)
-          throw new Error('Client deletion failed');
+          throw new Error('Business deletion failed here!');
       }
     }
 
@@ -764,20 +1299,66 @@ const deleteUserAccount = async (user: IAuth) => {
   }
 };
 
+// 16. getAccessTokenFromServer
+const getAccessTokenFromServer = async (refreshToken: string) => {
+  // checking if the given token is valid
+  const decoded = verifyToken(refreshToken, config.jwt.refresh_secret!) as any;
+
+  const { email, iat } = decoded;
+
+  // checking if the user is exist
+  const user = await Auth.isUserExistsByEmail(email);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  // checking if the user is already deleted
+  const isDeleted = user?.isDeleted;
+  if (isDeleted) {
+    throw new AppError(httpStatus.FORBIDDEN, 'This account is deleted!');
+  }
+
+  // checking if the any hacker using a token even-after the user changed the password
+  if (
+    user.passwordChangedAt &&
+    user.isJWTIssuedBeforePasswordChanged(iat as number)
+  ) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+  }
+
+  const jwtPayload = {
+    id: user._id.toString(),
+    fullName: user.fullName,
+    email: user.email,
+    image: user.image || defaultUserImage,
+    role: user.role,
+  };
+
+  const accessToken = createAccessToken(jwtPayload);
+
+  return {
+    accessToken,
+  };
+};
+
 export const AuthService = {
   createAuth,
-  saveAuthIntoDB,
-  signupOtpSendAgain,
-  saveProfileIntoDB,
+  sendSignupOtpAgain,
+  verifySignupOtpIntoDB,
   signinIntoDB,
+  createProfileIntoDB,
+  // clientCreateProfileIntoDB,
+  // artistCreateProfileIntoDB,
+  // businessCreateProfileIntoDB,
   socialLoginServices,
-  updateProfilePhoto,
+  updateProfilePhotoIntoDB,
   changePasswordIntoDB,
   forgotPassword,
   verifyOtpForForgetPassword,
   resetPasswordIntoDB,
   fetchProfileFromDB,
   fetchAllConnectedAcount,
-  deactiveUserCurrentAccount,
-  deleteUserAccount,
+  deactivateUserAccountFromDB,
+  deleteSpecificUserAccount,
+  getAccessTokenFromServer,
 };

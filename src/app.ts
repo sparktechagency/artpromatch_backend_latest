@@ -8,7 +8,6 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable no-unused-vars */
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Application, NextFunction, Request, Response } from 'express';
@@ -57,6 +56,7 @@ app.use(
     ],
   })
 );
+
 app.use(cookieParser());
 
 // static files

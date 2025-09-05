@@ -1,6 +1,7 @@
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { BusinessService } from './business.service';
+import sendResponse from '../../utils/sendResponse';
 
 const updateBusinessProfile = asyncHandler(async (req, res) => {
   const result = await BusinessService.updateBusinessProfile(
@@ -8,15 +9,11 @@ const updateBusinessProfile = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Business profile updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business profile updated successfully!',
+    data: result,
+  });
 });
 
 const updateBusinessPreferences = asyncHandler(async (req, res) => {
@@ -25,15 +22,11 @@ const updateBusinessPreferences = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Business preferences updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business preferences updated successfully!',
+    data: result,
+  });
 });
 
 const updateBusinessNotificationPreferences = asyncHandler(async (req, res) => {
@@ -42,15 +35,11 @@ const updateBusinessNotificationPreferences = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Business notification preferences updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business notification preferences updated successfully!',
+    data: result,
+  });
 });
 
 const updateBusinessSecuritySettings = asyncHandler(async (req, res) => {
@@ -59,31 +48,31 @@ const updateBusinessSecuritySettings = asyncHandler(async (req, res) => {
     req.body
   );
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result,
-        'Business security and privacy settings updated successfully'
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business security and privacy settings updated successfully!',
+    data: result,
+  });
 });
 
 const updateAvailability = asyncHandler(async (req, res) => {
   const result = await BusinessService.updateGuestSpots(req.user, req.body);
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(status.OK, result, 'Guest spots updated successfully')
-    );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Guest spots updated successfully!',
+    data: result,
+  });
 });
 
 const updateTimeOff = asyncHandler(async (req, res) => {
   const result = await BusinessService.updateTimeOff(req.user, req.body);
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Time off updated successfully'));
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Time off updated successfully!',
+    data: result,
+  });
 });
 
 const removeArtist = asyncHandler(async (req, res) => {
@@ -91,9 +80,12 @@ const removeArtist = asyncHandler(async (req, res) => {
     req.user,
     req.params.artistId
   );
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Artist remove successfully'));
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist removed successfully!',
+    data: result,
+  });
 });
 
 export const BusinessController = {

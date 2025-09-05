@@ -1,6 +1,5 @@
 import { Logger } from './logger';
 import AppError from './AppError';
-import AppResponse from './AppResponse';
 import asyncHandler from './asyncHandler';
 import { deleteFile } from './deleteFile';
 import globalErrorHandler from './globalErrorHandler';
@@ -18,7 +17,6 @@ const options = {
 
 export {
   AppError,
-  AppResponse,
   asyncHandler,
   globalErrorHandler,
   notFound,

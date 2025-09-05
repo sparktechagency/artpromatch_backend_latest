@@ -1,4 +1,4 @@
-import status from 'http-status';
+import httpStatus from 'http-status';
 import { AppError } from '../../utils';
 import Folder from '../Folder/folder.model';
 import fs from 'fs';
@@ -15,13 +15,13 @@ const changeStatusOnFolder = async (folderId: string, permission: boolean) => {
   const folder = await Folder.findById(folderId);
 
   if (!folder) {
-    throw new AppError(status.NOT_FOUND, 'Folder not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Folder not found');
   }
 
   const artist = await Artist.findOne({ auth: folder.auth });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
 
   if (permission) {
@@ -64,7 +64,7 @@ const verifiedArtistByAdminIntoDB = async (artistId: string) => {
   );
 
   if (!result) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
 
   return result;
@@ -78,7 +78,7 @@ const verifiedBusinessByAdminIntoDB = async (businessId: string) => {
   );
 
   if (!result) {
-    throw new AppError(status.NOT_FOUND, 'business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'business not found');
   }
 
   return result;

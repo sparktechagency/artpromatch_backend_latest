@@ -1,16 +1,15 @@
 import httpStatus from 'http-status';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import config from '../config';
+import { JwtPayload } from 'jsonwebtoken';
 import { AppError, asyncHandler } from '../utils';
-import { TRole } from '../modules/Auth/auth.constant';
-import Auth from '../modules/Auth/auth.model';
-import { console } from 'inspector';
-
+import { ROLE, TRole } from '../modules/Auth/auth.constant';
+import { Auth } from '../modules/Auth/auth.model';
+import { verifyToken } from '../lib';
+import config from '../config';
 
 const auth = (...requiredRoles: TRole[]) => {
   return asyncHandler(async (req, res, next) => {
     const token =
-      req.header('Authorization')?.replace('Bearer ', '') ||
+      req.headers.authorization?.replace('Bearer ', '') ||
       req.cookies?.accessToken;
 
     // checking if the token is missing
@@ -19,12 +18,9 @@ const auth = (...requiredRoles: TRole[]) => {
     }
 
     // checking if the given token is valid
-    const decoded = jwt.verify(
-      token,
-      config.jwt_access_secret as string
-    ) as JwtPayload;
+    const decoded = verifyToken(token, config.jwt.access_secret!) as JwtPayload;
 
-    const { id } = decoded;
+    const { id, iat } = decoded;
 
     // checking if the user is exist
     const user = await Auth.findById(id);
@@ -32,20 +28,37 @@ const auth = (...requiredRoles: TRole[]) => {
     if (!user) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'User not exists!');
     }
-    
-    if(user.isDeleted){
+
+    if (user.isDeleted) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
-    
-    if(user.isDeactivated) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You account is Deactive now!');
+
+    if (user.isDeactivated) {
+      throw new AppError(
+        httpStatus.UNAUTHORIZED,
+        'You account is Deactive now!'
+      );
     }
 
-    if(!user.isActive){
-        throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    // checking if any hacker using a token even-after the user changed the password
+    if (
+      user.passwordChangedAt &&
+      user.isJWTIssuedBeforePasswordChanged(iat as number)
+    ) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
-    console.log("role",requiredRoles)
+    if (
+      (user.role === ROLE.ARTIST || user.role === ROLE.BUSINESS) &&
+      !user.isActive
+    ) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Your profile is not activated by admin yet'
+      );
+    } else if (user.role === ROLE.CLIENT && !user.isActive) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    }
 
     if (requiredRoles.length && !requiredRoles.includes(user.role)) {
       throw new AppError(

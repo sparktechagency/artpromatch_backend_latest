@@ -1,14 +1,18 @@
-/* eslint-disable no-unused-vars */
-import { Document, Model, Types } from 'mongoose';
+import { Document, Model, ObjectId } from 'mongoose';
 import { TRole } from './auth.constant';
 
+// Instance methods
 export interface IAuth extends Document {
+  _id: ObjectId;
   email: string;
-  fullName?: string;
+  fullName: string;
   phoneNumber: string;
   password: string;
+  passwordChangedAt?: Date;
   fcmToken?: string | null;
-  image?: string;
+  image: string;
+  otp: string;
+  otpExpiry: Date;
   role: TRole;
   isSocialLogin: boolean;
   refreshToken?: string | null;
@@ -16,20 +20,20 @@ export interface IAuth extends Document {
   isVerified: boolean;
   stripeAccountId: string;
   isDeactivated: boolean;
-  deactivationReason: String;
+  deactivationReason: string;
   deactivatedAt: Date;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-}
 
-export interface IAuthMethods {
+  // Instance methods
+  isPasswordMatched(plainTextPassword: string): Promise<boolean>;
+  isJWTIssuedBeforePasswordChanged(jwtIssuedTimestamp: number): boolean;
   isPasswordCorrect(password: string): Promise<boolean>;
-  generateAccessToken(): string;
-  generateRefreshToken(): string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface IAuthModel
-  extends Model<IAuth, Record<string, never>, IAuthMethods> {}
+// Static methods
+export interface IAuthModel extends Model<IAuth> {
+  isUserExistsByEmail(email: string): Promise<IAuth | null>;
+}

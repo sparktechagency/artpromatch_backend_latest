@@ -2,7 +2,7 @@
 import Stripe from 'stripe';
 import config from '../../config';
 import { AppError } from '../../utils';
-import status from 'http-status';
+import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import { IAuth } from '../Auth/auth.interface';
 
@@ -51,8 +51,6 @@ const createSubscriptionIntoDB = async (
     };
   }
 
-
-  
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [lineItem],
@@ -76,7 +74,7 @@ const createSubscriptionIntoDB = async (
 
 const verifyPaymentSuccess = async (user: IAuth, sessionId: string) => {
   if (!sessionId) {
-    throw new AppError(status.BAD_REQUEST, 'Session ID is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Session ID is required');
   }
 
   const mongoSession = await mongoose.startSession();
@@ -86,7 +84,7 @@ const verifyPaymentSuccess = async (user: IAuth, sessionId: string) => {
     const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (!stripeSession) {
-      throw new AppError(status.NOT_FOUND, 'Session not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
     }
 
     // Check if the payment was successful
@@ -96,7 +94,7 @@ const verifyPaymentSuccess = async (user: IAuth, sessionId: string) => {
 
     if (!stripeSession.amount_total) {
       throw new AppError(
-        status.INTERNAL_SERVER_ERROR,
+        httpStatus.INTERNAL_SERVER_ERROR,
         'Invalid payment amount from Stripe'
       );
     }
@@ -110,7 +108,7 @@ const verifyPaymentSuccess = async (user: IAuth, sessionId: string) => {
     await mongoSession.abortTransaction(); // Rollback changes if any error occurs
     mongoSession.endSession();
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       `Transaction failed: ${error.message}`
     );
   }

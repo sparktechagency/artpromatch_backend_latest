@@ -1,13 +1,16 @@
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { AdminService } from './admin.service';
+import sendResponse from '../../utils/sendResponse';
 
 const getFolders = asyncHandler(async (req, res) => {
   const result = await AdminService.getArtistFolders();
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Folder retrieved successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Folder retrieved successfully!',
+    data: result,
+  });
 });
 
 const changeStatusOnFolder = asyncHandler(async (req, res) => {
@@ -15,72 +18,66 @@ const changeStatusOnFolder = asyncHandler(async (req, res) => {
   const permission = req.body.permission;
   const result = await AdminService.changeStatusOnFolder(id, permission);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Action is successful on folder'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Action is successful on folder!',
+    data: result,
+  });
 });
 
 const verifiedArtistByAdmin = asyncHandler(async (req, res) => {
   const artistId = req.params.artistId;
   const result = await AdminService.verifiedArtistByAdminIntoDB(artistId);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Artist verified successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist verified successfully!',
+    data: result,
+  });
 });
 
 const verifiedBusinessByAdmin = asyncHandler(async (req, res) => {
   const businessId = req.params.businessId;
   const result = await AdminService.verifiedBusinessByAdminIntoDB(businessId);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Business verified successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business verified successfully!',
+    data: result,
+  });
 });
 
 const fetchAllArtists = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllArtists(req.query);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result.data,
-        'Artists retrieved successFully',
-        result.meta
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artists retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
 const fetchAllBusiness = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllBusiness(req.query);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result.data,
-        'Business retrieved successFully',
-        result.meta
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
 const fetchAllClient = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllClient(req.query);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result.data,
-        'Clients retrieved successFully',
-        result.meta
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Clients retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
 export const AdminController = {

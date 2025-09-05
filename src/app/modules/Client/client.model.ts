@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import {
   artistTypes,
   dateFormats,
@@ -12,11 +12,19 @@ import { IClient } from './client.interface';
 
 const clientSchema = new Schema<IClient>(
   {
+    auth: {
+      type: Schema.Types.ObjectId,
+      ref: 'Auth',
+      required: true,
+      unique: true,
+    },
+
     location: {
       type: {
         type: String,
-        enum: ['Point'],
-        required: true,
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
       },
       coordinates: {
         type: [Number],
@@ -26,70 +34,52 @@ const clientSchema = new Schema<IClient>(
 
     radius: {
       type: Number,
-      required: false,
     },
 
     lookingFor: {
       type: [String],
       enum: Object.values(serviceTypes),
-      required: false,
       default: [],
     },
 
     country: {
       type: String,
-      required: false,
     },
 
     favoriteTattoos: {
       type: [String],
       enum: Object.values(favoriteTattoos),
-      required: false,
       default: [],
     },
 
     favoritePiercing: {
       type: [String],
       enum: Object.values(favoritePiercings),
-      required: false,
       default: [],
     },
 
     homeView: {
       type: String,
       enum: Object.values(homeViews),
-      required: false,
       default: homeViews.BOTH,
     },
 
     preferredArtistType: {
       type: String,
       enum: Object.values(artistTypes),
-      required: false,
       default: artistTypes.BOTH,
     },
 
     language: {
       type: String,
-      required: false,
     },
 
     dateFormat: {
       type: String,
       enum: Object.values(dateFormats),
-      required: false,
-    },
-    auth: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Auth',
-      required: true,
-      unique: true,
     },
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 clientSchema.index({ location: '2dsphere' });
