@@ -8,13 +8,7 @@ import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
 import Slot from '../Slot/slot.model';
-import {
-  hasOverlap,
-  normalizeWeeklySchedule,
-  removeDuplicateSlots,
-  splitIntoHourlySlots,
-  toMinutes,
-} from '../Slot/slot.utils';
+import { normalizeWeeklySchedule } from '../Slot/slot.utils';
 import Artist from './artist.model';
 import {
   TUpdateArtistNotificationPayload,
@@ -34,14 +28,12 @@ const updateProfile = async (
 ) => {
   const artist = await Artist.findOne({ auth: user._id });
 
-  console.log('artist', artist);
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
 
   const updatedArtist = await Auth.findByIdAndUpdate(user._id, payload);
 
-  console.log('a', updatedArtist);
   if (!updatedArtist?.isModified) {
     throw new AppError(httpStatus.NOT_FOUND, 'Failed to update artist!');
   }
@@ -142,12 +134,10 @@ const addFlashesIntoDB = async (
   user: IAuth,
   files: Express.Multer.File[] | undefined
 ) => {
-  console.log('id', user._id);
   const artist = await Artist.findOne({
     auth: user._id,
   });
 
-  console.log('user', artist);
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
@@ -156,7 +146,6 @@ const addFlashesIntoDB = async (
     throw new AppError(httpStatus.BAD_REQUEST, 'Files are required');
   }
 
-  console.log('files', files);
   return await Artist.findByIdAndUpdate(
     artist._id,
     {
@@ -336,16 +325,16 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   return { data, meta };
 };
 
-//
-
 // save availability
 const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   const { weeklySchedule: inputSchedule } = payload;
 
-  const artist: IArtist = await Artist.findOne({ auth: user._id }).select("_id");
+  const artist: IArtist = await Artist.findOne({ auth: user._id }).select(
+    '_id'
+  );
 
-  if(!artist){
-     throw new AppError(status.NOT_FOUND, 'Artist not found!');
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
@@ -357,7 +346,8 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
     mergedSchedule = { ...inputSchedule };
   }
 
-  const normalizedSchedule = normalizeWeeklySchedule(mergedSchedule);
+  const normalizedSchedule: WeeklySchedule =
+    normalizeWeeklySchedule(mergedSchedule);
 
   if (schedule) {
     schedule.weeklySchedule = normalizedSchedule;

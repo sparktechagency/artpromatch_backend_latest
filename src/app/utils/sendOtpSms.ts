@@ -15,7 +15,7 @@ const sendOtpSms = async (phoneNumber: string, otp: string) => {
   } catch (error: any) {
   console.error('Twilio error:', error);
   throw new AppError(
-    status.INTERNAL_SERVER_ERROR,
+    httpStatus.INTERNAL_SERVER_ERROR,
     error?.message || 'Failed to send OTP SMS'
   );
 }
