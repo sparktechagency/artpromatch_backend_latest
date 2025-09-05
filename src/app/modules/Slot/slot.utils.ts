@@ -1,3 +1,5 @@
+import { DaySchedule, WeeklySchedule } from "./slot.interface";
+
 // Convert HH:mm to total minutes
 export const toMinutes = (time: string) => {
   const [h, m] = time.split(':').map(Number);
@@ -72,45 +74,33 @@ export const splitIntoHourlySlots = (
 
 // parsed slots
 
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek"; 
-import { DaySchedule, WeeklySchedule } from "./slot.interface";
-dayjs.extend(isoWeek);
+function timeToMinutes(timeStr: string) {
+  // normalize input like "8:00 am" -> ["8:00", "am"]
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (!match) {
+    throw new Error(`Invalid time format: ${timeStr}`);
+  }
 
-// Map Mon–Sun → numeric weekday (ISO: 1 = Monday, 7 = Sunday)
-const weekdayMap: Record<string, number> = {
-  mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7
-};
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const modifier = match[3].toLowerCase();
 
-export function parseSlotTime(day: string, time?: string): Date {
-  if (!time) throw new Error("Time is undefined");
+  if (modifier === "pm" && hours !== 12) {
+    hours += 12;
+  }
+  if (modifier === "am" && hours === 12) {
+    hours = 0;
+  }
 
-  const parts = time.trim().split(" ");
-  if (parts.length !== 2) throw new Error(`Invalid time format: ${time}`);
-
-  const [t, modifier] = parts;
-  const [hoursStr, minutesStr] = t.split(":");
-  if (!hoursStr || !minutesStr) throw new Error(`Invalid time format: ${time}`);
-
-  const hours = Number(hoursStr);
-  const minutes = Number(minutesStr);
-  if (isNaN(hours) || isNaN(minutes)) throw new Error(`Invalid numeric values in time: ${time}`);
-
-  // start from beginning of this ISO week
-  let base = dayjs().startOf("week").add(weekdayMap[day] - 1, "day");
-
-  // apply hours/minutes with AM/PM
-  let h = hours % 12; // 12-hour base
-  if (modifier.toLowerCase() === "pm") h += 12;
-
-  return base.hour(h).minute(minutes).second(0).millisecond(0).toDate();
+  return hours * 60 + minutes;
 }
 
 
 const defaultDaySchedule = (): DaySchedule => ({
-  start: null,
-  end: null,
-  breaks: { start: null, end: null },
+  startTime: null,
+  endTime: null,
+  startMin: null,
+  endMin:null,
   off: true,
 });
 
@@ -131,11 +121,10 @@ export const normalizeWeeklySchedule = (
       normalized[day] = defaultDaySchedule();
     } else {
       normalized[day] = {
-        start: schedule.start ?? null,
-        end: schedule.end ?? null,
-        breaks: schedule.breaks
-          ? { start: schedule.breaks.start ?? null, end: schedule.breaks.end ?? null }
-          : { start: null, end: null },
+        startTime: schedule.startTime ?? null,
+        endTime: schedule.endTime ?? null,
+        startMin: timeToMinutes(schedule.startTime as string) ?? null,
+        endMin: timeToMinutes(schedule.endTime as string) ?? null,
         off: false,
       };
     }

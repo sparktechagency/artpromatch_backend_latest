@@ -8,7 +8,13 @@ import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
 import Slot from '../Slot/slot.model';
-import { normalizeWeeklySchedule } from '../Slot/slot.utils';
+import {
+  hasOverlap,
+  normalizeWeeklySchedule,
+  removeDuplicateSlots,
+  splitIntoHourlySlots,
+  toMinutes,
+} from '../Slot/slot.utils';
 import Artist from './artist.model';
 import {
   TUpdateArtistNotificationPayload,
@@ -336,10 +342,11 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
 const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   const { weeklySchedule: inputSchedule } = payload;
 
-  const artist: IArtist = await Artist.findOne({ auth: user._id }).select(
-    '_id'
-  );
-  if (!artist) throw new Error('Artist not found');
+  const artist: IArtist = await Artist.findOne({ auth: user._id }).select("_id");
+
+  if(!artist){
+     throw new AppError(status.NOT_FOUND, 'Artist not found!');
+  }
 
   let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
 

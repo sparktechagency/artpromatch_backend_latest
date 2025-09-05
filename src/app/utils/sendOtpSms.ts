@@ -12,17 +12,13 @@ const sendOtpSms = async (phoneNumber: string, otp: string) => {
       from: config.twilio.phoneNumber,
       to: phoneNumber,
     });
-  } catch (error: unknown) {
-    let message = 'Failed to send OTP SMS';
-
-    if (error instanceof Error) {
-      message = error.message;
-    }
-
-    // eslint-disable-next-line no-console
-    console.error('Twilio error:', error);
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, message);
-  }
+  } catch (error: any) {
+  console.error('Twilio error:', error);
+  throw new AppError(
+    status.INTERNAL_SERVER_ERROR,
+    error?.message || 'Failed to send OTP SMS'
+  );
+}
 };
 
 export default sendOtpSms;
