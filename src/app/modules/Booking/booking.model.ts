@@ -1,6 +1,6 @@
 import mongoose, { Schema, model } from 'mongoose';
-import { IBooking } from './booking.interface';
 import { BOOKING_STATUS } from './booking.constant';
+import { IBooking } from './booking.interface';
 
 const bookingSchema = new Schema<IBooking>(
   {
@@ -9,55 +9,55 @@ const bookingSchema = new Schema<IBooking>(
       ref: 'Artist',
       required: true,
     },
-    user: {
+     client: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Auth',
+      ref: 'User',
       required: true,
     },
-    date: {
+    originalDate: {
       type: Date,
       required: true,
+      default: null
     },
     day: {
       type: String,
       required: true,
     },
-    paymentIntentId: {
-      type: String,
+    startMin: {
+       type: Number,
       required: true,
     },
-    transactionId: {
-      type: String,
+     endMin: {
+       type: Number,
       required: true,
     },
-    slot: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Slot',
-      required: true,
-    },
-    slotTimeId: {
-      type: mongoose.Schema.Types.ObjectId, // specific subdocument in slots[]
-      required: true,
-    },
-
-    status: {
+    paymentStatus: {
       type: String,
       enum: Object.values(BOOKING_STATUS),
       default: 'pending',
     },
-    service: {
+    paymentIntentId: {
       type: String,
       required: true,
     },
-    serviceType: {
+    chargeId: {
+      type: String,
+      required: true,
+    },
+    bookingStatus: {
+      type: String,
+      enum: Object.values(BOOKING_STATUS),
+      default: 'confirmed',
+    },
+    bookingPrice: {
+      type: Number,
+      required: true,
+    },
+    serviceName: {
       type: String,
       required: true,
     },
     bodyLocation: {
-      type: String,
-      required: true,
-    },
-    description: {
       type: String,
       required: true,
     },
