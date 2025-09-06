@@ -1,22 +1,22 @@
 import { Document, Types } from 'mongoose';
 import { TWeekDay } from '../Artist/artist.constant';
-import { TBookingStatus } from './booking.constant';
+import { TBookingStatus, TPaymentStatus } from './booking.constant';
 
 export interface IBooking extends Document {
   artist: Types.ObjectId;
-  user: Types.ObjectId;
-  service: string;
-  serviceType: string;
-  bodyLocation: string;
-  description: string;
-  referralImage?: string;
-  date: Date;
+  client: Types.ObjectId;
+  originalDate: Date | null;
   day: TWeekDay;
+  startMin: number;
+  endMin: number;
+  bookingStatus: TBookingStatus;
+  bookingPrice: number;
+  serviceName: string;
+  bodyLocation: string;
+  referralImage?: string;
   paymentIntentId?: string;
-  transactionId?: string;
-  slot: Types.ObjectId;
-  slotTimeId: Types.ObjectId;
-  status: TBookingStatus;
+  chargeId?: string;
+  paymentStatus: TPaymentStatus;
   createdAt?: Date;
   updatedAt?: Date;
 }
