@@ -1,5 +1,5 @@
 import mongoose, { Schema, model } from 'mongoose';
-import { BOOKING_STATUS } from './booking.constant';
+import { BOOKING_STATUS, PAYMENT_STATUS } from './booking.constant';
 import { IBooking } from './booking.interface';
 
 const bookingSchema = new Schema<IBooking>(
@@ -33,7 +33,7 @@ const bookingSchema = new Schema<IBooking>(
     },
     paymentStatus: {
       type: String,
-      enum: Object.values(BOOKING_STATUS),
+      enum: Object.values(PAYMENT_STATUS),
       default: 'pending',
     },
     paymentIntentId: {

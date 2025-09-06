@@ -33,6 +33,7 @@ const portfolioSchema = new Schema({
 // 🔹 Main Artist Schema
 const artistSchema = new Schema<IArtist>(
   {
+
     auth: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Auth',
@@ -62,14 +63,16 @@ const artistSchema = new Schema<IArtist>(
       enum: Object.values(expertiseTypes),
       required: true,
     },
+
     mainLocation: {
       type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], required: true }, 
+      coordinates: { type: [Number], required: true },
     },
+
     currentLocation: {
       type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], required: true }, 
-      currentLocationUntil: { type: Date , default: null}
+      coordinates: { type: [Number], required: true },
+      currentLocationUntil: { type: Date, default: null },
     },
 
     city: {
@@ -97,11 +100,20 @@ const artistSchema = new Schema<IArtist>(
       default: 0,
     },
 
-    rating: {
+    avgRating: {
       type: Number,
       default: 0,
     },
 
+    totalReview: {
+      type: Number,
+      default: 0,
+    },
+    boost: {
+      lastBoostAt: { type: Date, default: null }, 
+      endTime: { type: Date, default: null }, 
+      isActive: { type: Boolean, default: false }, 
+    },
     services: {
       type: [servicesSchema],
       required: true,
@@ -116,18 +128,6 @@ const artistSchema = new Schema<IArtist>(
       type: String,
       required: false,
     },
-    flashes: [
-      {
-        type: portfolioSchema,
-        required: true,
-      },
-    ],
-    portfolio: [
-      {
-        type: portfolioSchema,
-        required: true,
-      },
-    ],
     preferences: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ArtistPreferences',
