@@ -33,6 +33,7 @@ const portfolioSchema = new Schema({
 // 🔹 Main Artist Schema
 const artistSchema = new Schema<IArtist>(
   {
+
     auth: {
       type: Schema.Types.ObjectId,
       ref: 'Auth',
@@ -61,6 +62,7 @@ const artistSchema = new Schema<IArtist>(
       enum: Object.values(expertiseTypes),
       required: true,
     },
+
     mainLocation: {
       type: {
         type: String,
@@ -71,6 +73,7 @@ const artistSchema = new Schema<IArtist>(
       },
       coordinates: { type: [Number], required: true },
     },
+
     currentLocation: {
       type: {
         type: String,
@@ -108,11 +111,20 @@ const artistSchema = new Schema<IArtist>(
       default: 0,
     },
 
-    rating: {
+    avgRating: {
       type: Number,
       default: 0,
     },
 
+    totalReview: {
+      type: Number,
+      default: 0,
+    },
+    boost: {
+      lastBoostAt: { type: Date, default: null }, 
+      endTime: { type: Date, default: null }, 
+      isActive: { type: Boolean, default: false }, 
+    },
     services: {
       type: [servicesSchema],
       required: true,
@@ -125,18 +137,6 @@ const artistSchema = new Schema<IArtist>(
     description: {
       type: String,
     },
-    flashes: [
-      {
-        type: portfolioSchema,
-        required: true,
-      },
-    ],
-    portfolio: [
-      {
-        type: portfolioSchema,
-        required: true,
-      },
-    ],
     preferences: {
       type: Schema.Types.ObjectId,
       ref: 'ArtistPreferences',

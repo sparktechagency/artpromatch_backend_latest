@@ -13,16 +13,6 @@ const folderSchema = new mongoose.Schema<IFolder>(
       type: String,
       required: true,
     },
-    images: [
-      {
-        type: String,
-        required: true,
-      },
-    ],
-    isPublished: {
-      type: Boolean,
-      default: false,
-    },
     for: {
       type: String,
       enum: Object.values(FOLDER_FOR),

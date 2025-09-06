@@ -6,6 +6,11 @@ import {
   TServices,
 } from './artist.constant';
 
+interface IBoost {
+      lastBoostAt: Date | null;
+      endTime: Date | null
+      isActive: boolean
+}
 export interface IArtist extends Document {
   auth: Types.ObjectId;
   business: Types.ObjectId | null;
@@ -18,14 +23,14 @@ export interface IArtist extends Document {
   isConnBusiness: boolean;
   idCardFront: string;
   idCardBack: string;
-  rating:number;
+  boost: IBoost;
+  avgRating:number;
+  totalReview:number;
   selfieWithId: string;
   taskCompleted: number;
   services?: TServices;
   contact?: TContact;
   description: string;
-  flashes: Types.ObjectId[];
-  portfolio: Types.ObjectId[];
   preferences?: Types.ObjectId;
   timeOff: Date[];
 }
