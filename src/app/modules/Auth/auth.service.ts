@@ -1025,7 +1025,7 @@ const verifyOtpForForgetPassword = async (payload: {
   const user = await Auth.findOne({ email, isActive: true });
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
 
   // Check if OTP expired
@@ -1166,7 +1166,7 @@ const fetchAllConnectedAcount = async (user: IAuth) => {
   }
 
   if (!currentUser) {
-    throw new AppError(httpStatus.NOT_FOUND, 'profile not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Profile not found!');
   }
 
   const result = await ClientPreferences.findOne(
@@ -1217,7 +1217,7 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
   try {
     const currentUser = await Auth.findById(user._id).session(session);
     if (!currentUser)
-      throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
 
     currentUser.isDeleted = true;
     currentUser.isDeactivated = false;

@@ -57,7 +57,7 @@ const deleteMessage = async (messageId: string): Promise<IMessage | null> => {
     );
 
     if (!message) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found!');
     }
 
     await mongoSession.commitTransaction();
@@ -89,7 +89,7 @@ const markMessageAsRead = async (
     );
 
     if (!message) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found!');
     }
 
     return message;
@@ -117,7 +117,7 @@ const pinMessage = async (
     );
 
     if (!message) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found!');
     }
 
     return message;
@@ -149,7 +149,7 @@ const updateMessagePriority = async (
     );
 
     if (!message) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Message not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Message not found!');
     }
 
     return message;
