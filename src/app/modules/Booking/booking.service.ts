@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable no-undef */
 import Booking from './booking.model';
 import Slot from '../Slot/slot.model';
 import { IAuth } from '../Auth/auth.interface';
 import { AppError } from '../../utils';
-import status from 'http-status';
+import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import { TBookingData } from './booking.validation';
 import Artist from '../Artist/artist.model';
@@ -30,7 +29,7 @@ const createBooking = async (
   const existSlot = await Slot.findOne({ 'slots._id': slotId });
 
   if (!existSlot) {
-    throw new AppError(status.NOT_FOUND, 'Slot not available on this day');
+    throw new AppError(httpStatus.NOT_FOUND, 'Slot not available on this day');
   }
 
   const findSlot = existSlot.slots.find(
@@ -38,13 +37,13 @@ const createBooking = async (
   );
 
   if (!findSlot) {
-    throw new AppError(status.NOT_FOUND, 'Slot not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Slot not found!');
   }
 
   const artist = await Artist.findOne({ auth: existSlot.auth });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   // Check if the booking already exists for the same user and artist at this slot
@@ -57,7 +56,7 @@ const createBooking = async (
 
   if (existingBooking) {
     throw new AppError(
-      status.BAD_REQUEST,
+      httpStatus.BAD_REQUEST,
       'You have already booked for this time slot'
     );
   }
@@ -90,7 +89,7 @@ const createBooking = async (
 
   if (!result) {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       'Something went wrong saving booking into DB'
     );
   }
@@ -152,7 +151,7 @@ const createBooking = async (
 //     .exec();
 
 //   if (!updatedBooking) {
-//     throw new AppError(status.NOT_FOUND, 'Booking not found');
+//     throw new AppError(status.NOT_FOUND, 'Booking not found!');
 //   }
 
 //   return updatedBooking;
@@ -170,7 +169,7 @@ const createBooking = async (
 //     .exec();
 
 //   if (!cancelledBooking) {
-//     throw new AppError(status.NOT_FOUND, 'Booking not found');
+//     throw new AppError(status.NOT_FOUND, 'Booking not found!');
 //   }
 
 //   return cancelledBooking;

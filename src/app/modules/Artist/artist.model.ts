@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { ARTIST_TYPE, expertiseTypes } from './artist.constant';
 import { IArtist } from './artist.interface';
 
@@ -17,13 +17,13 @@ const servicesSchema = new Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   duration: { type: String, required: true },
-  bufferTime: { type: String, required: false, default: '' },
+  bufferTime: { type: String, default: '' },
 });
 
 // 🔹 Subschema: Portfolio
 const portfolioSchema = new Schema({
   folder: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Folder',
     required: true,
   },
@@ -35,15 +35,14 @@ const artistSchema = new Schema<IArtist>(
   {
 
     auth: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Auth',
       required: true,
     },
 
     business: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Business',
-      required: false,
       default: null,
     },
 
@@ -65,12 +64,24 @@ const artistSchema = new Schema<IArtist>(
     },
 
     mainLocation: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
+      },
       coordinates: { type: [Number], required: true },
     },
 
     currentLocation: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
+      },
       coordinates: { type: [Number], required: true },
       currentLocationUntil: { type: Date, default: null },
     },
@@ -121,24 +132,18 @@ const artistSchema = new Schema<IArtist>(
 
     contact: {
       type: contactSchema,
-      required: false,
     },
 
     description: {
       type: String,
-      required: false,
     },
     preferences: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'ArtistPreferences',
-      required: false,
     },
     timeOff: [{ type: Date }],
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 artistSchema.index({ location: '2dsphere' });

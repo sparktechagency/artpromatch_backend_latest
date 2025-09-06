@@ -1,24 +1,14 @@
-/* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
-import status from 'http-status';
-import moment from 'moment';
-import { ObjectId } from 'mongoose';
+import httpStatus from 'http-status';
 import QueryBuilder from '../../builders/QueryBuilder';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
-import Auth from '../Auth/auth.model';
-import Booking from '../Booking/booking.model';
+import { Auth } from '../Auth/auth.model';
 import Slot from '../Slot/slot.model';
-import {
-  hasOverlap,
-  normalizeWeeklySchedule,
-  removeDuplicateSlots,
-  splitIntoHourlySlots,
-  toMinutes,
-} from '../Slot/slot.utils';
+import { normalizeWeeklySchedule } from '../Slot/slot.utils';
 import Artist from './artist.model';
 import {
   TUpdateArtistNotificationPayload,
@@ -28,7 +18,7 @@ import {
   TUpdateArtistProfilePayload,
 } from './artist.validation';
 import ArtistSchedule from '../Slot/slot.model';
-import { IArtistSchedule, WeeklySchedule } from '../Slot/slot.interface';
+import { WeeklySchedule } from '../Slot/slot.interface';
 import { IArtist } from './artist.interface';
 
 // update profile
@@ -38,22 +28,22 @@ const updateProfile = async (
 ) => {
   const artist = await Artist.findOne({ auth: user._id });
 
-  console.log('artist', artist);
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   const updatedArtist = await Auth.findByIdAndUpdate(user._id, payload);
-  
-  console.log("a",updatedArtist)
+
   if (!updatedArtist?.isModified) {
-    throw new AppError(status.NOT_FOUND, 'Failed to update artist!');
+    throw new AppError(httpStatus.NOT_FOUND, 'Failed to update artist!');
   }
 
-  const result = await Artist.findOne({ auth: user._id }).select('_id').populate({
-    path: 'auth',
-    select: 'fullName', 
-  });
+  const result = await Artist.findOne({ auth: user._id })
+    .select('_id')
+    .populate({
+      path: 'auth',
+      select: 'fullName',
+    });
 
   return result;
 };
@@ -68,7 +58,7 @@ const updatePreferences = async (
   });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   const artistPreferences = await ArtistPreferences.findOne({
@@ -76,7 +66,7 @@ const updatePreferences = async (
   });
 
   if (!artistPreferences) {
-    throw new AppError(status.NOT_FOUND, 'Artist preferences not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist preferences not found!');
   }
 
   Object.assign(artistPreferences, payload);
@@ -95,7 +85,7 @@ const updateNotificationPreferences = async (
   });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   const artistPreferences = await ArtistPreferences.findOne({
@@ -103,7 +93,7 @@ const updateNotificationPreferences = async (
   });
 
   if (!artistPreferences) {
-    throw new AppError(status.NOT_FOUND, 'Artist preferences not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist preferences not found!');
   }
 
   Object.assign(artistPreferences, payload);
@@ -122,7 +112,7 @@ const updatePrivacySecuritySettings = async (
   });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   const artistPreferences = await ArtistPreferences.findOne({
@@ -130,7 +120,7 @@ const updatePrivacySecuritySettings = async (
   });
 
   if (!artistPreferences) {
-    throw new AppError(status.NOT_FOUND, 'Artist preferences not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist preferences not found!');
   }
 
   Object.assign(artistPreferences, payload);
@@ -144,21 +134,18 @@ const addFlashesIntoDB = async (
   user: IAuth,
   files: Express.Multer.File[] | undefined
 ) => {
-  console.log('id', user._id);
   const artist = await Artist.findOne({
     auth: user._id,
   });
 
-  console.log('user', artist);
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   if (!files || !files?.length) {
-    throw new AppError(status.BAD_REQUEST, 'Files are required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Files are required!');
   }
 
-  console.log('files', files);
   return await Artist.findByIdAndUpdate(
     artist._id,
     {
@@ -180,19 +167,19 @@ const addPortfolioImages = async (
   });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   // if (!artist.isVerified) {
-  //   throw new AppError(status.BAD_REQUEST, 'Artist not verified');
+  //   throw new AppError(httpStatus.BAD_REQUEST, 'Artist not verified');
   // }
 
   // if (!artist.isActive) {
-  //   throw new AppError(status.BAD_REQUEST, 'Artist not activated by admin yet');
+  //   throw new AppError(httpStatus.BAD_REQUEST, 'Artist not activated by admin yet');
   // }
 
   if (!files || !files?.length) {
-    throw new AppError(status.BAD_REQUEST, 'Files are required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Files are required');
   }
 
   return await Artist.findByIdAndUpdate(
@@ -213,7 +200,7 @@ const removeImage = async (user: IAuth, filePath: string) => {
   });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   // Remove the image file path from the 'flashes' array
@@ -230,7 +217,7 @@ const removeImage = async (user: IAuth, filePath: string) => {
 
   if (!updatedArtist) {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       'Failed to remove flash image'
     );
   }
@@ -249,7 +236,7 @@ const updateArtistPersonalInfoIntoDB = async (
   const artist = await Artist.findOne({ auth: user._id });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   await ArtistPreferences.findOneAndUpdate({ artistId: artist._id }, payload, {
@@ -309,14 +296,12 @@ const updateArtistPersonalInfoIntoDB = async (
 //   }
 // };
 
-
-
 /* ------ */
 
 // fetch all artist from db
 const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   const artistsQuery = new QueryBuilder(
-    Artist.find({}).populate([
+    Artist.find().populate([
       {
         path: 'auth',
         select: 'fullName image phoneNumber',
@@ -340,20 +325,19 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   return { data, meta };
 };
 
-//
-
 // save availability
 const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   const { weeklySchedule: inputSchedule } = payload;
 
-  const artist: IArtist = await Artist.findOne({ auth: user._id }).select("_id");
+  const artist: IArtist = await Artist.findOne({ auth: user._id }).select(
+    '_id'
+  );
 
-  if(!artist){
-     throw new AppError(status.NOT_FOUND, 'Artist not found');
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
-
 
   let mergedSchedule: Partial<WeeklySchedule> = {};
   if (schedule) {
@@ -362,8 +346,8 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
     mergedSchedule = { ...inputSchedule };
   }
 
-
-  const normalizedSchedule = normalizeWeeklySchedule(mergedSchedule);
+  const normalizedSchedule: WeeklySchedule =
+    normalizeWeeklySchedule(mergedSchedule);
 
   if (schedule) {
     schedule.weeklySchedule = normalizedSchedule;
@@ -383,7 +367,7 @@ const updateAvailability = async (user: IAuth, data: any) => {
   // Find the artist
   const artist = await Artist.findOne({ auth: user._id });
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   // Update availability slots
@@ -405,7 +389,7 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
   const artist = await Artist.findOne({ auth: user._id });
 
   if (!artist) {
-    throw new AppError(status.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   // Convert the string dates in the payload to Date objects
@@ -418,7 +402,7 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
 
     if (today > date) {
       throw new AppError(
-        status.BAD_REQUEST,
+        httpStatus.BAD_REQUEST,
         'Selected date cannot be in the past. Please choose a future date.'
       );
     }
@@ -451,7 +435,7 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
 
   if (result.modifiedCount === 0) {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       'Failed to update time off'
     );
   }
@@ -469,7 +453,7 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
 //   const artist = await Artist.findById(artistId);
 
 //   if (!artist) {
-//     throw new AppError(status.NOT_FOUND, 'Artist not found');
+//     throw new AppError(status.NOT_FOUND, 'Artist not found!');
 //   }
 
 //   // Fetch the available slots for the artist
@@ -546,5 +530,4 @@ export const ArtistService = {
   fetchAllArtistsFromDB,
   updateAvailability,
   updateTimeOff,
- 
 };

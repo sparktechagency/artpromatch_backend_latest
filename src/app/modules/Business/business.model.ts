@@ -45,8 +45,9 @@ const businessSchema = new Schema<IBusiness>(
     location: {
       type: {
         type: String,
-        enum: ['Point'],
-        required: true,
+        default: 'Point',
+        // enum: ['Point'],
+        // required: true,
       },
       coordinates: {
         type: [Number],
@@ -78,10 +79,7 @@ const businessSchema = new Schema<IBusiness>(
     residentArtists: [{ type: Schema.Types.ObjectId, ref: 'Artist' }],
     timeOff: [{ type: Date }],
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 businessSchema.index({ location: '2dsphere' });

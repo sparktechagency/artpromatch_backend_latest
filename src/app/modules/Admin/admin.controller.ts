@@ -1,94 +1,98 @@
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { AdminService } from './admin.service';
+import sendResponse from '../../utils/sendResponse';
 
-const getFolders = asyncHandler(async (req, res) => {
-  const result = await AdminService.getArtistFolders();
+// getAllArtistsFolders
+const getAllArtistsFolders = asyncHandler(async (req, res) => {
+  const result = await AdminService.getAllArtistsFoldersFromDB();
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Folder retrieved successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Folder retrieved successfully!',
+    data: result,
+  });
 });
 
+// changeStatusOnFolder
 const changeStatusOnFolder = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const permission = req.body.permission;
   const result = await AdminService.changeStatusOnFolder(id, permission);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Action is successful on folder'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Action is successful on folder!',
+    data: result,
+  });
 });
 
-const verifiedArtistByAdmin = asyncHandler(async (req, res) => {
+// verifyArtistByAdmin
+const verifyArtistByAdmin = asyncHandler(async (req, res) => {
   const artistId = req.params.artistId;
-  const result = await AdminService.verifiedArtistByAdminIntoDB(artistId);
+  const result = await AdminService.verifyArtistByAdminIntoDB(artistId);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Artist verified successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist verified successfully!',
+    data: result,
+  });
 });
 
-const verifiedBusinessByAdmin = asyncHandler(async (req, res) => {
+// verifyBusinessByAdmin
+const verifyBusinessByAdmin = asyncHandler(async (req, res) => {
   const businessId = req.params.businessId;
-  const result = await AdminService.verifiedBusinessByAdminIntoDB(businessId);
+  const result = await AdminService.verifyBusinessByAdminIntoDB(businessId);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Business verified successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business verified successfully!',
+    data: result,
+  });
 });
 
+// fetchAllArtists
 const fetchAllArtists = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllArtists(req.query);
+  const result = await AdminService.fetchAllArtistsFromDB(req.query);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result.data,
-        'Artists retrieved successFully',
-        result.meta
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artists retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
-const fetchAllBusiness = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllBusiness(req.query);
+// fetchAllBusinesses
+const fetchAllBusinesses = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchAllBusinessesFromDB(req.query);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result.data,
-        'Business retrieved successFully',
-        result.meta
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Business retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
-const fetchAllClient = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllClient(req.query);
+// fetchAllClients
+const fetchAllClients = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchAllClientsFromDB(req.query);
 
-  res
-    .status(status.OK)
-    .json(
-      new AppResponse(
-        status.OK,
-        result.data,
-        'Clients retrieved successFully',
-        result.meta
-      )
-    );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Clients retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
 });
 
 export const AdminController = {
-  getFolders,
+  getAllArtistsFolders,
   changeStatusOnFolder,
-  verifiedArtistByAdmin,
-  verifiedBusinessByAdmin,
+  verifyArtistByAdmin,
+  verifyBusinessByAdmin,
   fetchAllArtists,
-  fetchAllBusiness,
-  fetchAllClient,
+  fetchAllBusinesses,
+  fetchAllClients,
 };

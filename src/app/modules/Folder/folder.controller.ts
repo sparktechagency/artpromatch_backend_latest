@@ -1,7 +1,7 @@
-/* eslint-disable no-undef */
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { FolderService } from './folder.service';
+import sendResponse from '../../utils/sendResponse';
 
 const saveFolder = asyncHandler(async (req, res) => {
   const files = req.files as Express.Multer.File[] | undefined;
@@ -10,18 +10,23 @@ const saveFolder = asyncHandler(async (req, res) => {
     req.body,
     files
   );
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Folder saved successfully'));
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Folder saved successfully!',
+    data: result,
+  });
 });
 
 const removeFolder = asyncHandler(async (req, res) => {
   const folderId = req.params.folderId;
   const result = await FolderService.removeFolderFromDB(folderId);
 
-  res
-    .status(status.OK)
-    .json(new AppResponse(status.OK, result, 'Folder removed successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Folder removed successfully!',
+    data: result,
+  });
 });
 
 export const FolderController = {

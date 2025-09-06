@@ -25,24 +25,19 @@ import { IArtistSchedule } from './slot.interface';
 //       required: true,
 //     },
 //   },
-//   {
-//     timestamps: true,
-//     versionKey: false,
-//   }
+// { timestamps: true, versionKey: false }
 // );
 
 // const Slot = model<ISlot>('Slot', slotSchema);
 
 // export default Slot;
 
-
-
 const DayScheduleSchema = new mongoose.Schema({
-  startTime: { type: String,  default: null },
-  endTime: { type: String,  default: null },
+  startTime: { type: String, default: null },
+  endTime: { type: String, default: null },
   startMin: { type: Number, default: null },
   endMin: { type: Number, default: null },
-  off: { type: Boolean, default: true},
+  off: { type: Boolean, default: true },
 });
 
 const GuestSpotSchema = new mongoose.Schema({
@@ -55,8 +50,8 @@ const GuestSpotSchema = new mongoose.Schema({
 });
 
 const OffTimeSchema = new mongoose.Schema({
-  startDate: { type: Date, required: true , default:null},
-  endDate: { type: Date, required: true , default: null},   
+  startDate: { type: Date, required: true, default: null },
+  endDate: { type: Date, required: true, default: null },
 });
 
 const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
@@ -71,14 +66,10 @@ const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
       saturday: { type: DayScheduleSchema, required: false },
       sunday: { type: DayScheduleSchema, required: false },
     },
-     guestSpots: [GuestSpotSchema],
-     offTimes: [OffTimeSchema],
+    guestSpots: [GuestSpotSchema],
+    offTimes: [OffTimeSchema],
   },
-  
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 const ArtistSchedule = model<IArtistSchedule>(
@@ -86,7 +77,6 @@ const ArtistSchedule = model<IArtistSchedule>(
   ArtistScheduleSchema
 );
 export default ArtistSchedule;
-
 
 /*
 

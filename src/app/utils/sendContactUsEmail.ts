@@ -1,4 +1,4 @@
-import status from 'http-status';
+import httpStatus from 'http-status';
 import nodemailer from 'nodemailer';
 import config from '../config';
 import AppError from './AppError';
@@ -110,7 +110,7 @@ const sendContactUsEmail = async (payload: IContactMessage) => {
     await transporter.sendMail(mailOptions);
   } catch {
     throw new AppError(
-      status.INTERNAL_SERVER_ERROR,
+      httpStatus.INTERNAL_SERVER_ERROR,
       'Failed to send contact us message'
     );
   }

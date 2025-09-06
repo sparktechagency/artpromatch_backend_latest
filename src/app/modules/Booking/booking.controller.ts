@@ -1,13 +1,20 @@
-import status from 'http-status';
-import { AppResponse, asyncHandler } from '../../utils';
+import httpStatus from 'http-status';
+import { asyncHandler } from '../../utils';
 import { BookingService } from './booking.service';
+import sendResponse from '../../utils/sendResponse';
 
 const saveBooking = asyncHandler(async (req, res) => {
-  const result = await BookingService.createBooking(req.user, req.body, req.file);
+  const result = await BookingService.createBooking(
+    req.user,
+    req.body,
+    req.file
+  );
 
-  res
-    .status(status.CREATED)
-    .json(new AppResponse(status.CREATED, result, 'Booked successfully'));
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Booked successfully!',
+    data: result,
+  });
 });
 
 export const BookingController = {

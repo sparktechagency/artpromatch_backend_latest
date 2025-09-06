@@ -1,7 +1,7 @@
 // import { Types, Document } from 'mongoose';
 // import { TWeekDay } from '../Artist/artist.constant';
 
-import { Types } from "mongoose";
+import { Types } from 'mongoose';
 
 // export interface IAvailabilitySlot extends Document {
 //   start: string; // Format: 'HH:MM'
@@ -43,16 +43,14 @@ import { Types } from "mongoose";
 //   updatedAt?: Date;
 // }
 
-
 // One break per day, always 7 days in DB
 
-
 export interface DaySchedule {
-  startTime: string | null; 
-  endTime: string | null;   
-  startMin: number | null; 
-  endMin: number | null;     
-  off: boolean;         
+  startTime: string | null;
+  endTime: string | null;
+  startMin: number | null;
+  endMin: number | null;
+  off: boolean;
 }
 
 export interface WeeklySchedule {

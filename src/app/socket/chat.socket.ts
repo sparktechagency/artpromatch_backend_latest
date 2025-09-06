@@ -4,7 +4,7 @@ import { Server, Socket } from 'socket.io';
 import { socketAuth } from '../middlewares';
 import { MessageData, SOCKET_EVENTS, SocketUser } from './socket.constant';
 import { MessageService } from '../modules/Message/message.service';
-import Auth from '../modules/Auth/auth.model';
+import { Auth } from '../modules/Auth/auth.model';
 
 const initSocketIo = (io: Server): void => {
   io.use(socketAuth);
@@ -41,7 +41,7 @@ const initSocketIo = (io: Server): void => {
         if (!receiver) {
           socket.emit(SOCKET_EVENTS.ERROR, {
             statusCode: 404,
-            message: 'Receiver user not found',
+            message: 'Receiver user not found!',
           });
           return;
         }
