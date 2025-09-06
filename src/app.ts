@@ -10,6 +10,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import morgan from 'morgan';
 import express, { Application, NextFunction, Request, Response } from 'express';
 import routes from './app/routes';
 import { globalErrorHandler, notFound } from './app/utils';
@@ -58,6 +59,7 @@ app.use(
 );
 
 app.use(cookieParser());
+app.use(morgan('dev'));
 
 // static files
 app.use('/public', express.static('public'));
