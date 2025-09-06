@@ -6,7 +6,7 @@ const ArtistBoostSchema = new Schema<IArtistBoost>(
   {
     artistId: {
       type: Schema.Types.ObjectId,
-      ref: "Artist",
+      ref: 'Artist',
       required: true,
       index: true,
     },
@@ -21,14 +21,14 @@ const ArtistBoostSchema = new Schema<IArtistBoost>(
     duration: {
       type: Number,
       required: true,
-      default: 12 
+      default: 12,
     },
     isActive: {
       type: Boolean,
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
 

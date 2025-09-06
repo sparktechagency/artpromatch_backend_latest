@@ -20,15 +20,7 @@ const servicesSchema = new Schema({
   bufferTime: { type: String, default: '' },
 });
 
-// 🔹 Subschema: Portfolio
-const portfolioSchema = new Schema({
-  folder: {
-    type: Schema.Types.ObjectId,
-    ref: 'Folder',
-    required: true,
-  },
-  position: { type: Number, default: 0 },
-});
+
 
 // 🔹 Main Artist Schema
 const artistSchema = new Schema<IArtist>(
