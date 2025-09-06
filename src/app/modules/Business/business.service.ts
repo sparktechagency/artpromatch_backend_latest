@@ -20,7 +20,7 @@ const updateBusinessProfile = async (
   const business = await Business.findOne({ auth: user._id });
 
   if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   const session = await mongoose.startSession();
@@ -68,7 +68,7 @@ const updateBusinessPreferences = async (
   // Find the business using the auth user_id
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   // Find and update business preferences, or create new ones if not found
@@ -96,7 +96,7 @@ const updateBusinessNotificationPreferences = async (
   // Step 1: Find the business
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   // Step 2: Find and update the business's notification preferences
@@ -125,7 +125,7 @@ const updateBusinessSecuritySettings = async (
   // Step 1: Find the business
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   // Step 2: Find and update the business's notification preferences
@@ -150,7 +150,7 @@ const updateGuestSpots = async (user: IAuth, data: any) => {
   // Find the business
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   // Update guest spots logic
@@ -168,7 +168,7 @@ const updateTimeOff = async (user: IAuth, data: any) => {
 
   const business = await Business.findOne({ auth: user._id });
   if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   // Add the time-off logic

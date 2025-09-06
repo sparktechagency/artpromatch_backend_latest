@@ -41,7 +41,7 @@ const initSocketIo = (io: Server): void => {
         if (!receiver) {
           socket.emit(SOCKET_EVENTS.ERROR, {
             statusCode: 404,
-            message: 'Receiver user not found',
+            message: 'Receiver user not found!',
           });
           return;
         }

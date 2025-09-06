@@ -7,21 +7,23 @@ import Business from '../Business/business.model';
 import Client from '../Client/client.model';
 import QueryBuilder from 'mongoose-query-builders';
 
-const getArtistFolders = async () => {
+// getAllArtistsFoldersFromDB
+const getAllArtistsFoldersFromDB = async () => {
   return await Folder.find({ isPublished: false });
 };
 
+// changeStatusOnFolder
 const changeStatusOnFolder = async (folderId: string, permission: boolean) => {
   const folder = await Folder.findById(folderId);
 
   if (!folder) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Folder not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Folder not found!');
   }
 
   const artist = await Artist.findOne({ auth: folder.auth });
 
   if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   if (permission) {
@@ -56,7 +58,8 @@ const changeStatusOnFolder = async (folderId: string, permission: boolean) => {
   }
 };
 
-const verifiedArtistByAdminIntoDB = async (artistId: string) => {
+// verifyArtistByAdminIntoDB
+const verifyArtistByAdminIntoDB = async (artistId: string) => {
   const result = await Artist.findByIdAndUpdate(
     artistId,
     { isActive: true },
@@ -64,13 +67,14 @@ const verifiedArtistByAdminIntoDB = async (artistId: string) => {
   );
 
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   return result;
 };
 
-const verifiedBusinessByAdminIntoDB = async (businessId: string) => {
+// verifyBusinessByAdminIntoDB
+const verifyBusinessByAdminIntoDB = async (businessId: string) => {
   const result = await Business.findByIdAndUpdate(
     businessId,
     { isActive: true },
@@ -78,15 +82,16 @@ const verifiedBusinessByAdminIntoDB = async (businessId: string) => {
   );
 
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   return result;
 };
 
-const fetchAllArtists = async (query: Record<string, unknown>) => {
+// fetchAllArtistsFromDB
+const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   const artistQuery = new QueryBuilder(
-    Artist.find({}).populate([
+    Artist.find().populate([
       {
         path: 'auth',
         select: 'fullName image email phoneNumber isProfile',
@@ -106,7 +111,8 @@ const fetchAllArtists = async (query: Record<string, unknown>) => {
   return { data, meta };
 };
 
-const fetchAllBusiness = async (query: Record<string, unknown>) => {
+// fetchAllBusinessesFromDB
+const fetchAllBusinessesFromDB = async (query: Record<string, unknown>) => {
   const businessQuery = new QueryBuilder(
     Business.find().populate([
       {
@@ -142,9 +148,10 @@ const fetchAllBusiness = async (query: Record<string, unknown>) => {
   return { data, meta };
 };
 
-const fetchAllClient = async (query: Record<string, unknown>) => {
+// fetchAllClientsFromDB
+const fetchAllClientsFromDB = async (query: Record<string, unknown>) => {
   const businessQuery = new QueryBuilder(
-    Client.find({}).populate([
+    Client.find().populate([
       {
         path: 'auth',
         select: 'fullName image email phoneNumber isProfile',
@@ -171,11 +178,11 @@ const fetchAllClient = async (query: Record<string, unknown>) => {
 };
 
 export const AdminService = {
-  getArtistFolders,
+  getAllArtistsFoldersFromDB,
   changeStatusOnFolder,
-  verifiedArtistByAdminIntoDB,
-  verifiedBusinessByAdminIntoDB,
-  fetchAllArtists,
-  fetchAllBusiness,
-  fetchAllClient,
+  verifyArtistByAdminIntoDB,
+  verifyBusinessByAdminIntoDB,
+  fetchAllArtistsFromDB,
+  fetchAllBusinessesFromDB,
+  fetchAllClientsFromDB,
 };

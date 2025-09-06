@@ -27,7 +27,7 @@ const updatePreferences = async (
   // Find the client using the auth user_id
   const client = await Client.findOne({ auth: user._id });
   if (!client) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Client not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
   }
 
   const result = await Client.findByIdAndUpdate(client._id, payload, {
@@ -52,7 +52,7 @@ const updateNotificationPreferences = async (
   // Step 1: Find the client
   const client = await Client.findOne({ auth: user._id });
   if (!client) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Client not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
   }
 
   const updateData = payload.all
@@ -102,7 +102,7 @@ const updatePrivacySecuritySettings = async (
 ) => {
   const client = await Client.findOne({ auth: user._id }).select('_id');
   if (!client) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Client not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
   }
 
   const updatedPreferences = await ClientPreferences.findOneAndUpdate(
@@ -120,7 +120,7 @@ const updatePrivacySecuritySettings = async (
   );
 
   if (!updatedPreferences) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Client preferences not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Client preferences not found!');
   }
 
   return updatedPreferences;
@@ -134,7 +134,7 @@ const fetchDiscoverArtistFromDB = async (
   const client = await Client.findOne({ auth: user._id });
 
   if (!client) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Client not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
   }
 
   // Define the earth radius in kilometers (6378.1 km) - This is useful for understanding the scale

@@ -39,7 +39,7 @@ const removeFolderFromDB = async (folderId: string) => {
   const artist = await Artist.findOne({ auth: folder.auth });
 
   if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   return await Artist.findByIdAndUpdate(

@@ -16,10 +16,10 @@ const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
     const artist = await Artist.findOne({ auth: user._id });
     const business = await Business.findOne({ _id: payload.receiverId });
     if (!artist) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
     }
     if (!business) {
-      throw new AppError(httpStatus.NOT_FOUND, 'business not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'business not found!');
     }
     if (artist.business?.toString() === payload.receiverId) {
       throw new AppError(
@@ -53,12 +53,12 @@ const createRequestIntoDB = async (user: IAuth, payload: RequestPayload) => {
   if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user._id });
     if (!business) {
-      throw new AppError(httpStatus.NOT_FOUND, 'business not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'business not found!');
     }
 
     const artist = await Artist.findOne({ _id: payload.receiverId });
     if (!artist) {
-      throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'artist not found!');
     }
 
     const isExistRequest = await RequestModel.findOne({
@@ -272,7 +272,7 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
   const artist = await Artist.findOne({ auth: user._id });
 
   if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   const request = await RequestModel.findOne({
@@ -281,13 +281,13 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
   });
 
   if (!request) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Request not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Request not found!');
   }
 
   const business = await Business.findById(request.businessId);
 
   if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
   const session = await mongoose.startSession();

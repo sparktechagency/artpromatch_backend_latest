@@ -37,13 +37,13 @@ const createBooking = async (
   );
 
   if (!findSlot) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Slot not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Slot not found!');
   }
 
   const artist = await Artist.findOne({ auth: existSlot.auth });
 
   if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   // Check if the booking already exists for the same user and artist at this slot
@@ -151,7 +151,7 @@ const createBooking = async (
 //     .exec();
 
 //   if (!updatedBooking) {
-//     throw new AppError(status.NOT_FOUND, 'Booking not found');
+//     throw new AppError(status.NOT_FOUND, 'Booking not found!');
 //   }
 
 //   return updatedBooking;
@@ -169,7 +169,7 @@ const createBooking = async (
 //     .exec();
 
 //   if (!cancelledBooking) {
-//     throw new AppError(status.NOT_FOUND, 'Booking not found');
+//     throw new AppError(status.NOT_FOUND, 'Booking not found!');
 //   }
 
 //   return cancelledBooking;

@@ -84,7 +84,7 @@ const verifyPaymentSuccess = async (user: IAuth, sessionId: string) => {
     const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (!stripeSession) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
+      throw new AppError(httpStatus.NOT_FOUND, 'Session not found!');
     }
 
     // Check if the payment was successful
