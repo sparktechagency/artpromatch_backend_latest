@@ -40,10 +40,10 @@ router
 // fetchAllArtists
 router.route('/fetch-artists').get(AdminController.fetchAllArtists);
 
-// fetchAllBusiness
+// fetchAllBusinesses
 router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
 
-// fetchAllClient
+// fetchAllClients
 router.route('/fetch-clients').get(AdminController.fetchAllClients);
 
 export const AdminRoutes = router;
