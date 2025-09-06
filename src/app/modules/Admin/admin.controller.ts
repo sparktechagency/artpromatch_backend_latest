@@ -3,8 +3,9 @@ import { asyncHandler } from '../../utils';
 import { AdminService } from './admin.service';
 import sendResponse from '../../utils/sendResponse';
 
-const getFolders = asyncHandler(async (req, res) => {
-  const result = await AdminService.getArtistFolders();
+// getAllArtistsFolders
+const getAllArtistsFolders = asyncHandler(async (req, res) => {
+  const result = await AdminService.getAllArtistsFoldersFromDB();
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -13,6 +14,7 @@ const getFolders = asyncHandler(async (req, res) => {
   });
 });
 
+// changeStatusOnFolder
 const changeStatusOnFolder = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const permission = req.body.permission;
@@ -25,9 +27,10 @@ const changeStatusOnFolder = asyncHandler(async (req, res) => {
   });
 });
 
-const verifiedArtistByAdmin = asyncHandler(async (req, res) => {
+// verifyArtistByAdmin
+const verifyArtistByAdmin = asyncHandler(async (req, res) => {
   const artistId = req.params.artistId;
-  const result = await AdminService.verifiedArtistByAdminIntoDB(artistId);
+  const result = await AdminService.verifyArtistByAdminIntoDB(artistId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -36,9 +39,10 @@ const verifiedArtistByAdmin = asyncHandler(async (req, res) => {
   });
 });
 
-const verifiedBusinessByAdmin = asyncHandler(async (req, res) => {
+// verifyBusinessByAdmin
+const verifyBusinessByAdmin = asyncHandler(async (req, res) => {
   const businessId = req.params.businessId;
-  const result = await AdminService.verifiedBusinessByAdminIntoDB(businessId);
+  const result = await AdminService.verifyBusinessByAdminIntoDB(businessId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -47,8 +51,9 @@ const verifiedBusinessByAdmin = asyncHandler(async (req, res) => {
   });
 });
 
+// fetchAllArtists
 const fetchAllArtists = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllArtists(req.query);
+  const result = await AdminService.fetchAllArtistsFromDB(req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -58,8 +63,9 @@ const fetchAllArtists = asyncHandler(async (req, res) => {
   });
 });
 
-const fetchAllBusiness = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllBusiness(req.query);
+// fetchAllBusinesses
+const fetchAllBusinesses = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchAllBusinessesFromDB(req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -69,8 +75,9 @@ const fetchAllBusiness = asyncHandler(async (req, res) => {
   });
 });
 
-const fetchAllClient = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllClient(req.query);
+// fetchAllClients
+const fetchAllClients = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchAllClientsFromDB(req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -81,11 +88,11 @@ const fetchAllClient = asyncHandler(async (req, res) => {
 });
 
 export const AdminController = {
-  getFolders,
+  getAllArtistsFolders,
   changeStatusOnFolder,
-  verifiedArtistByAdmin,
-  verifiedBusinessByAdmin,
+  verifyArtistByAdmin,
+  verifyBusinessByAdmin,
   fetchAllArtists,
-  fetchAllBusiness,
-  fetchAllClient,
+  fetchAllBusinesses,
+  fetchAllClients,
 };

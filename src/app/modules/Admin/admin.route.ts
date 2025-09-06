@@ -5,11 +5,15 @@ import { AdminController } from './admin.controller';
 
 const router = Router();
 
-router.route('/folders').get(
-  //! auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-  AdminController.getFolders
-);
+// getAllArtistsFolders
+router
+  .route('/folders')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.getAllArtistsFolders
+  );
 
+// changeStatusOnFolder
 router
   .route('/folders/:id')
   .patch(
@@ -17,23 +21,29 @@ router
     AdminController.changeStatusOnFolder
   );
 
+// verifyArtistByAdmin
 router
   .route('/verified-artist/:artistId')
   .patch(
     auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.verifiedArtistByAdmin
+    AdminController.verifyArtistByAdmin
   );
 
+// verifyBusinessByAdmin
 router
   .route('/verified-business/:businessId')
   .patch(
     auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.verifiedBusinessByAdmin
+    AdminController.verifyBusinessByAdmin
   );
 
+// fetchAllArtists
+router.route('/fetch-artists').get(AdminController.fetchAllArtists);
 
-router.route("/fetch-artists").get(AdminController.fetchAllArtists);
-router.route("/fetch-business").get(AdminController.fetchAllBusiness);
-router.route("/fetch-client").get(AdminController.fetchAllClient);
+// fetchAllBusiness
+router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
+
+// fetchAllClient
+router.route('/fetch-clients').get(AdminController.fetchAllClients);
 
 export const AdminRoutes = router;
