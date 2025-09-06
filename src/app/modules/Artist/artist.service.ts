@@ -301,7 +301,7 @@ const updateArtistPersonalInfoIntoDB = async (
 // fetch all artist from db
 const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   const artistsQuery = new QueryBuilder(
-    Artist.find({}).populate([
+    Artist.find().populate([
       {
         path: 'auth',
         select: 'fullName image phoneNumber',

@@ -91,7 +91,7 @@ const verifyBusinessByAdminIntoDB = async (businessId: string) => {
 // fetchAllArtistsFromDB
 const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   const artistQuery = new QueryBuilder(
-    Artist.find({}).populate([
+    Artist.find().populate([
       {
         path: 'auth',
         select: 'fullName image email phoneNumber isProfile',
@@ -151,7 +151,7 @@ const fetchAllBusinessesFromDB = async (query: Record<string, unknown>) => {
 // fetchAllClientsFromDB
 const fetchAllClientsFromDB = async (query: Record<string, unknown>) => {
   const businessQuery = new QueryBuilder(
-    Client.find({}).populate([
+    Client.find().populate([
       {
         path: 'auth',
         select: 'fullName image email phoneNumber isProfile',
