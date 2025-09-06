@@ -23,7 +23,7 @@ router
 
 // verifyArtistByAdmin
 router
-  .route('/verified-artist/:artistId')
+  .route('/verify-artist/:artistId')
   .patch(
     auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
     AdminController.verifyArtistByAdmin
@@ -31,7 +31,7 @@ router
 
 // verifyBusinessByAdmin
 router
-  .route('/verified-business/:businessId')
+  .route('/verify-business/:businessId')
   .patch(
     auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
     AdminController.verifyBusinessByAdmin
