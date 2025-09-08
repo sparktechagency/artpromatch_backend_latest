@@ -27,6 +27,21 @@ const ArtistBoostSchema = new Schema<IArtistBoost>(
       type: Boolean,
       default: true,
     },
+    price: {
+      type: Number,
+      required: true, 
+    },
+    paymentIntentId: {
+      type: String, 
+    },
+    chargeId: {
+      type: String, 
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "succeeded", "failed", "refunded"],
+      default: "pending",
+    },
   },
   { timestamps: true, versionKey: false }
 );

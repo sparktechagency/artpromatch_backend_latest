@@ -7,8 +7,9 @@ import { AppError } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
-import Slot from '../Slot/slot.model';
-import { normalizeWeeklySchedule } from '../Slot/slot.utils';
+import { default as ArtistSchedule, default as Slot } from '../Slot/slot.model';
+import { formatDay, normalizeWeeklySchedule } from '../Slot/slot.utils';
+import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
   TUpdateArtistNotificationPayload,
@@ -17,9 +18,7 @@ import {
   TUpdateArtistPrivacySecurityPayload,
   TUpdateArtistProfilePayload,
 } from './artist.validation';
-import ArtistSchedule from '../Slot/slot.model';
 import { WeeklySchedule } from '../Slot/slot.interface';
-import { IArtist } from './artist.interface';
 
 // update profile
 const updateProfile = async (
@@ -339,15 +338,10 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
 
   let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
 
-  let mergedSchedule: Partial<WeeklySchedule> = {};
-  if (schedule) {
-    mergedSchedule = { ...schedule.weeklySchedule, ...inputSchedule };
-  } else {
-    mergedSchedule = { ...inputSchedule };
-  }
-
-  const normalizedSchedule: WeeklySchedule =
-    normalizeWeeklySchedule(mergedSchedule);
+  const normalizedSchedule = normalizeWeeklySchedule(
+    inputSchedule,
+    schedule?.weeklySchedule
+  );
 
   if (schedule) {
     schedule.weeklySchedule = normalizedSchedule;
@@ -359,7 +353,12 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   }
 
   await schedule.save();
-  return schedule;
+  const updatedSchedule: Partial<Record<keyof WeeklySchedule, any>> = {};
+  for (const day of Object.keys(inputSchedule) as (keyof WeeklySchedule)[]) {
+    updatedSchedule[day] = formatDay(schedule.weeklySchedule[day]);
+  }
+
+  return updatedSchedule;
 };
 
 // For availability
