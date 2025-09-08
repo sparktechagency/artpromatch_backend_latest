@@ -7,7 +7,11 @@ export interface IArtistBoost extends Document {
   startTime: Date;                   
   endTime: Date;                     
   duration: number;                 
-  isActive: boolean;                 
+  isActive: boolean;
+  price:number;
+  paymentIntentId: string;
+  chargeId: string;
+  paymentStatus: string;                 
   createdAt: Date;
   updatedAt: Date;
 }

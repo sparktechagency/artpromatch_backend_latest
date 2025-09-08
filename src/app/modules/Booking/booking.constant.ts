@@ -1,5 +1,6 @@
 export const BOOKING_STATUS = {
     CONFIRMED: 'confirmed',
+    COMPLETED: 'completed',
     CANCELLED: 'cancelled',
     RESCHEDULED: 'rescheduled'
   } as const;

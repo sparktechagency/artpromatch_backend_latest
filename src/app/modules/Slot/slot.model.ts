@@ -40,14 +40,6 @@ const DayScheduleSchema = new mongoose.Schema({
   off: { type: Boolean, default: true },
 });
 
-const GuestSpotSchema = new mongoose.Schema({
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true },
-  startTime: { type: String, required: true },
-  endTime: { type: String, required: true },
-  startMin: { type: Number, required: false },
-  endMin: { type: Number, required: false },
-});
 
 const OffTimeSchema = new mongoose.Schema({
   startDate: { type: Date, required: true, default: null },
@@ -66,7 +58,11 @@ const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
       saturday: { type: DayScheduleSchema, required: false },
       sunday: { type: DayScheduleSchema, required: false },
     },
-    guestSpots: [GuestSpotSchema],
+    activeGuestSpot: {
+      type: Schema.Types.ObjectId,
+      ref: "GuestSpot",
+      default: null,
+    },
     offTimes: [OffTimeSchema],
   },
   { timestamps: true, versionKey: false }
@@ -77,6 +73,7 @@ const ArtistSchedule = model<IArtistSchedule>(
   ArtistScheduleSchema
 );
 export default ArtistSchedule;
+
 
 /*
 

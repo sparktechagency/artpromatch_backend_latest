@@ -45,6 +45,14 @@ export const removeDuplicateSlots = (
   );
 };
 
+// format day
+
+export const formatDay = (day: DaySchedule) => ({
+  startTime: day.startTime,
+  endTime: day.endTime,
+  off: day.off,
+});
+
 // Split a time range into 1-hour chunks
 export const splitIntoHourlySlots = (
   start: string,
@@ -92,16 +100,12 @@ function timeToMinutes(timeStr: string) {
   return hours * 60 + minutes;
 }
 
-const defaultDaySchedule = (): DaySchedule => ({
-  startTime: null,
-  endTime: null,
-  startMin: null,
-  endMin: null,
-  off: true,
-});
+
+const defaultDaySchedule = (): DaySchedule => ({ startTime: null, endTime: null, startMin: null, endMin: null, off: true, });
 
 export const normalizeWeeklySchedule = (
-  input: Partial<WeeklySchedule>
+  input: Partial<WeeklySchedule>,
+  existing?: WeeklySchedule
 ): WeeklySchedule => {
   const days: (keyof WeeklySchedule)[] = [
     'monday',
@@ -116,16 +120,27 @@ export const normalizeWeeklySchedule = (
   const normalized: WeeklySchedule = {} as WeeklySchedule;
 
   for (const day of days) {
-    const schedule = input[day];
+    const incoming = input[day];
+    const prev = existing?.[day];
 
-    if (!schedule || schedule.off) {
+    if (!incoming) {
+      // keep existing day if available, otherwise default
+      normalized[day] = prev ?? defaultDaySchedule();
+      continue;
+    }
+
+    if (incoming.off) {
       normalized[day] = defaultDaySchedule();
     } else {
       normalized[day] = {
-        startTime: schedule.startTime ?? null,
-        endTime: schedule.endTime ?? null,
-        startMin: timeToMinutes(schedule.startTime as string) ?? null,
-        endMin: timeToMinutes(schedule.endTime as string) ?? null,
+        startTime: incoming.startTime ?? prev?.startTime ?? null,
+        endTime: incoming.endTime ?? prev?.endTime ?? null,
+        startMin: incoming.startTime
+          ? timeToMinutes(incoming.startTime)
+          : prev?.startMin ?? null,
+        endMin: incoming.endTime
+          ? timeToMinutes(incoming.endTime)
+          : prev?.endMin ?? null,
         off: false,
       };
     }

@@ -62,14 +62,7 @@ export interface WeeklySchedule {
   saturday: DaySchedule;
   sunday: DaySchedule;
 }
-export interface GuestSpots {
-  startDate: Date;
-  endDate: Date;
-  startTime: string;
-  endTime: string;
-  startMin: number;
-  endMin: number;
-}
+
 
 export interface offTimes {
   startDate: Date;
@@ -79,6 +72,6 @@ export interface offTimes {
 export interface IArtistSchedule {
   artistId: Types.ObjectId;
   weeklySchedule: WeeklySchedule;
-  guestSpots: GuestSpots;
+  activeGuestSpot: Types.ObjectId | null
   offTimes: offTimes;
 }
