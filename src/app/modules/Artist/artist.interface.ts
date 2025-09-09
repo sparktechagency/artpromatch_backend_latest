@@ -21,7 +21,10 @@ export interface IArtist extends Document {
   // image?: string;
   stripeAccountId: string;
   mainLocation: { type: 'Point'; coordinates: [number, number] };
-  currentLocation: { type: 'Point'; coordinates: [number, number] };
+  currentLocation: { type: 'Point'; coordinates: [number, number]; currentLocationUntil: Date | null};
+  city: string;
+  hourlyRate: number;
+  isConnBusiness: boolean;
   idCardFront: string;
   idCardBack: string;
   selfieWithId: string;
@@ -33,5 +36,4 @@ export interface IArtist extends Document {
   contact?: TContact;
   description: string;
   preferences?: Types.ObjectId;
-  timeOff: Date[];
 }

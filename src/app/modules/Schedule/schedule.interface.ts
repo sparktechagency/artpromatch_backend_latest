@@ -65,13 +65,13 @@ export interface WeeklySchedule {
 
 
 export interface offTimes {
-  startDate: Date;
-  endDate: Date;
+  startDate: Date | null;
+  endDate: Date | null;
 }
 
 export interface IArtistSchedule {
   artistId: Types.ObjectId;
   weeklySchedule: WeeklySchedule;
   activeGuestSpot: Types.ObjectId | null
-  offTimes: offTimes;
+  offTimes: [offTimes];
 }

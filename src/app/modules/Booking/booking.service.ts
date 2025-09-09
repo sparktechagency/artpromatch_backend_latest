@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Booking from './booking.model';
-import Slot from '../Slot/slot.model';
-import { IAuth } from '../Auth/auth.interface';
-import { AppError } from '../../utils';
 import httpStatus from 'http-status';
 import { Types } from 'mongoose';
-import { TBookingData } from './booking.validation';
+import { AppError } from '../../utils';
 import Artist from '../Artist/artist.model';
+import { IAuth } from '../Auth/auth.interface';
+import Slot from '../Schedule/schedule.model';
+import Booking from './booking.model';
+import { TBookingData } from './booking.validation';
 
 // Create a new booking
 const createBooking = async (

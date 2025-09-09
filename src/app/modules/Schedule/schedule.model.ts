@@ -1,5 +1,5 @@
 import mongoose, { Schema, model } from 'mongoose';
-import { IArtistSchedule } from './slot.interface';
+import { IArtistSchedule } from './schedule.interface';
 // import { WEEK_DAYS } from '../Artist/artist.constant';
 // import { ISlot } from './slot.interface';
 
@@ -40,8 +40,7 @@ const DayScheduleSchema = new mongoose.Schema({
   off: { type: Boolean, default: true },
 });
 
-
-const OffTimeSchema = new mongoose.Schema({
+export const OffTimeSchema = new mongoose.Schema({
   startDate: { type: Date, required: true, default: null },
   endDate: { type: Date, required: true, default: null },
 });
@@ -60,7 +59,7 @@ const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
     },
     activeGuestSpot: {
       type: Schema.Types.ObjectId,
-      ref: "GuestSpot",
+      ref: 'GuestSpot',
       default: null,
     },
     offTimes: [OffTimeSchema],
@@ -73,7 +72,6 @@ const ArtistSchedule = model<IArtistSchedule>(
   ArtistScheduleSchema
 );
 export default ArtistSchedule;
-
 
 /*
 
