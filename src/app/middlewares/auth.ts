@@ -33,10 +33,14 @@ const auth = (...requiredRoles: TRole[]) => {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
+    if (!user.isVerifiedByOTP) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+    }
+
     if (user.isDeactivated) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        'You account is Deactive now!'
+        'You account is not active now!'
       );
     }
 

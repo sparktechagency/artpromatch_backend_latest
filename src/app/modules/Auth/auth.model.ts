@@ -59,7 +59,7 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: Boolean,
       default: false,
     },
-    isVerified: {
+    isVerifiedByOTP: {
       type: Boolean,
       default: false,
     },

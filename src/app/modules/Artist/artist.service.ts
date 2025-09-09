@@ -173,7 +173,7 @@ const addPortfolioImages = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
-  // if (!artist.isVerified) {
+  // if (!artist.isVerifiedByOTP) {
   //   throw new AppError(httpStatus.BAD_REQUEST, 'Artist not verified');
   // }
 

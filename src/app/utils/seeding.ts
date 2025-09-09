@@ -16,7 +16,7 @@ const seedingAdmin = async () => {
         email: config.super_admin.email,
         password: config.super_admin.password,
         image: config.super_admin.profile_photo || defaultUserImage,
-        isVerified: true,
+        isVerifiedByOTP: true,
       });
     }
   } catch {
