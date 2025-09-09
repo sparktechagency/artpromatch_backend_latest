@@ -55,10 +55,6 @@ const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
       type: String,
       default: null,
     },
-    stripeAccountId: {
-      type: String,
-      default: null,
-    },
     isProfile: {
       type: Boolean,
       default: false,
