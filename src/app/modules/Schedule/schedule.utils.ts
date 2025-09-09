@@ -1,4 +1,4 @@
-import { DaySchedule, WeeklySchedule } from './slot.interface';
+import { DaySchedule, WeeklySchedule } from './schedule.interface';
 
 // Convert HH:mm to total minutes
 export const toMinutes = (time: string) => {
@@ -100,8 +100,13 @@ function timeToMinutes(timeStr: string) {
   return hours * 60 + minutes;
 }
 
-
-const defaultDaySchedule = (): DaySchedule => ({ startTime: null, endTime: null, startMin: null, endMin: null, off: true, });
+const defaultDaySchedule = (): DaySchedule => ({
+  startTime: null,
+  endTime: null,
+  startMin: null,
+  endMin: null,
+  off: true,
+});
 
 export const normalizeWeeklySchedule = (
   input: Partial<WeeklySchedule>,

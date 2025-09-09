@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import { asyncHandler } from '../../utils';
 import { ArtistService } from './artist.service';
 import sendResponse from '../../utils/sendResponse';
+import { TServiceImage} from '../ArtistServices/artist.services.interface';
 
 // update profile
 const updateProfile = asyncHandler(async (req, res) => {
@@ -148,6 +149,42 @@ const updateTimeOff = asyncHandler(async (req, res) => {
   });
 });
 
+
+export const addService = asyncHandler(async (req, res) => {
+  const files = (req.files as TServiceImage) || {};
+  const result = await ArtistService.createService(req.user,req.body,files);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Service created successfully!',
+    data: result,
+  });
+});
+
+export const updateService = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await ArtistService.updateServiceById(id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Service updated successfully!',
+    data: result,
+  });
+});
+
+
+export const deleteService = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  await ArtistService.deleteServiceById(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Service deleted successfully!',
+    data: null,
+  });
+});
+
+
 // get availibility
 // const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
 //   const artistId = req.params.id;
@@ -167,6 +204,9 @@ const updateTimeOff = asyncHandler(async (req, res) => {
 // });
 
 export const ArtistController = {
+  addService,
+  updateService,
+  deleteService,
   updateProfile,
   updatePreferences,
   updateNotificationPreferences,

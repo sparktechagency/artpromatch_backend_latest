@@ -7,8 +7,12 @@ import { AppError } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
-import { default as ArtistSchedule, default as Slot } from '../Slot/slot.model';
-import { formatDay, normalizeWeeklySchedule } from '../Slot/slot.utils';
+import { WeeklySchedule } from '../Schedule/schedule.interface';
+import {
+  default as ArtistSchedule,
+  default as Slot,
+} from '../Schedule/schedule.model';
+import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
@@ -18,7 +22,8 @@ import {
   TUpdateArtistPrivacySecurityPayload,
   TUpdateArtistProfilePayload,
 } from './artist.validation';
-import { WeeklySchedule } from '../Slot/slot.interface';
+import { IService, TServiceImage, TServicePayload } from '../ArtistServices/artist.services.interface';
+import Service from '../ArtistServices/artist.services.model';
 
 // update profile
 const updateProfile = async (
@@ -516,6 +521,47 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
 //   return { calendarData };
 // };
 
+
+const createService = async (
+  user: IAuth,
+  payload: TServicePayload,
+  files: TServiceImage
+): Promise<IService> => {
+
+  const artist = await Artist.findOne({ auth: user.id });
+  if (!artist) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Artist not found'
+    );
+  }
+  const serviceImage = files.serviceImage?.[0]?.path || '';
+  const serviceData = {
+    ...payload,
+    artist: artist._id,
+    image: serviceImage
+  };
+  const service = await Service.create(serviceData);
+
+  return service;
+};
+
+
+//get all services of an artist
+// Update service
+const updateServiceById = async (id: string, data: Partial<IService>) => {
+  const service = await Service.findByIdAndUpdate(id, data, { new: true });
+  if (!service) throw new Error('Service not found');
+  return service;
+};
+
+// Delete service
+const deleteServiceById = async (id: string) => {
+  const service = await Service.findByIdAndDelete(id);
+  if (!service) throw new Error('Service not found');
+  return service;
+};
+
 export const ArtistService = {
   updateProfile,
   updatePreferences,
@@ -529,4 +575,7 @@ export const ArtistService = {
   fetchAllArtistsFromDB,
   updateAvailability,
   updateTimeOff,
+  createService,
+  updateServiceById,
+  deleteServiceById
 };
