@@ -148,6 +148,22 @@ const updateTimeOff = asyncHandler(async (req, res) => {
   });
 });
 
+// update timeoff
+const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
+  async (req, res) => {
+    const result =
+      await ArtistService.createConnectedAccountAndOnboardingLinkForArtistIntoDb(
+        req.user
+      );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      message: 'Onboarding account url is generated successfully!',
+      data: result,
+    });
+  }
+);
+
 // get availibility
 // const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
 //   const artistId = req.params.id;
@@ -179,5 +195,6 @@ export const ArtistController = {
   fetchAllArtists,
   updateAvailability,
   updateTimeOff,
+  createConnectedAccountAndOnboardingLinkForArtist,
   // getAvailabilityExcludingTimeOff,
 };

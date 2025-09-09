@@ -95,5 +95,11 @@ router
     ArtistController.updateTimeOff
   );
 
+router
+  .route('/create-onboarding-account')
+  .post(
+    auth(ROLE.ARTIST),
+    ArtistController.createConnectedAccountAndOnboardingLinkForArtist
+  );
 
 export const ArtistRoutes = router;

@@ -39,7 +39,9 @@ export default {
 
   stripe: {
     secret_key: process.env.STRIPE_SECRET_KEY,
-    webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
+    // webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
+    onboarding_refresh_url: process.env.STRIPE_ONBOARDING_REFRESH_URL,
+    onboarding_return_url: process.env.STRIPE_ONBOARDING_RETURN_URL,
   },
 
   twilio: {
