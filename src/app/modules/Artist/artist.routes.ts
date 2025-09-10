@@ -83,6 +83,13 @@ router
     );
 
       router
+    .route('/services')
+    .get(
+      auth(ROLE.ARTIST),
+       ArtistController.getSpecificServices
+    );
+
+      router
     .route('/service/update/:id')
     .post(
       auth(ROLE.ARTIST),

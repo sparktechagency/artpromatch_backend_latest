@@ -161,6 +161,17 @@ export const addService = asyncHandler(async (req, res) => {
   });
 });
 
+export const getSpecificServices = asyncHandler(async (req, res) => {
+  const result = await ArtistService.getServicesByArtist(req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Service created successfully!',
+    data: result,
+  });
+});
+
+
 export const updateService = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const result = await ArtistService.updateServiceById(id, req.body);
@@ -219,5 +230,6 @@ export const ArtistController = {
   fetchAllArtists,
   updateAvailability,
   updateTimeOff,
+  getSpecificServices
   // getAvailabilityExcludingTimeOff,
 };
