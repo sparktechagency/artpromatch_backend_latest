@@ -3,7 +3,7 @@ import fs from 'fs';
 import httpStatus from 'http-status';
 import QueryBuilder from '../../builders/QueryBuilder';
 import { TAvailability } from '../../schema/slotValidation';
-import { AppError } from '../../utils';
+import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
@@ -22,6 +22,12 @@ import {
   TUpdateArtistPrivacySecurityPayload,
   TUpdateArtistProfilePayload,
 } from './artist.validation';
+import ArtistSchedule from '../Slot/slot.model';
+import { WeeklySchedule } from '../Slot/slot.interface';
+import { IArtist } from './artist.interface';
+import stripe from '../Payment/payment.service';
+import { JwtPayload } from 'jsonwebtoken';
+import config from '../../config';
 import { IService, TServiceImage, TServicePayload } from '../ArtistServices/artist.services.interface';
 import Service from '../ArtistServices/artist.services.model';
 
@@ -174,7 +180,7 @@ const addPortfolioImages = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
-  // if (!artist.isVerified) {
+  // if (!artist.isVerifiedByOTP) {
   //   throw new AppError(httpStatus.BAD_REQUEST, 'Artist not verified');
   // }
 
@@ -448,7 +454,102 @@ const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
   return updatedArtist;
 };
 
-// get availibilty excluding time off
+const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
+  userData: JwtPayload
+) => {
+  try {
+    // Step 1: Find Artist
+    const artist = await Artist.findOne(
+      { auth: userData.id },
+      { _id: 1, stripeAccountId: 1, isStripeReady: 1, auth: 1 }
+    ).populate('auth');
+
+    if (!artist) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Artist not found or restricted.'
+      );
+    }
+
+    // Step 2: If Stripe account exists but not ready yet
+    if (artist.stripeAccountId && !artist.isStripeReady) {
+      const account = await stripe.accounts.retrieve(artist.stripeAccountId);
+
+      const isStripeFullyOk =
+        account?.capabilities?.card_payments === 'active' &&
+        account?.capabilities?.transfers === 'active';
+
+      if (isStripeFullyOk) {
+        // Mark artist as Stripe ready
+        artist.isStripeReady = true;
+        await artist.save();
+
+        return null; // Already ready, no need for onboarding link
+      }
+
+      // Generate new onboarding link for existing account
+      const onboardingData = await stripe.accountLinks.create({
+        account: artist.stripeAccountId,
+        refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${artist.stripeAccountId}`,
+        return_url: config.stripe.onboarding_return_url,
+        type: 'account_onboarding',
+      });
+
+      return onboardingData.url;
+    }
+
+    // Step 3: If no Stripe account, create a new one
+    if (!artist.stripeAccountId) {
+      const account = await stripe.accounts.create({
+        type: 'express',
+        email: (artist?.auth as any)?.email,
+        country: 'US',
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        business_type: 'individual',
+        settings: {
+          payouts: { schedule: { interval: 'manual' } },
+        },
+      });
+
+      const onboardingData = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${account.id}`,
+        return_url: config.stripe.onboarding_return_url,
+        type: 'account_onboarding',
+      });
+
+      const updatedArtist = await Artist.findByIdAndUpdate(
+        artist._id,
+        { $set: { stripeAccountId: account.id, isStripeReady: false } },
+        { new: true }
+      );
+
+      if (!updatedArtist) {
+        await stripe.accounts.del(account.id); // cleanup
+
+        throw new AppError(
+          httpStatus.NOT_EXTENDED,
+          'Failed to save Stripe account ID into DB!'
+        );
+      }
+
+      return onboardingData.url;
+    }
+
+    return null; // Fallback
+  } catch (error) {
+    Logger.error('Stripe Onboarding Error:', error);
+    throw new AppError(
+      httpStatus.SERVICE_UNAVAILABLE,
+      'Stripe onboarding service unavailable'
+    );
+  }
+};
+
+// get availability excluding time off
 // const getAvailabilityExcludingTimeOff = async (
 //   artistId: string,
 //   month: number,
@@ -575,6 +676,7 @@ export const ArtistService = {
   fetchAllArtistsFromDB,
   updateAvailability,
   updateTimeOff,
+  createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createService,
   updateServiceById,
   deleteServiceById

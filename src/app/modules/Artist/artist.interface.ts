@@ -7,9 +7,9 @@ import {
 } from './artist.constant';
 
 interface IBoost {
-      lastBoostAt: Date | null;
-      endTime: Date | null
-      isActive: boolean
+  lastBoostAt: Date | null;
+  endTime: Date | null;
+  isActive: boolean;
 }
 export interface IArtist extends Document {
   auth: Types.ObjectId;
@@ -20,6 +20,7 @@ export interface IArtist extends Document {
   city: string;
   // image?: string;
   stripeAccountId: string;
+  isStripeReady: boolean;
   mainLocation: { type: 'Point'; coordinates: [number, number] };
   currentLocation: { type: 'Point'; coordinates: [number, number]; currentLocationUntil: Date | null};
   city: string;

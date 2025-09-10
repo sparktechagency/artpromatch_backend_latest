@@ -2,7 +2,7 @@ import { Schema, model } from 'mongoose';
 import { ARTIST_TYPE, expertiseTypes } from './artist.constant';
 import { IArtist } from './artist.interface';
 
-// 🔹 Subschema: Contact
+// Subschema: Contact
 const contactSchema = new Schema(
   {
     email: { type: String },
@@ -12,14 +12,14 @@ const contactSchema = new Schema(
   { _id: false }
 );
 
-// 🔹 Subschema: Services
+// Subschema: Services
 const servicesSchema = new Schema({
   name: { type: String, required: true },
   duration: { type: String, required: true },
   bufferTime: { type: String, default: '' },
 });
 
-// 🔹 Main Artist Schema
+// Main Artist Schema
 const artistSchema = new Schema<IArtist>(
   {
     auth: {
@@ -59,6 +59,11 @@ const artistSchema = new Schema<IArtist>(
     stripeAccountId: {
       type: String,
       default: null,
+    },
+
+    isStripeReady: {
+      type: Boolean,
+      default: false,
     },
 
     mainLocation: {

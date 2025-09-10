@@ -17,7 +17,7 @@ export interface IAuth extends Document {
   isSocialLogin: boolean;
   refreshToken?: string | null;
   isProfile: boolean;
-  isVerified: boolean;
+  isVerifiedByOTP: boolean;
   isDeactivated: boolean;
   deactivationReason: string;
   deactivatedAt: Date;
