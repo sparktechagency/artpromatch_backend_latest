@@ -23,9 +23,7 @@ export interface IArtist extends Document {
   isStripeReady: boolean;
   mainLocation: { type: 'Point'; coordinates: [number, number] };
   currentLocation: { type: 'Point'; coordinates: [number, number]; currentLocationUntil: Date | null};
-  city: string;
   hourlyRate: number;
-  isConnBusiness: boolean;
   idCardFront: string;
   idCardBack: string;
   selfieWithId: string;

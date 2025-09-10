@@ -1,10 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 import QueryBuilder from '../../builders/QueryBuilder';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
+import {
+  IService,
+  TServiceImage,
+  TServicePayload,
+} from '../ArtistServices/artist.services.interface';
+import Service from '../ArtistServices/artist.services.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
 import { WeeklySchedule } from '../Schedule/schedule.interface';
@@ -622,31 +629,66 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 //   return { calendarData };
 // };
 
-
 const createService = async (
   user: IAuth,
   payload: TServicePayload,
   files: TServiceImage
 ): Promise<IService> => {
-
   const artist = await Artist.findOne({ auth: user.id });
   if (!artist) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Artist not found'
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found');
   }
   const serviceImage = files.serviceImage?.[0]?.path || '';
   const serviceData = {
     ...payload,
     artist: artist._id,
-    image: serviceImage
+    image: serviceImage,
   };
   const service = await Service.create(serviceData);
 
   return service;
 };
 
+const getServicesByArtist = async (user: IAuth) => {
+  const artist = await Artist.findOne({ auth: user.id });
+  if (!artist) throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found');
+  const artistObjectId = new mongoose.Types.ObjectId(artist._id as string);
+
+  const result = await Service.aggregate([
+    { $match: { artist: artistObjectId } },
+
+    {
+      $lookup: {
+        from: 'artists',
+        localField: 'artist',
+        foreignField: '_id',
+        as: 'artistInfo',
+      },
+    },
+
+    { $unwind: '$artistInfo' },
+
+    {
+      $addFields: {
+        price: {
+          $multiply: ['$duration', { $divide: ['$artistInfo.hourlyRate', 60] }],
+        },
+      },
+    },
+
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        duration: 1,
+        bufferTime: 1,
+        price: 1,
+      },
+    },
+  ]);
+
+  return result;
+};
 
 //get all services of an artist
 // Update service
@@ -678,6 +720,7 @@ export const ArtistService = {
   updateTimeOff,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createService,
+  getServicesByArtist,
   updateServiceById,
-  deleteServiceById
+  deleteServiceById,
 };
