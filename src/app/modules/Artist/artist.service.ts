@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
-import mongoose from 'mongoose';
+import { Types } from 'mongoose';
 import QueryBuilder from '../../builders/QueryBuilder';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import {
   IService,
-  TServiceImage,
+  TServiceImages,
   TServicePayload,
-} from '../ArtistServices/artist.services.interface';
+} from '../Service/service.interface';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
 
@@ -29,7 +29,7 @@ import stripe from '../Payment/payment.service';
 import { JwtPayload } from 'jsonwebtoken';
 import config from '../../config';
 
-import Service from '../ArtistServices/artist.services.model';
+import Service from '../Service/service.model';
 import ArtistSchedule from '../Schedule/schedule.model';
 import { WeeklySchedule } from '../Schedule/schedule.interface';
 
@@ -627,57 +627,70 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 const createService = async (
   user: IAuth,
   payload: TServicePayload,
-  files: TServiceImage
+  files: TServiceImages
 ): Promise<IService> => {
+  const artist = await Artist.findOne({ auth: user.id });
+  if (!artist) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
+  }
+  const thumbnail = files?.thumbnail[0]?.path || '';
+  const images = files?.images?.map((image) => image.path || '');
+
+  const serviceData = {
+    ...payload,
+    artist: artist._id,
+    thumbnail: thumbnail,
+    images: images,
+  };
+
+  const service = await Service.create(serviceData);
+  return service;
+};
+
+
+// getServicesByArtistFromDB
+const getServicesByArtistFromDB = async (user: IAuth) => {
   const artist = await Artist.findOne({ auth: user.id });
   if (!artist) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found');
   }
-  const serviceImage = files.serviceImage?.[0]?.path || '';
-  const serviceData = {
-    ...payload,
-    artist: artist._id,
-    image: serviceImage,
-  };
-  const service = await Service.create(serviceData);
 
-  return service;
-};
-
-const getServicesByArtist = async (user: IAuth) => {
-  const artist = await Artist.findOne({ auth: user.id });
-  if (!artist) throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found');
-  const artistObjectId = new mongoose.Types.ObjectId(artist._id as string);
+  const artistObjectId = new Types.ObjectId(artist._id as string);
 
   const result = await Service.aggregate([
     { $match: { artist: artistObjectId } },
 
-    {
-      $lookup: {
-        from: 'artists',
-        localField: 'artist',
-        foreignField: '_id',
-        as: 'artistInfo',
-      },
-    },
+    // {
+    //   $lookup: {
+    //     from: 'artists',
+    //     localField: 'artist',
+    //     foreignField: '_id',
+    //     as: 'artistInfo',
+    //   },
+    // },
 
-    { $unwind: '$artistInfo' },
+    // { $unwind: { path: '$artistInfo', preserveNullAndEmptyArrays: true } },
 
-    {
-      $addFields: {
-        price: {
-          $multiply: ['$duration', { $divide: ['$artistInfo.hourlyRate', 60] }],
-        },
-      },
-    },
+    // {
+    //   $addFields: {
+    //     price: {
+    //       $multiply: ['$duration', { $divide: ['$artistInfo.hourlyRate', 60] }],
+    //     },
+    //   },
+    // },
 
     {
       $project: {
         _id: 1,
-        name: 1,
-        duration: 1,
-        bufferTime: 1,
+        title: 1,
         price: 1,
+        durationInMinutes: 1,
+        bufferTimeInMinutes: 1,
+        thumbnail: 1,
+        images: 1,
+        totalCompletedOrder: 1,
+        totalReviewCount: 1,
+        avgRating: 1,
       },
     },
   ]);
@@ -715,7 +728,7 @@ export const ArtistService = {
   updateTimeOff,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createService,
-  getServicesByArtist,
+  getServicesByArtistFromDB,
   updateServiceById,
   deleteServiceById,
 };

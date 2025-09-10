@@ -5,7 +5,7 @@ import { ROLE } from '../Auth/auth.constant';
 import { ArtistValidation } from './artist.validation';
 import { upload } from '../../lib';
 import { SlotValidation } from '../../schema/slotValidation';
-import { ArtistServiceValidation } from '../ArtistServices/artist.services.zod';
+import { ArtistServiceValidation } from '../Service/service.zod';
 import { validateRequestFromFormData } from '../../middlewares/validateRequest';
 
 const router = Router();
@@ -71,43 +71,36 @@ router
     ArtistController.updateArtistPortfolio
   );
 
-  router
-    .route('/service/create')
-    .post(
-        upload.fields([
-          { name: 'serviceImage', maxCount: 1 },
-        ]),
-      auth(ROLE.ARTIST),
-      validateRequestFromFormData(ArtistServiceValidation.createServiceSchema),
-       ArtistController.addService
-    );
+router.route('/service/create').post(
+  upload.fields([
+    { name: 'images', maxCount: 5 },
+    { name: 'thumbnail', maxCount: 1 },
+  ]),
+  auth(ROLE.ARTIST),
+  validateRequestFromFormData(ArtistServiceValidation.createServiceSchema),
+  ArtistController.addService
+);
 
-    router
-    .route('/services')
-    .get(
-      auth(ROLE.ARTIST),
-       ArtistController.getSpecificServices
-    );
+router
+  .route('/services')
+  .get(auth(ROLE.ARTIST), ArtistController.getServicesByArtist);
 
-    router
-    .route('/service/update/:id')
-    .post(
-      auth(ROLE.ARTIST),
-      validateRequest(ArtistServiceValidation.updateServiceSchema),
-       ArtistController.updateService
-    );
+router
+  .route('/service/update/:id')
+  .post(
+    auth(ROLE.ARTIST),
+    validateRequest(ArtistServiceValidation.updateServiceSchema),
+    ArtistController.updateService
+  );
 
-    router
-    .route('/service/delete/:id')
-    .post(
-      auth(ROLE.ARTIST),
-      ArtistController.deleteService
-    );
+router
+  .route('/service/delete/:id')
+  .post(auth(ROLE.ARTIST), ArtistController.deleteService);
 
 router
   .route('/remove-image')
   .delete(auth(ROLE.ARTIST), ArtistController.removeImage);
- 
+
 router
   .route('/availability')
   .post(

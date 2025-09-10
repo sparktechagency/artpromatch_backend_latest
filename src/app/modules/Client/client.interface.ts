@@ -1,4 +1,4 @@
-import mongoose, { Document } from 'mongoose';
+import { Document } from 'mongoose';
 // import { locationSchema } from '../Location/location.model';
 import {
   ArtistType,
@@ -8,6 +8,7 @@ import {
   HomeView,
   ServiceType,
 } from './client.constant';
+import { Types } from 'mongoose';
 
 export interface IClient extends Document {
   image?: string;
@@ -21,5 +22,5 @@ export interface IClient extends Document {
   preferredArtistType: ArtistType;
   language: string;
   dateFormat: DateFormat;
-  auth: mongoose.Types.ObjectId;
+  auth: Types.ObjectId;
 }

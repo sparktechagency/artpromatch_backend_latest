@@ -22,17 +22,23 @@ export interface IArtist extends Document {
   stripeAccountId: string;
   isStripeReady: boolean;
   mainLocation: { type: 'Point'; coordinates: [number, number] };
-  currentLocation: { type: 'Point'; coordinates: [number, number]; currentLocationUntil: Date | null};
+  currentLocation: {
+    type: 'Point';
+    coordinates: [number, number];
+    currentLocationUntil: Date | null;
+  };
   hourlyRate: number;
   idCardFront: string;
   idCardBack: string;
   selfieWithId: string;
-  taskCompleted: number;
-  avgRating: number;
-  totalReview: number;
+
   boost: IBoost;
   services?: TServices;
   contact?: TContact;
   description: string;
   preferences?: Types.ObjectId;
+
+  totalCompletedService: number;
+  totalReviewCount: number;
+  avgRating: number;
 }

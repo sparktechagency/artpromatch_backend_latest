@@ -1,69 +1,49 @@
-import mongoose, { Schema } from "mongoose";
-import { IArtistBoost } from "./boost.profile.interface";
-
+import mongoose, { Schema } from 'mongoose';
+import { IArtistBoost } from './boost.profile.interface';
 
 const ArtistBoostSchema = new Schema<IArtistBoost>(
   {
-    artistId: {
+    artist: {
       type: Schema.Types.ObjectId,
       ref: 'Artist',
       required: true,
       index: true,
     },
+
     startTime: {
       type: Date,
       default: Date.now,
     },
     endTime: {
       type: Date,
-      required: true,
+      default: Date.now() + 12 * 60 * 60 * 1000,
     },
-    duration: {
+
+    price: {
       type: Number,
       required: true,
-      default: 12,
+    },
+    paymentIntentId: {
+      type: String,
+    },
+    chargeId: {
+      type: String,
+    },
+
+    paymentStatus: {
+      type: String,
+      enum: ['Pending', 'Succeeded', 'Failed', 'Refunded'],
+      default: 'Pending',
     },
     isActive: {
       type: Boolean,
       default: true,
     },
-    price: {
-      type: Number,
-      required: true, 
-    },
-    paymentIntentId: {
-      type: String, 
-    },
-    chargeId: {
-      type: String, 
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "succeeded", "failed", "refunded"],
-      default: "pending",
-    },
   },
   { timestamps: true, versionKey: false }
 );
 
-
-ArtistBoostSchema.pre("validate", function (next) {
-  if (this.isNew) {
-    if (!this.endTime) {
-      this.endTime = new Date(
-        this.startTime.getTime() + this.duration * 60 * 60 * 1000
-      );
-    }
-  }
-
-  if (this.endTime < new Date()) {
-    this.isActive = false;
-  }
-
-  next();
-});
-
 export const ArtistBoost = mongoose.model<IArtistBoost>(
-  "ArtistBoost",
+  'ArtistBoost',
   ArtistBoostSchema
 );

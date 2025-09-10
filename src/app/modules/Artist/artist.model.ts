@@ -69,7 +69,7 @@ const artistSchema = new Schema<IArtist>(
     mainLocation: {
       type: {
         type: String,
-         enum: ['Point'],
+        enum: ['Point'],
         default: 'Point',
       },
       coordinates: { type: [Number], required: true },
@@ -89,10 +89,10 @@ const artistSchema = new Schema<IArtist>(
       type: String,
       required: true,
     },
-    
+
     hourlyRate: {
       type: Number,
-      required:true,
+      required: true,
     },
 
     idCardBack: {
@@ -103,21 +103,6 @@ const artistSchema = new Schema<IArtist>(
     selfieWithId: {
       type: String,
       required: true,
-    },
-
-    taskCompleted: {
-      type: Number,
-      default: 0,
-    },
-
-    avgRating: {
-      type: Number,
-      default: 0,
-    },
-
-    totalReview: {
-      type: Number,
-      default: 0,
     },
 
     boost: {
@@ -142,6 +127,19 @@ const artistSchema = new Schema<IArtist>(
     preferences: {
       type: Schema.Types.ObjectId,
       ref: 'ArtistPreferences',
+    },
+
+    totalCompletedService: {
+      type: Number,
+      default: 0,
+    },
+    totalReviewCount: {
+      type: Number,
+      default: 0,
+    },
+    avgRating: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true, versionKey: false }
