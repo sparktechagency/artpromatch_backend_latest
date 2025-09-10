@@ -6,12 +6,20 @@ import { BookingValidation } from './booking.validation';
 
 const router = Router();
 
+// router
+//   .route('/create')
+//   .post(
+//     auth(ROLE.CLIENT),
+//     validateRequest(BookingValidation.bookingSchema),
+//     BookingController.createBooking
+//   );
+
 router
-  .route('/')
+  .route('/review')
   .post(
     auth(ROLE.CLIENT),
     validateRequest(BookingValidation.bookingSchema),
-    BookingController.saveBooking
+    BookingController.ReviewAfterAServiceIsCompleted
   );
 
 export const BookingRoutes = router;

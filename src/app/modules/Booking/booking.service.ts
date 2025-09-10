@@ -1,109 +1,107 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import httpStatus from 'http-status';
-import { Types } from 'mongoose';
-import { AppError } from '../../utils';
-import Artist from '../Artist/artist.model';
+// import httpStatus from 'http-status';
+// import { Types } from 'mongoose';
+// import { AppError } from '../../utils';
+// import Artist from '../Artist/artist.model';
 import { IAuth } from '../Auth/auth.interface';
-import Slot from '../Schedule/schedule.model';
-import Booking from './booking.model';
-import { TBookingData } from './booking.validation';
+// import Slot from '../Schedule/schedule.model';
+// import Booking from './booking.model';
+// import { TBookingData } from './booking.validation';
 
-// Create a new booking
-const createBooking = async (
-  user: IAuth,
-  payload: TBookingData,
-  file: Express.Multer.File | undefined
-) => {
-  const {
-    slotId,
-    date,
-    service,
-    serviceType,
-    description,
-    paymentIntentId,
-    bodyLocation,
-    transactionId,
-  } = payload;
-  // Check if the selected slot exists and is available
-  const existSlot = await Slot.findOne({ 'slots._id': slotId });
+// createBookingIntoDB
+// const createBookingIntoDB = async (
+//   user: IAuth,
+//   payload: TBookingData,
+//   file: Express.Multer.File | undefined
+// ) => {
+//   const {
+//     slotId,
+//     date,
+//     service,
+//     serviceType,
+//     description,
+//     paymentIntentId,
+//     bodyLocation,
+//     transactionId,
+//   } = payload;
+//   // Check if the selected slot exists and is available
+//   const existSlot = await Slot.findOne({ 'slots._id': slotId });
 
-  if (!existSlot) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Slot not available on this day');
-  }
+//   if (!existSlot) {
+//     throw new AppError(httpStatus.NOT_FOUND, 'Slot not available on this day');
+//   }
 
-  const findSlot = existSlot.slots.find(
-    (item) => (item._id as Types.ObjectId).toString() === slotId
-  );
+//   const findSlot = existSlot.slots.find(
+//     (item) => (item._id as Types.ObjectId).toString() === slotId
+//   );
 
-  if (!findSlot) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Slot not found!');
-  }
+//   if (!findSlot) {
+//     throw new AppError(httpStatus.NOT_FOUND, 'Slot not found!');
+//   }
 
-  const artist = await Artist.findOne({ auth: existSlot.auth });
+//   const artist = await Artist.findOne({ auth: existSlot.auth });
 
-  if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-  }
+//   if (!artist) {
+//     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+//   }
 
-  // Check if the booking already exists for the same user and artist at this slot
-  const existingBooking = await Booking.findOne({
-    artist: artist._id,
-    user: user._id,
-    date,
-    slotTimeId: slotId,
-  });
+//   // Check if the booking already exists for the same user and artist at this slot
+//   const existingBooking = await Booking.findOne({
+//     artist: artist._id,
+//     user: user._id,
+//     date,
+//     slotTimeId: slotId,
+//   });
 
-  if (existingBooking) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'You have already booked for this time slot'
-    );
-  }
+//   if (existingBooking) {
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       'You have already booked for this time slot'
+//     );
+//   }
 
-  let referralImage = null;
+//   let referralImage = null;
 
-  // if referral image
-  if (file) {
-    referralImage = file.path;
-  }
+//   // if referral image
+//   if (file) {
+//     referralImage = file.path;
+//   }
 
-  // Create the booking
-  const booking = await Booking.create({
-    artist: artist._id,
-    user: user._id,
-    date,
-    day: existSlot.day,
-    paymentIntentId,
-    transactionId,
-    slot: existSlot._id,
-    slotTimeId: findSlot._id,
-    service,
-    serviceType,
-    bodyLocation,
-    description,
-    referralImage,
-  });
+//   // Create the booking
+//   const booking = await Booking.create({
+//     artist: artist._id,
+//     user: user._id,
+//     date,
+//     day: existSlot.day,
+//     paymentIntentId,
+//     transactionId,
+//     slot: existSlot._id,
+//     slotTimeId: findSlot._id,
+//     service,
+//     serviceType,
+//     bodyLocation,
+//     description,
+//     referralImage,
+//   });
 
-  const result = await Booking.findById(booking._id).populate('slot');
+//   const result = await Booking.findById(booking._id).populate('slot');
 
-  if (!result) {
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      'Something went wrong saving booking into DB'
-    );
-  }
+//   if (!result) {
+//     throw new AppError(
+//       httpStatus.INTERNAL_SERVER_ERROR,
+//       'Something went wrong saving booking into DB'
+//     );
+//   }
 
-  const { slot, slotTimeId, ...remainData } = result?.toObject() as any;
+//   const { slot, slotTimeId, ...remainData } = result?.toObject() as any;
 
-  return {
-    slot: slot?.slots?.find(
-      //@ts-ignore
-      (item) => item._id?.toString() === slotTimeId?.toString()
-    ),
-    ...remainData,
-  };
-};
+//   return {
+//     slot: slot?.slots?.find(
+//       //@ts-ignore
+//       (item) => item._id?.toString() === slotTimeId?.toString()
+//     ),
+//     ...remainData,
+//   };
+// };
 
 // // Get all bookings for a user (client)
 // const getUserBookings = async (user: IAuth) => {
@@ -190,11 +188,29 @@ const createBooking = async (
 //   return true; // Slot is available
 // };
 
+type TReviewData = {
+  review: string;
+  rating: number;
+  secretReviewForAdmin?: string;
+};
+
+// ReviewAfterAServiceIsCompletedIntoDB
+const ReviewAfterAServiceIsCompletedIntoDB = (
+  payload: TReviewData,
+  user: IAuth
+) => {
+  console.log({ payload, user });
+
+
+  
+};
+
 export const BookingService = {
-  createBooking,
+  // createBookingIntoDB,
   // getUserBookings,
   // getArtistBookings,
   // updateBookingStatus,
   // cancelBooking,
   // checkAvailability,
+  ReviewAfterAServiceIsCompletedIntoDB,
 };

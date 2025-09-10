@@ -46,7 +46,6 @@ const verifySignupOtp = asyncHandler(async (req, res) => {
 
 // 4. signin
 const signin = asyncHandler(async (req, res) => {
-  console.log(req.body)
   const result = await AuthService.signinIntoDB(req.body);
   
   sendResponse(res, {

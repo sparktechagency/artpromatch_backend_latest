@@ -13,8 +13,8 @@ import { Types } from 'mongoose';
 //   artist: Types.ObjectId;
 //   day: TWeekDay;
 //   slots: IAvailabilitySlot[];
-//   createdAt?: Date;
-//   updatedAt?: Date;
+//   createdAt: Date;
+//   updatedAt: Date;
 // }
 
 // import { Document, Types } from 'mongoose';
@@ -25,8 +25,8 @@ import { Types } from 'mongoose';
 //   endTime: string;
 //   startDateTime: Date;
 //   endDateTime: Date;
-//   createdAt?: Date;
-//   updatedAt?: Date;
+//   createdAt: Date;
+//   updatedAt: Date;
 // }
 
 // export interface IArtistSchedule extends Document {
@@ -39,8 +39,8 @@ import { Types } from 'mongoose';
 //   sat: ISlot[];
 //   sun: ISlot[];
 
-//   createdAt?: Date;
-//   updatedAt?: Date;
+//   createdAt: Date;
+//   updatedAt: Date;
 // }
 
 // One break per day, always 7 days in DB
@@ -63,7 +63,6 @@ export interface WeeklySchedule {
   sunday: DaySchedule;
 }
 
-
 export interface offTimes {
   startDate: Date | null;
   endDate: Date | null;
@@ -72,6 +71,6 @@ export interface offTimes {
 export interface IArtistSchedule {
   artistId: Types.ObjectId;
   weeklySchedule: WeeklySchedule;
-  activeGuestSpot: Types.ObjectId | null
+  activeGuestSpot: Types.ObjectId | null;
   offTimes: [offTimes];
 }
