@@ -6,10 +6,10 @@ export const validateRequest = (schema: AnyZodObject) => {
   return asyncHandler(
     async (req: Request, _res: Response, next: NextFunction) => {
       const parsedData = await schema.parseAsync({
-        body: req.body,
+        body:req.body,
         cookies: req.cookies,
       });
-
+ 
       req.body = parsedData.body;
       req.cookies = parsedData.cookies;
 

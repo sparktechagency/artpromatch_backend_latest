@@ -7,8 +7,13 @@ import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
-import Slot from '../Slot/slot.model';
-import { normalizeWeeklySchedule } from '../Slot/slot.utils';
+import { WeeklySchedule } from '../Schedule/schedule.interface';
+import {
+  default as ArtistSchedule,
+  default as Slot,
+} from '../Schedule/schedule.model';
+import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
+import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
   TUpdateArtistNotificationPayload,
@@ -23,6 +28,8 @@ import { IArtist } from './artist.interface';
 import stripe from '../Payment/payment.service';
 import { JwtPayload } from 'jsonwebtoken';
 import config from '../../config';
+import { IService, TServiceImage, TServicePayload } from '../ArtistServices/artist.services.interface';
+import Service from '../ArtistServices/artist.services.model';
 
 // update profile
 const updateProfile = async (
@@ -342,15 +349,10 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
 
   let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
 
-  let mergedSchedule: Partial<WeeklySchedule> = {};
-  if (schedule) {
-    mergedSchedule = { ...schedule.weeklySchedule, ...inputSchedule };
-  } else {
-    mergedSchedule = { ...inputSchedule };
-  }
-
-  const normalizedSchedule: WeeklySchedule =
-    normalizeWeeklySchedule(mergedSchedule);
+  const normalizedSchedule = normalizeWeeklySchedule(
+    inputSchedule,
+    schedule?.weeklySchedule
+  );
 
   if (schedule) {
     schedule.weeklySchedule = normalizedSchedule;
@@ -362,7 +364,12 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   }
 
   await schedule.save();
-  return schedule;
+  const updatedSchedule: Partial<Record<keyof WeeklySchedule, any>> = {};
+  for (const day of Object.keys(inputSchedule) as (keyof WeeklySchedule)[]) {
+    updatedSchedule[day] = formatDay(schedule.weeklySchedule[day]);
+  }
+
+  return updatedSchedule;
 };
 
 // For availability
@@ -615,6 +622,47 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 //   return { calendarData };
 // };
 
+
+const createService = async (
+  user: IAuth,
+  payload: TServicePayload,
+  files: TServiceImage
+): Promise<IService> => {
+
+  const artist = await Artist.findOne({ auth: user.id });
+  if (!artist) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Artist not found'
+    );
+  }
+  const serviceImage = files.serviceImage?.[0]?.path || '';
+  const serviceData = {
+    ...payload,
+    artist: artist._id,
+    image: serviceImage
+  };
+  const service = await Service.create(serviceData);
+
+  return service;
+};
+
+
+//get all services of an artist
+// Update service
+const updateServiceById = async (id: string, data: Partial<IService>) => {
+  const service = await Service.findByIdAndUpdate(id, data, { new: true });
+  if (!service) throw new Error('Service not found');
+  return service;
+};
+
+// Delete service
+const deleteServiceById = async (id: string) => {
+  const service = await Service.findByIdAndDelete(id);
+  if (!service) throw new Error('Service not found');
+  return service;
+};
+
 export const ArtistService = {
   updateProfile,
   updatePreferences,
@@ -629,4 +677,7 @@ export const ArtistService = {
   updateAvailability,
   updateTimeOff,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
+  createService,
+  updateServiceById,
+  deleteServiceById
 };

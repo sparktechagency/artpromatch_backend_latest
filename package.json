@@ -40,6 +40,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
     "@types/multer": "^1.4.13",
     "@types/nodemailer": "^6.4.19",
     "@types/otp-generator": "^4.0.2",
@@ -47,6 +48,7 @@
     "eslint": "^9.34.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
+    "morgan": "^1.10.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0"

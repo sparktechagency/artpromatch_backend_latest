@@ -15,7 +15,6 @@ const contactSchema = new Schema(
 // Subschema: Services
 const servicesSchema = new Schema({
   name: { type: String, required: true },
-  price: { type: Number, required: true },
   duration: { type: String, required: true },
   bufferTime: { type: String, default: '' },
 });
@@ -70,10 +69,8 @@ const artistSchema = new Schema<IArtist>(
     mainLocation: {
       type: {
         type: String,
-        enum: ['Point'],
+         enum: ['Point'],
         default: 'Point',
-        // enum: ['Point'],
-        // required: true,
       },
       coordinates: { type: [Number], required: true },
     },
@@ -83,8 +80,6 @@ const artistSchema = new Schema<IArtist>(
         type: String,
         enum: ['Point'],
         default: 'Point',
-        // enum: ['Point'],
-        // required: true,
       },
       coordinates: { type: [Number], required: true },
       currentLocationUntil: { type: Date, default: null },
@@ -93,6 +88,11 @@ const artistSchema = new Schema<IArtist>(
     idCardFront: {
       type: String,
       required: true,
+    },
+    
+    hourlyRate: {
+      type: Number,
+      required:true,
     },
 
     idCardBack: {
@@ -143,12 +143,6 @@ const artistSchema = new Schema<IArtist>(
       type: Schema.Types.ObjectId,
       ref: 'ArtistPreferences',
     },
-
-    timeOff: [
-      {
-        type: Date,
-      },
-    ],
   },
   { timestamps: true, versionKey: false }
 );

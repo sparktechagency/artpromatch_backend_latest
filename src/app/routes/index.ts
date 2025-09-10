@@ -29,6 +29,7 @@ const moduleRoutes = [
     path: '/artists',
     route: ArtistRoutes,
   },
+
   {
     path: '/business',
     route: BusinessRoutes,

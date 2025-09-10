@@ -5,6 +5,8 @@ import { ROLE } from '../Auth/auth.constant';
 import { ArtistValidation } from './artist.validation';
 import { upload } from '../../lib';
 import { SlotValidation } from '../../schema/slotValidation';
+import { ArtistServiceValidation } from '../ArtistServices/artist.services.zod';
+import { validateRequestFromFormData } from '../../middlewares/validateRequest';
 
 const router = Router();
 
@@ -68,6 +70,32 @@ router
     upload.array('files'),
     ArtistController.updateArtistPortfolio
   );
+
+  router
+    .route('/service/create')
+    .post(
+        upload.fields([
+          { name: 'serviceImage', maxCount: 1 },
+        ]),
+      auth(ROLE.ARTIST),
+      validateRequestFromFormData(ArtistServiceValidation.createServiceSchema),
+       ArtistController.addService
+    );
+
+      router
+    .route('/service/update/:id')
+    .post(
+      auth(ROLE.ARTIST),
+      validateRequest(ArtistServiceValidation.updateServiceSchema),
+       ArtistController.updateService
+    );
+
+          router
+    .route('/service/delete/:id')
+    .post(
+      auth(ROLE.ARTIST),
+      ArtistController.deleteService
+    );
 
 router
   .route('/remove-image')

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
+import { IShowcase } from './showcase.interface';
 
-const imageSchema = new mongoose.Schema(
+const showcaseSchema = new mongoose.Schema(
   {
     auth: {
       type: mongoose.Schema.Types.ObjectId,
@@ -18,5 +19,5 @@ const imageSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
-const Image = mongoose.model('Image', imageSchema);
+const Image = mongoose.model<IShowcase>('Image', showcaseSchema);
 export default Image;
