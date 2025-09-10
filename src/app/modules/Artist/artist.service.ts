@@ -11,14 +11,9 @@ import {
   TServiceImage,
   TServicePayload,
 } from '../ArtistServices/artist.services.interface';
-import Service from '../ArtistServices/artist.services.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
-import { WeeklySchedule } from '../Schedule/schedule.interface';
-import {
-  default as ArtistSchedule,
-  default as Slot,
-} from '../Schedule/schedule.model';
+
 import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import { IArtist } from './artist.interface';
 import Artist from './artist.model';
@@ -29,14 +24,14 @@ import {
   TUpdateArtistPrivacySecurityPayload,
   TUpdateArtistProfilePayload,
 } from './artist.validation';
-import ArtistSchedule from '../Slot/slot.model';
-import { WeeklySchedule } from '../Slot/slot.interface';
-import { IArtist } from './artist.interface';
+
 import stripe from '../Payment/payment.service';
 import { JwtPayload } from 'jsonwebtoken';
 import config from '../../config';
-import { IService, TServiceImage, TServicePayload } from '../ArtistServices/artist.services.interface';
+
 import Service from '../ArtistServices/artist.services.model';
+import ArtistSchedule from '../Schedule/schedule.model';
+import { WeeklySchedule } from '../Schedule/schedule.interface';
 
 // update profile
 const updateProfile = async (
@@ -380,23 +375,23 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
 };
 
 // For availability
-const updateAvailability = async (user: IAuth, data: any) => {
-  // Find the artist
-  const artist = await Artist.findOne({ auth: user._id });
-  if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-  }
+// const updateAvailability = async (user: IAuth, data: any) => {
+//   // Find the artist
+//   const artist = await Artist.findOne({ auth: user._id });
+//   if (!artist) {
+//     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+//   }
 
-  // Update availability slots
-  const slots = data.slots; // This would be an array of time slots
-  // Assuming you store the time slots in the artist schema or in a related collection
-  await Slot.updateMany(
-    { auth: artist.auth },
-    { $set: { slots } } // Update the slots for the artist
-  );
+//   // Update availability slots
+//   const slots = data.slots; // This would be an array of time slots
+//   // Assuming you store the time slots in the artist schema or in a related collection
+//   await Slot.updateMany(
+//     { auth: artist.auth },
+//     { $set: { slots } } // Update the slots for the artist
+//   );
 
-  return artist;
-};
+//   return artist;
+// };
 
 // update time off
 const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
@@ -716,7 +711,7 @@ export const ArtistService = {
   updateArtistPersonalInfoIntoDB,
   saveAvailabilityIntoDB,
   fetchAllArtistsFromDB,
-  updateAvailability,
+  // updateAvailability,
   updateTimeOff,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createService,

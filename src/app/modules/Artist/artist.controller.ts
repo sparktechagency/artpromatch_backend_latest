@@ -128,15 +128,15 @@ const fetchAllArtists = asyncHandler(async (req, res) => {
 });
 
 // For availability
-const updateAvailability = asyncHandler(async (req, res) => {
-  const result = await ArtistService.updateAvailability(req.user, req.body);
+// const updateAvailability = asyncHandler(async (req, res) => {
+//   const result = await ArtistService.updateAvailability(req.user, req.body);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Availability updated successfully!',
-    data: result,
-  });
-});
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     message: 'Availability updated successfully!',
+//     data: result,
+//   });
+// });
 
 // update timeoff
 const updateTimeOff = asyncHandler(async (req, res) => {
@@ -245,7 +245,7 @@ export const ArtistController = {
   updateArtistPortfolio,
   saveAvailability,
   fetchAllArtists,
-  updateAvailability,
+  // updateAvailability,
   updateTimeOff,
   getSpecificServices,
   createConnectedAccountAndOnboardingLinkForArtist,
