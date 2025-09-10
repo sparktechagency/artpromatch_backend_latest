@@ -10,7 +10,7 @@ import sendResponse from '../../utils/sendResponse';
 
 // 1. createAuth
 const createAuth = asyncHandler(async (req, res) => {
-  const result = await AuthService.createAuth(req.body);
+  const result = await AuthService.createAuthIntoDB(req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

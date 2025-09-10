@@ -31,13 +31,13 @@ import sendOtpSms from '../../utils/sendOtpSms';
 
 const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
 
-// 1. createAuth
-const createAuth = async (payload: IAuth) => {
+// 1. createAuthIntoDB
+const createAuthIntoDB = async (payload: IAuth) => {
   // const existingUser = await Auth.findOne({ email: payload.email });
   const existingUser = await Auth.isUserExistsByEmail(payload.email);
 
   // if user exists but unverified
-  if (existingUser && !existingUser.isVerified) {
+  if (existingUser && !existingUser.isVerifiedByOTP) {
     const now = new Date();
 
     // if Token/OTP expired and sending new otp
@@ -60,12 +60,12 @@ const createAuth = async (payload: IAuth) => {
     // if OTP is valid till now
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'You have an unverified account, verify it now!'
+      'You have an unverified account, verify it now with the otp sent to your phone!'
     );
   }
 
   // if user is already verified
-  if (existingUser && existingUser.isVerified) {
+  if (existingUser && existingUser.isVerifiedByOTP) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User already exists!');
   }
 
@@ -79,7 +79,7 @@ const createAuth = async (payload: IAuth) => {
     ...payload,
     otp,
     otpExpiry: new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000),
-    isVerified: false,
+    isVerifiedByOTP: false,
   });
 
   // const token = jwt.sign({ ...payload, otp }, config.jwt.otp_secret!, {
@@ -104,7 +104,7 @@ const sendSignupOtpAgain = async (userEmail: string) => {
     );
   }
 
-  if (user.isVerified) {
+  if (user.isVerifiedByOTP) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'This account is already verified!'
@@ -154,7 +154,7 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
 
-  if (user.isVerified) {
+  if (user.isVerifiedByOTP) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'This account is already verified!'
@@ -176,7 +176,7 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
   }
 
   // Mark user as verified
-  user.isVerified = true;
+  user.isVerifiedByOTP = true;
   await user.save();
 
   // Prepare user payload for tokens
@@ -209,7 +209,7 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
     throw new AppError(httpStatus.NOT_FOUND, 'User does not exist!');
   }
 
-  if (!user.isVerified) {
+  if (!user.isVerifiedByOTP) {
     const otp = generateOtp();
     await sendOtpSms(user.phoneNumber, otp);
 
@@ -830,7 +830,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       phoneNumber,
       address,
       isSocialLogin: true,
-      isVerified: true,
+      isVerifiedByOTP: true,
     });
 
     if (!authRes) {
@@ -1342,7 +1342,7 @@ const getAccessTokenFromServer = async (refreshToken: string) => {
 };
 
 export const AuthService = {
-  createAuth,
+  createAuthIntoDB,
   sendSignupOtpAgain,
   verifySignupOtpIntoDB,
   signinIntoDB,

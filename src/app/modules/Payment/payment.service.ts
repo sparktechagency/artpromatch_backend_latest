@@ -6,9 +6,11 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import { IAuth } from '../Auth/auth.interface';
 
-const stripe = new Stripe(config.stripe.secret_key as string, {
-  apiVersion: '2025-01-27.acacia' as any,
-});
+const stripe = new Stripe(config.stripe.secret_key!);
+
+// const stripe = new Stripe(config.stripe.secret_key!, {
+//   apiVersion: '2025-01-27.acacia' as any,
+// });
 
 export default stripe;
 

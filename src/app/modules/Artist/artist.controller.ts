@@ -149,7 +149,23 @@ const updateTimeOff = asyncHandler(async (req, res) => {
   });
 });
 
+// update timeoff
+const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
+  async (req, res) => {
+    const result =
+      await ArtistService.createConnectedAccountAndOnboardingLinkForArtistIntoDb(
+        req.user
+      );
 
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      message: 'Onboarding account url is generated successfully!',
+      data: result,
+    });
+  }
+);
+
+// addService
 export const addService = asyncHandler(async (req, res) => {
   const files = (req.files as TServiceImage) || {};
   const result = await ArtistService.createService(req.user,req.body,files);
@@ -160,6 +176,7 @@ export const addService = asyncHandler(async (req, res) => {
     data: result,
   });
 });
+
 
 export const getSpecificServices = asyncHandler(async (req, res) => {
   const result = await ArtistService.getServicesByArtist(req.user);
@@ -172,6 +189,7 @@ export const getSpecificServices = asyncHandler(async (req, res) => {
 });
 
 
+// updateService
 export const updateService = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const result = await ArtistService.updateServiceById(id, req.body);
@@ -183,7 +201,7 @@ export const updateService = asyncHandler(async (req, res) => {
   });
 });
 
-
+// deleteService
 export const deleteService = asyncHandler(async (req, res) => {
   const { id } = req.params;
   await ArtistService.deleteServiceById(id);
@@ -194,7 +212,6 @@ export const deleteService = asyncHandler(async (req, res) => {
     data: null,
   });
 });
-
 
 // get availibility
 // const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
@@ -230,6 +247,7 @@ export const ArtistController = {
   fetchAllArtists,
   updateAvailability,
   updateTimeOff,
-  getSpecificServices
+  getSpecificServices,
+  createConnectedAccountAndOnboardingLinkForArtist,
   // getAvailabilityExcludingTimeOff,
 };

@@ -60,17 +60,17 @@ const changeStatusOnFolder = async (folderId: string, permission: boolean) => {
 
 // verifyArtistByAdminIntoDB
 const verifyArtistByAdminIntoDB = async (artistId: string) => {
-  const result = await Artist.findByIdAndUpdate(
-    artistId,
-    { isActive: true },
-    { new: true }
-  );
+  const artist = await Artist.findById(artistId).populate('auth');
 
-  if (!result) {
+  if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
-  return result;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const authDoc = artist.auth as any;
+  authDoc.isActive = true;
+  await authDoc.save();
+  return null;
 };
 
 // verifyBusinessByAdminIntoDB
