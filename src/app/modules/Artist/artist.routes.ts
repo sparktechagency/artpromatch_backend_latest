@@ -82,14 +82,14 @@ router
        ArtistController.addService
     );
 
-      router
+    router
     .route('/services')
     .get(
       auth(ROLE.ARTIST),
        ArtistController.getSpecificServices
     );
 
-      router
+    router
     .route('/service/update/:id')
     .post(
       auth(ROLE.ARTIST),
@@ -97,7 +97,7 @@ router
        ArtistController.updateService
     );
 
-          router
+    router
     .route('/service/delete/:id')
     .post(
       auth(ROLE.ARTIST),
