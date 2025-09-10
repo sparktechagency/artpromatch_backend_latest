@@ -19,16 +19,6 @@ const servicesSchema = new Schema({
   bufferTime: { type: String, default: '' },
 });
 
-// 🔹 Subschema: Portfolio
-const portfolioSchema = new Schema({
-  folder: {
-    type: Schema.Types.ObjectId,
-    ref: 'Folder',
-    required: true,
-  },
-  position: { type: Number, default: 0 },
-});
-
 // 🔹 Main Artist Schema
 const artistSchema = new Schema<IArtist>(
   {
@@ -61,6 +51,16 @@ const artistSchema = new Schema<IArtist>(
       required: true,
     },
 
+    city: {
+      type: String,
+      required: true,
+    },
+
+    stripeAccountId: {
+      type: String,
+      default: null,
+    },
+
     mainLocation: {
       type: {
         type: String,
@@ -78,11 +78,6 @@ const artistSchema = new Schema<IArtist>(
       },
       coordinates: { type: [Number], required: true },
       currentLocationUntil: { type: Date, default: null },
-    },
-
-    city: {
-      type: String,
-      required: true,
     },
 
     idCardFront: {
@@ -119,11 +114,13 @@ const artistSchema = new Schema<IArtist>(
       type: Number,
       default: 0,
     },
+
     boost: {
-      lastBoostAt: { type: Date, default: null }, 
-      endTime: { type: Date, default: null }, 
-      isActive: { type: Boolean, default: false }, 
+      lastBoostAt: { type: Date, default: null },
+      endTime: { type: Date, default: null },
+      isActive: { type: Boolean, default: false },
     },
+
     services: {
       type: [servicesSchema],
       required: true,
@@ -141,7 +138,6 @@ const artistSchema = new Schema<IArtist>(
       type: Schema.Types.ObjectId,
       ref: 'ArtistPreferences',
     },
-
   },
   { timestamps: true, versionKey: false }
 );

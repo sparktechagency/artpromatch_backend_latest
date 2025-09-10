@@ -16,10 +16,7 @@ const showcaseSchema = new mongoose.Schema(
     },
     url: { type: String, required: true },
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
 const Image = mongoose.model<IShowcase>('Image', showcaseSchema);

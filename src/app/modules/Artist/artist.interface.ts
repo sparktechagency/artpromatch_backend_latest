@@ -14,21 +14,22 @@ interface IBoost {
 export interface IArtist extends Document {
   auth: Types.ObjectId;
   business: Types.ObjectId | null;
+  isConnBusiness: boolean;
   type: TArtistType;
   expertise: ExpertiseType[];
-  image?: string;
+  city: string;
+  // image?: string;
+  stripeAccountId: string;
   mainLocation: { type: 'Point'; coordinates: [number, number] };
   currentLocation: { type: 'Point'; coordinates: [number, number]; currentLocationUntil: Date | null};
-  city: string;
   hourlyRate: number;
-  isConnBusiness: boolean;
   idCardFront: string;
   idCardBack: string;
-  boost: IBoost;
-  avgRating:number;
-  totalReview:number;
   selfieWithId: string;
   taskCompleted: number;
+  avgRating: number;
+  totalReview: number;
+  boost: IBoost;
   services?: TServices;
   contact?: TContact;
   description: string;
