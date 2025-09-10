@@ -9,33 +9,57 @@ const bookingSchema = new Schema<IBooking>(
       ref: 'Artist',
       required: true,
     },
-     client: {
+    client: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Client',
       required: true,
     },
+    service: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service',
+      required: true,
+    },
+
     originalDate: {
       type: Date,
       required: true,
-      default: null
+      default: null,
     },
-    day: {
-      type: String,
-      required: true,
-    },
+    // day: {
+    //   type: String,
+    //   required: true,
+    // },
     startMin: {
-       type: Number,
+      type: Number,
       required: true,
     },
-     endMin: {
-       type: Number,
+    endMin: {
+      type: Number,
       required: true,
     },
-    paymentStatus: {
+    status: {
       type: String,
-      enum: Object.values(PAYMENT_STATUS),
-      default: 'pending',
+      enum: Object.values(BOOKING_STATUS),
+      default: 'confirmed',
     },
+
+    serviceName: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    serviceLocation: {
+      type: String,
+      required: true,
+    },
+    bodyPart: {
+      type: String,
+      required: true,
+    },
+
     paymentIntentId: {
       type: String,
       required: true,
@@ -44,25 +68,19 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       required: true,
     },
-    bookingStatus: {
+    paymentStatus: {
       type: String,
-      enum: Object.values(BOOKING_STATUS),
-      default: 'confirmed',
+      enum: Object.values(PAYMENT_STATUS),
+      default: 'pending',
     },
-    bookingPrice: {
-      type: Number,
-      required: true,
-    },
-    serviceName: {
+
+    review: {
       type: String,
       required: true,
     },
-    bodyLocation: {
+    rating: {
       type: String,
       required: true,
-    },
-    referralImage: {
-      type: String,
     },
   },
   { timestamps: true, versionKey: false }

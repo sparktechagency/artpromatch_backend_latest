@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { asyncHandler } from '../../utils';
 import { ArtistService } from './artist.service';
 import sendResponse from '../../utils/sendResponse';
-import { TServiceImage} from '../ArtistServices/artist.services.interface';
+import { TServiceImages } from '../Service/service.interface';
 
 // update profile
 const updateProfile = asyncHandler(async (req, res) => {
@@ -166,9 +166,9 @@ const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
 );
 
 // addService
-export const addService = asyncHandler(async (req, res) => {
-  const files = (req.files as TServiceImage) || {};
-  const result = await ArtistService.createService(req.user,req.body,files);
+const addService = asyncHandler(async (req, res) => {
+  const files = req.files as TServiceImages;
+  const result = await ArtistService.createService(req.user, req.body, files);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -177,20 +177,18 @@ export const addService = asyncHandler(async (req, res) => {
   });
 });
 
-
-export const getSpecificServices = asyncHandler(async (req, res) => {
-  const result = await ArtistService.getServicesByArtist(req.user);
+const getServicesByArtist = asyncHandler(async (req, res) => {
+  const result = await ArtistService.getServicesByArtistFromDB(req.user);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'Service created successfully!',
+    message: 'Services retrieved successfully!',
     data: result,
   });
 });
-
 
 // updateService
-export const updateService = asyncHandler(async (req, res) => {
+const updateService = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const result = await ArtistService.updateServiceById(id, req.body);
 
@@ -202,7 +200,7 @@ export const updateService = asyncHandler(async (req, res) => {
 });
 
 // deleteService
-export const deleteService = asyncHandler(async (req, res) => {
+const deleteService = asyncHandler(async (req, res) => {
   const { id } = req.params;
   await ArtistService.deleteServiceById(id);
 
@@ -247,7 +245,7 @@ export const ArtistController = {
   fetchAllArtists,
   // updateAvailability,
   updateTimeOff,
-  getSpecificServices,
+  getServicesByArtist,
   createConnectedAccountAndOnboardingLinkForArtist,
   // getAvailabilityExcludingTimeOff,
 };

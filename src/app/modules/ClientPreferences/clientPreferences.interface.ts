@@ -10,21 +10,21 @@ export interface IClientPreferences extends Document {
   clientId: Types.ObjectId;
 
   // Notifications
-  bookingConfirmations: boolean;
-  bookingReminders: boolean;
-  bookingCancellations: boolean;
-  newMessageNotifications: boolean;
+  // bookingConfirmations: boolean;
+  // bookingReminders: boolean;
+  // bookingCancellations: boolean;
+  // newMessageNotifications: boolean;
   appUpdates: boolean;
-  newAvailability: boolean;
-  lastMinuteBookings: boolean;
-  newGuestArtists: boolean;
-  notificationPreferences: TNotificationChannel[];
+  // newAvailability: boolean;
+  // lastMinuteBookings: boolean;
+  // newGuestArtists: boolean;
+  notificationChannels: TNotificationChannel[];
 
   // Connected Accounts
   connectedAccounts: ConnectedAccount[];
 
   // Security & Personalization
-  twoFactorAuthEnabled: boolean;
-  personalizedContent: boolean;
-  locationSuggestions: boolean;
+  // twoFactorAuthEnabled: boolean;
+  // personalizedContent: boolean;
+  // locationSuggestions: boolean;
 }

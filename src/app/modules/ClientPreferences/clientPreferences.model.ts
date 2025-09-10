@@ -23,15 +23,15 @@ const clientPreferencesSchema = new Schema<IClientPreferences>(
     },
 
     // Notifications
-    bookingConfirmations: { type: Boolean, default: true },
-    bookingReminders: { type: Boolean, default: true },
-    bookingCancellations: { type: Boolean, default: true },
-    newMessageNotifications: { type: Boolean, default: true },
-    appUpdates: { type: Boolean, default: true },
-    newAvailability: { type: Boolean, default: true },
-    lastMinuteBookings: { type: Boolean, default: true },
-    newGuestArtists: { type: Boolean, default: true },
-    notificationPreferences: {
+    // bookingConfirmations: { type: Boolean, default: true },
+    // bookingReminders: { type: Boolean, default: true },
+    // bookingCancellations: { type: Boolean, default: true },
+    // newMessageNotifications: { type: Boolean, default: true },
+    // appUpdates: { type: Boolean, default: true },
+    // newAvailability: { type: Boolean, default: true },
+    // lastMinuteBookings: { type: Boolean, default: true },
+    // newGuestArtists: { type: Boolean, default: true },
+    notificationChannels: {
       type: [String],
       enum: ['app', 'email', 'sms'],
       default: ['app'],
@@ -44,9 +44,9 @@ const clientPreferencesSchema = new Schema<IClientPreferences>(
     },
 
     // Security & Personalization
-    twoFactorAuthEnabled: { type: Boolean, default: false },
-    personalizedContent: { type: Boolean, default: true },
-    locationSuggestions: { type: Boolean, default: true },
+    // twoFactorAuthEnabled: { type: Boolean, default: false },
+    // personalizedContent: { type: Boolean, default: true },
+    // locationSuggestions: { type: Boolean, default: true },
   },
   { timestamps: true, versionKey: false }
 );
