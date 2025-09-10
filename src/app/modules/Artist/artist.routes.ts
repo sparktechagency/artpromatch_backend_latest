@@ -107,7 +107,7 @@ router
 router
   .route('/remove-image')
   .delete(auth(ROLE.ARTIST), ArtistController.removeImage);
-
+ 
 router
   .route('/availability')
   .post(
