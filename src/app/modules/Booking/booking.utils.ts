@@ -5,7 +5,7 @@ import ArtistSchedule from '../Schedule/schedule.model';
 export const minToTimeString = (min: number) => {
   const h = Math.floor(min / 60);
   const m = min % 60;
-  const ampm = h >= 12 ? 'PM' : 'AM';
+  const ampm = h >= 12 ? 'pm' : 'am';
   const hour = ((h + 11) % 12) + 1;
   return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
 };

@@ -16,196 +16,20 @@ import {
   resolveScheduleForDate,
   roundUpMinutes,
 } from './booking.utils';
-// import Slot from '../Schedule/schedule.model';
-// import Booking from './booking.model';
-// import { TBookingData } from './booking.validation';
-
-// createBookingIntoDB
-// const createBookingIntoDB = async (
-//   user: IAuth,
-//   payload: TBookingData,
-//   file: Express.Multer.File | undefined
-// ) => {
-//   const {
-//     slotId,
-//     date,
-//     service,
-//     serviceType,
-//     description,
-//     paymentIntentId,
-//     bodyLocation,
-//     transactionId,
-//   } = payload;
-//   // Check if the selected slot exists and is available
-//   const existSlot = await Slot.findOne({ 'slots._id': slotId });
-
-//   if (!existSlot) {
-//     throw new AppError(httpStatus.NOT_FOUND, 'Slot not available on this day');
-//   }
-
-//   const findSlot = existSlot.slots.find(
-//     (item) => (item._id as Types.ObjectId).toString() === slotId
-//   );
-
-//   if (!findSlot) {
-//     throw new AppError(httpStatus.NOT_FOUND, 'Slot not found!');
-//   }
-
-//   const artist = await Artist.findOne({ auth: existSlot.auth });
-
-//   if (!artist) {
-//     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-//   }
-
-//   // Check if the booking already exists for the same user and artist at this slot
-//   const existingBooking = await Booking.findOne({
-//     artist: artist._id,
-//     user: user._id,
-//     date,
-//     slotTimeId: slotId,
-//   });
-
-//   if (existingBooking) {
-//     throw new AppError(
-//       httpStatus.BAD_REQUEST,
-//       'You have already booked for this time slot'
-//     );
-//   }
-
-//   let referralImage = null;
-
-//   // if referral image
-//   if (file) {
-//     referralImage = file.path;
-//   }
-
-//   // Create the booking
-//   const booking = await Booking.create({
-//     artist: artist._id,
-//     user: user._id,
-//     date,
-//     day: existSlot.day,
-//     paymentIntentId,
-//     transactionId,
-//     slot: existSlot._id,
-//     slotTimeId: findSlot._id,
-//     service,
-//     serviceType,
-//     bodyLocation,
-//     description,
-//     referralImage,
-//   });
-
-//   const result = await Booking.findById(booking._id).populate('slot');
-
-//   if (!result) {
-//     throw new AppError(
-//       httpStatus.INTERNAL_SERVER_ERROR,
-//       'Something went wrong saving booking into DB'
-//     );
-//   }
-
-//   const { slot, slotTimeId, ...remainData } = result?.toObject() as any;
-
-//   return {
-//     slot: slot?.slots?.find(
-//       //@ts-ignore
-//       (item) => item._id?.toString() === slotTimeId?.toString()
-//     ),
-//     ...remainData,
-//   };
-// };
-
-// // Get all bookings for a user (client)
-// const getUserBookings = async (user: IAuth) => {
-//   const bookings = await Booking.find({ user: user._id })
-//     .populate('artist', 'name')
-//     .populate('slot', 'start end day')
-//     .exec();
-
-//   if (!bookings.length) {
-//     throw new AppError(status.NOT_FOUND, 'No bookings found for this user');
-//   }
-
-//   return bookings;
-// };
-
-// // Get all bookings for an artist
-// const getArtistBookings = async (artistId: string) => {
-//   const bookings = await Booking.find({ artist: artistId })
-//     .populate('user', 'fullName email')
-//     .populate('slot', 'start end day')
-//     .exec();
-
-//   if (!bookings.length) {
-//     throw new AppError(status.NOT_FOUND, 'No bookings found for this artist');
-//   }
-
-//   return bookings;
-// };
-
-// // Update booking status (e.g., accept, reject)
-// const updateBookingStatus = async (bookingId: string, status: string) => {
-//   const validStatuses = Object.values(BOOKING_STATUS);
-//   if (!validStatuses.includes(status)) {
-//     throw new AppError(status.BAD_REQUEST, 'Invalid booking status');
-//   }
-
-//   // Find and update the booking
-//   const updatedBooking = await Booking.findByIdAndUpdate(
-//     bookingId,
-//     { status },
-//     { new: true }
-//   ).populate('artist', 'name')
-//     .populate('user', 'fullName')
-//     .populate('slot', 'start end day')
-//     .exec();
-
-//   if (!updatedBooking) {
-//     throw new AppError(status.NOT_FOUND, 'Booking not found!');
-//   }
-
-//   return updatedBooking;
-// };
-
-// // Cancel a booking
-// const cancelBooking = async (bookingId: string) => {
-//   const cancelledBooking = await Booking.findByIdAndUpdate(
-//     bookingId,
-//     { status: BOOKING_STATUS.CANCELLED },
-//     { new: true }
-//   ).populate('artist', 'name')
-//     .populate('user', 'fullName')
-//     .populate('slot', 'start end day')
-//     .exec();
-
-//   if (!cancelledBooking) {
-//     throw new AppError(status.NOT_FOUND, 'Booking not found!');
-//   }
-
-//   return cancelledBooking;
-// };
-
-// // Check availability for a given date and time slot
-// const checkAvailability = async (day: string, start: string, end: string) => {
-//   const existingBookings = await Booking.find({
-//     day,
-//     'slot.start': { $lt: end },
-//     'slot.end': { $gt: start },
-//   });
-
-//   if (existingBookings.length > 0) {
-//     return false; // Slot is not available
-//   }
-
-//   return true; // Slot is available
-// };
+import { TBookingData } from './booking.validation';
 
 type TReviewData = {
   bookingId: string;
   review: string;
   rating: number;
   secretReviewForAdmin: string;
+};
+
+const createBookingIntoDB = async (
+  user: IAuth,
+  payload: TBookingData,
+) => {
+  
 };
 
 // ReviewAfterAServiceIsCompletedIntoDB
@@ -405,7 +229,7 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
 };
 
 export const BookingService = {
-  // createBookingIntoDB,
+  createBookingIntoDB,
   // getUserBookings,
   // getArtistBookings,
   // updateBookingStatus,
@@ -414,3 +238,53 @@ export const BookingService = {
   ReviewAfterAServiceIsCompletedIntoDB,
   getAvailabilityFromDB,
 };
+
+
+/*
+import Stripe from 'stripe';
+import Booking from './models/booking.model';
+import Artist from './models/artist.model';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
+
+export async function completeBookingAndPayArtist(bookingId: string) {
+  // 1️⃣ Get booking
+  const booking = await Booking.findById(bookingId);
+  if (!booking || !booking.paymentIntentId) throw new Error('Booking/payment not found');
+
+  // 2️⃣ Capture money in platform account
+  const paymentIntent = await stripe.paymentIntents.capture(booking.paymentIntentId);
+
+  // 3️⃣ Get artist Stripe account
+  const artist = await Artist.findById(booking.artist);
+  if (!artist || !artist.stripeAccountId) throw new Error('Artist Stripe account not found');
+
+  // 4️⃣ Calculate artist share (95%) and platform fee (5%)
+  const platformFeePercent = 5;
+  const artistAmount = Math.round(paymentIntent.amount_received * (100 - platformFeePercent) / 100);
+
+  // 5️⃣ Transfer artist share to artist connected account
+  await stripe.transfers.create({
+    amount: artistAmount, // in cents
+    currency: paymentIntent.currency,
+    destination: artist.stripeAccountId,
+    metadata: { bookingId: booking._id.toString() },
+  });
+
+  // 6️⃣ Update booking in DB
+  booking.status = 'completed';
+  booking.payoutStatus = 'paid';
+  booking.platformFee = Math.round(paymentIntent.amount_received * platformFeePercent / 100);
+  await booking.save();
+
+  return {
+    success: true,
+    capturedAmount: paymentIntent.amount_received,
+    artistPaid: artistAmount,
+    platformFee: booking.platformFee,
+  };
+}
+
+
+
+*/

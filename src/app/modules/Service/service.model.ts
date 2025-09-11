@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { IService } from './service.interface';
+import { IService, TattooBodyParts } from './service.interface';
 
 const serviceSchema = new Schema<IService>(
   {
@@ -47,7 +47,10 @@ const serviceSchema = new Schema<IService>(
       type: Number,
       default: 0,
     },
-
+    bodyParts:{
+      type: String,
+      enum: Object.values(TattooBodyParts),
+    },
     totalCompletedOrder: {
       type: Number,
       default: 0,
