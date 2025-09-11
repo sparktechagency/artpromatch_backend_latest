@@ -1,12 +1,16 @@
 import { z } from 'zod';
 import { FOLDER_FOR } from './folder.constant';
 
-// Zod schema for Folder validation
-const folderValidationSchema = z.object({
+// createFolderSchema
+const createFolderSchema = z.object({
   body: z.object({
-    name: z.string({
-      required_error: 'Folder name is required',
-    }),
+    name: z
+      .string({
+        required_error: 'Folder name is required',
+      })
+      .min(3, 'Folder name should be at least 3 characters long')
+      .max(15, 'Folder name cannot exceed 15 characters'),
+
     for: z.enum(Object.values(FOLDER_FOR) as [string, ...string[]], {
       message:
         'Invalid folder type. Please choose either "portfolio" or "flash".',
@@ -15,7 +19,7 @@ const folderValidationSchema = z.object({
 });
 
 export const FolderValidation = {
-  folderValidationSchema,
+  createFolderSchema,
 };
 
-export type TFolderPayload = z.infer<typeof folderValidationSchema.shape.body>;
+// export type TFolderPayload = z.infer<typeof createFolderSchema.shape.body>;

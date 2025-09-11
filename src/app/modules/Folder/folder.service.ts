@@ -2,20 +2,27 @@ import { AppError } from '../../utils';
 import { IAuth } from '../Auth/auth.interface';
 import httpStatus from 'http-status';
 import Folder from './folder.model';
-import { TFolderPayload } from './folder.validation';
+import { IFolder } from './folder.interface';
 import fs from 'fs';
-import Artist from '../Artist/artist.model';
 
-const saveFolderIntoDB = async (
-  user: IAuth,
-  payload: TFolderPayload,
-  files: Express.Multer.File[] | undefined
+// createFolderIntoDB
+const createFolderIntoDB = async (
+  userData: IAuth,
+  payload: Pick<IFolder, 'name' | 'for'>,
+  files: Express.Multer.File[]
 ) => {
-  if (!files || !files?.length) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Files are required');
+  if (files && files?.length > 50) {
+    files?.forEach((file) => fs.unlink(file.path, () => {}));
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "You can't upload more then 50 images in a folder. Create a new one!"
+    );
   }
 
-  const folder = await Folder.findOne({ name: payload.name, auth: user._id });
+  const folder = await Folder.findOne({
+    name: payload.name,
+    owner: userData.id,
+  });
 
   if (folder) {
     files?.forEach((file) => fs.unlink(file.path, () => {}));
@@ -23,38 +30,104 @@ const saveFolderIntoDB = async (
   }
 
   return await Folder.create({
-    auth: user._id,
-    images: files.map((file) => file.path),
+    owner: userData.id,
+    images: files?.length ? files.map((file) => file.path) : [],
     ...payload,
   });
 };
 
-const removeFolderFromDB = async (folderId: string) => {
-  const folder = await Folder.findByIdAndDelete(folderId);
+// updateFolderIntoDB
+const updateFolderIntoDB = async (
+  folderId: string,
+  userData: IAuth,
+  payload: Pick<IFolder, 'name' | 'for'>
+) => {
+  const folder = await Folder.findOne({
+    _id: folderId,
+    owner: userData.id,
+  });
 
   if (!folder) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Folder name already exists!');
   }
 
-  const artist = await Artist.findOne({ auth: folder.auth });
+  folder.name = payload.name;
+  folder.for = payload.for;
+  await folder.save();
 
-  if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  return folder;
+};
+
+// uploadFileToFolderIntoDB
+const uploadFileToFolderIntoDB = async (
+  folderId: string,
+  userData: IAuth,
+  files: Express.Multer.File[]
+) => {
+  if (!files || !files?.length) {
+    files?.forEach((file) => fs.unlink(file.path, () => {}));
+    throw new AppError(httpStatus.BAD_REQUEST, 'Files are required');
   }
 
-  return await Artist.findByIdAndUpdate(
-    artist._id,
-    {
-      $pull: {
-        portfolio: { folder: folderId },
-        flashes: { folder: folderId },
-      },
-    },
-    { new: true }
-  );
+  if (files && files?.length > 50) {
+    files?.forEach((file) => fs.unlink(file.path, () => {}));
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "You can't upload more then 50 images in a folder!"
+    );
+  }
+
+  const folder = await Folder.findOne({
+    _id: folderId,
+    owner: userData.id,
+  });
+
+  if (!folder) {
+    files?.forEach((file) => fs.unlink(file.path, () => {}));
+    throw new AppError(httpStatus.BAD_REQUEST, 'Folder name already exists!');
+  }
+
+  if (folder?.images.length + files?.length > 50) {
+    files?.forEach((file) => fs.unlink(file.path, () => {}));
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "You can't upload more then 50 images in a folder!"
+    );
+  }
+
+  folder.images = [...folder.images, ...files.map((file) => file.path)];
+  await folder.save();
+
+  return folder;
+};
+
+// removeFolderFromDB
+const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
+  if (userData.role === 'ADMIN' || userData.role === 'SUPER_ADMIN') {
+    const folder = await Folder.findByIdAndDelete(folderId);
+
+    if (!folder) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists!');
+    }
+    folder.images?.forEach((images) => fs.unlink(images, () => {}));
+  } else {
+    const folder = await Folder.findOneAndDelete({
+      _id: folderId,
+      owner: userData.id,
+    });
+
+    if (!folder) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists!');
+    }
+    folder.images?.forEach((images) => fs.unlink(images, () => {}));
+  }
+
+  return null;
 };
 
 export const FolderService = {
-  saveFolderIntoDB,
+  createFolderIntoDB,
+  updateFolderIntoDB,
+  uploadFileToFolderIntoDB,
   removeFolderFromDB,
 };
