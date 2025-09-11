@@ -13,13 +13,13 @@ router
     AdminController.getAllArtistsFolders
   );
 
-// changeStatusOnFolder
-router
-  .route('/folders/:id')
-  .patch(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.changeStatusOnFolder
-  );
+// // changeStatusOnFolder
+// router
+//   .route('/folders/:id')
+//   .patch(
+//     auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+//     AdminController.changeStatusOnFolder
+//   );
 
 // verifyArtistByAdmin
 router
@@ -45,5 +45,8 @@ router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
 
 // fetchAllClients
 router.route('/fetch-clients').get(AdminController.fetchAllClients);
+
+// fetchAllSecretReviews
+router.route('/secret-reviews').get(AdminController.fetchAllSecretReviews);
 
 export const AdminRoutes = router;

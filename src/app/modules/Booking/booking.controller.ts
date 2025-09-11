@@ -27,7 +27,7 @@ const ReviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'Booked successfully!',
+    message: 'Review submitted successfully!',
     data: result,
   });
 });

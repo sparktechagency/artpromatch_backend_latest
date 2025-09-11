@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+import { Error } from 'mongoose';
 
-const handleMongooseError = (err: mongoose.Error.ValidationError) => {
+const handleMongooseError = (err: Error.ValidationError) => {
   return {
     statusCode: 400,
     message: 'Validation error',

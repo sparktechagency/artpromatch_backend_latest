@@ -3,7 +3,7 @@ import Business from './business.model';
 import { IAuth } from '../Auth/auth.interface';
 import { AppError } from '../../utils';
 import httpStatus from 'http-status';
-import mongoose from 'mongoose';
+import { startSession } from 'mongoose';
 import {
   TUpdateBusinessProfilePayload,
   TUpdateBusinessNotificationPayload,
@@ -23,10 +23,11 @@ const updateBusinessProfile = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const session = await startSession();
 
   try {
+    session.startTransaction();
+
     // Update Auth data with new business details
     await Auth.findByIdAndUpdate(user._id, payload, { session });
 
@@ -47,12 +48,12 @@ const updateBusinessProfile = async (
     ]);
 
     await session.commitTransaction();
-    session.endSession();
+    await session.endSession();
 
     return updatedBusiness;
   } catch {
     await session.abortTransaction();
-    session.endSession();
+    await session.endSession();
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
       'Something went wrong while updating business profile data'
@@ -146,21 +147,22 @@ const updateBusinessSecuritySettings = async (
   return preferences;
 };
 
-const updateGuestSpots = async (user: IAuth, data: any) => {
-  // Find the business
-  const business = await Business.findOne({ auth: user._id });
-  if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
-  }
+// updateGuestSpotsIntoDB
+// const updateGuestSpotsIntoDB = async (user: IAuth, data: any) => {
+//   // Find the business
+//   const business = await Business.findOne({ auth: user._id });
+//   if (!business) {
+//     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
+//   }
 
-  // Update guest spots logic
-  const guestSpots = data.guestSpots;
-  console.log({ guestSpots });
+//   // Update guest spots logic
+//   const guestSpots = data.guestSpots;
+//   console.log({ guestSpots });
 
-  await business.save();
+//   await business.save();
 
-  return business;
-};
+//   return business;
+// };
 
 const updateTimeOff = async (user: IAuth, data: any) => {
   // Handle time-off for business (if needed)
@@ -197,7 +199,7 @@ export const BusinessService = {
   updateBusinessPreferences,
   updateBusinessNotificationPreferences,
   updateBusinessSecuritySettings,
-  updateGuestSpots,
+  // updateGuestSpotsIntoDB,
   updateTimeOff,
   removeArtistFromDB,
 };

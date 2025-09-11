@@ -1,11 +1,11 @@
-import mongoose from 'mongoose';
+import { model, Schema } from 'mongoose';
 import { IFolder } from './folder.interface';
 import { FOLDER_FOR } from './folder.constant';
 
-const folderSchema = new mongoose.Schema<IFolder>(
+const folderSchema = new Schema<IFolder>(
   {
     auth: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Auth',
       required: true,
     },
@@ -22,6 +22,6 @@ const folderSchema = new mongoose.Schema<IFolder>(
   { timestamps: true, versionKey: false }
 );
 
-const Folder = mongoose.model('Folder', folderSchema);
+const Folder = model('Folder', folderSchema);
 
 export default Folder;

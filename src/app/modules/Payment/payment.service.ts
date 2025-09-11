@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import config from '../../config';
 import { AppError } from '../../utils';
 import httpStatus from 'http-status';
-import mongoose from 'mongoose';
+import { startSession } from 'mongoose';
 import { IAuth } from '../Auth/auth.interface';
 
 const stripe = new Stripe(config.stripe.secret_key!);
@@ -79,10 +79,11 @@ const verifyPaymentSuccess = async (user: IAuth, sessionId: string) => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Session ID is required');
   }
 
-  const mongoSession = await mongoose.startSession();
-  mongoSession.startTransaction();
+  const session = await startSession();
 
   try {
+    session.startTransaction();
+
     const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (!stripeSession) {
@@ -102,13 +103,13 @@ const verifyPaymentSuccess = async (user: IAuth, sessionId: string) => {
     }
 
     // Step 5: Commit the transaction
-    await mongoSession.commitTransaction();
-    mongoSession.endSession();
+    await session.commitTransaction();
+    await session.endSession();
 
     return { message: 'Payment was successful' };
   } catch (error: any) {
-    await mongoSession.abortTransaction(); // Rollback changes if any error occurs
-    mongoSession.endSession();
+    await session.abortTransaction(); // Rollback changes if any error occurs
+    await session.endSession();
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
       `Transaction failed: ${error.message}`

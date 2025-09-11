@@ -73,7 +73,6 @@ export const expertiseTypes = {
   WHITE_ON_BLACK: 'White On Black',
   WHITE_TATTOOS: 'White Tattoos',
   WATERCOLOR: 'Watercolor',
-
 } as const;
 
 export type ExpertiseType =
@@ -86,16 +85,23 @@ export const ARTIST_TYPE = {
 
 export type ValueOf<T> = T[keyof T];
 export type TArtistType = ValueOf<typeof ARTIST_TYPE>;
-export type TServices = {
-  hourlyRate: number;
-  dayRate: number;
-  consultationsFee: number;
+
+export type TService = {
+  name: string;
+  duration: string;
+  bufferTime?: string;
 };
 
 export type TContact = {
   email: string;
   phone: string;
   address: string;
+};
+
+export type TBoost = {
+  lastBoostAt: Date | null;
+  endTime: Date | null;
+  isActive: boolean;
 };
 
 export const cancellationPolicy = {

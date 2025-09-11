@@ -1,8 +1,15 @@
-// import httpStatus from 'http-status';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import httpStatus from 'http-status';
 // import { Types } from 'mongoose';
 // import { AppError } from '../../utils';
 // import Artist from '../Artist/artist.model';
+import { startSession } from 'mongoose';
 import { IAuth } from '../Auth/auth.interface';
+import Booking from './booking.model';
+import { AppError } from '../../utils';
+import { IArtist } from '../Artist/artist.interface';
+import { IService } from '../Service/service.interface';
+import SecretReview from '../SecretReview/secretReview.model';
 // import Slot from '../Schedule/schedule.model';
 // import Booking from './booking.model';
 // import { TBookingData } from './booking.validation';
@@ -189,20 +196,90 @@ import { IAuth } from '../Auth/auth.interface';
 // };
 
 type TReviewData = {
+  bookingId: string;
   review: string;
   rating: number;
-  secretReviewForAdmin?: string;
+  secretReviewForAdmin: string;
 };
 
 // ReviewAfterAServiceIsCompletedIntoDB
-const ReviewAfterAServiceIsCompletedIntoDB = (
+const ReviewAfterAServiceIsCompletedIntoDB = async (
   payload: TReviewData,
-  user: IAuth
+  clientData: IAuth
 ) => {
-  console.log({ payload, user });
+  const { bookingId, review, rating, secretReviewForAdmin } = payload;
 
+  const booking = await Booking.findOne({
+    _id: bookingId,
+    client: clientData.id,
+  }).populate(['Artist', 'Client', 'Service']);
 
-  
+  if (!booking) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
+  }
+
+  // console.log({
+  //   payload,
+  //   user: clientData,
+  // });
+
+  // Start a MongoDB session for transaction
+  const session = await startSession();
+
+  try {
+    session.startTransaction();
+
+    // artist avgRating & totalReviewCount
+    const artist = booking.artist as unknown as IArtist;
+
+    artist.avgRating =
+      (artist.avgRating * artist.totalReviewCount + rating) /
+      (artist.totalReviewCount + 1);
+
+    artist.totalReviewCount = artist.totalReviewCount + 1;
+    artist.save({ session });
+
+    // service avgRating & totalReviewCount
+    const service = booking.service as unknown as IService;
+    service.avgRating =
+      (service.avgRating * service.totalReviewCount + rating) /
+      (service.totalReviewCount + 1);
+    service.totalReviewCount = service.totalReviewCount + 1;
+    service.save({ session });
+
+    // booking review & rating
+    booking.review = review;
+    booking.rating = rating;
+    booking.save({ session });
+
+    const secretReview = await SecretReview.create(
+      [
+        {
+          service: service._id,
+          booking: booking._id,
+          description: secretReviewForAdmin,
+        },
+      ],
+      { session }
+    );
+
+    if (!secretReview) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to submit your review!'
+      );
+    }
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return secretReview;
+  } catch (err: any) {
+    await session.abortTransaction();
+    await session.endSession();
+
+    throw err;
+  }
 };
 
 export const BookingService = {

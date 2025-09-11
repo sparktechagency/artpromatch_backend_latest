@@ -1,17 +1,8 @@
 import { Document, Types } from 'mongoose';
-import {
-  ExpertiseType,
-  TArtistType,
-  TContact,
-  TServices,
-} from './artist.constant';
+import { ExpertiseType, TBoost, TArtistType } from './artist.constant';
 
-interface IBoost {
-  lastBoostAt: Date | null;
-  endTime: Date | null;
-  isActive: boolean;
-}
 export interface IArtist extends Document {
+  _id: Types.ObjectId;
   auth: Types.ObjectId;
   business: Types.ObjectId | null;
   isConnBusiness: boolean;
@@ -21,20 +12,22 @@ export interface IArtist extends Document {
   // image?: string;
   stripeAccountId: string;
   isStripeReady: boolean;
+
   mainLocation: { type: 'Point'; coordinates: [number, number] };
   currentLocation: {
     type: 'Point';
     coordinates: [number, number];
     currentLocationUntil: Date | null;
   };
+
   hourlyRate: number;
   idCardFront: string;
   idCardBack: string;
   selfieWithId: string;
 
-  boost: IBoost;
-  services?: TServices;
-  contact?: TContact;
+  boost: TBoost;
+  // services?: TService[];
+  // contact?: TContact;
   description: string;
   preferences?: Types.ObjectId;
 

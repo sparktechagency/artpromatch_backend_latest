@@ -647,7 +647,6 @@ const createService = async (
   return service;
 };
 
-
 // getServicesByArtistFromDB
 const getServicesByArtistFromDB = async (user: IAuth) => {
   const artist = await Artist.findOne({ auth: user.id });
@@ -655,7 +654,7 @@ const getServicesByArtistFromDB = async (user: IAuth) => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found');
   }
 
-  const artistObjectId = new Types.ObjectId(artist._id as string);
+  const artistObjectId = new Types.ObjectId(artist._id);
 
   const result = await Service.aggregate([
     { $match: { artist: artistObjectId } },

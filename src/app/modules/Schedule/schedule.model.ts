@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { IArtistSchedule } from './schedule.interface';
 // import { WEEK_DAYS } from '../Artist/artist.constant';
 // import { ISlot } from './slot.interface';
@@ -11,7 +11,7 @@ import { IArtistSchedule } from './schedule.interface';
 // const slotSchema = new Schema<ISlot>(
 //   {
 //     auth: {
-//       type: mongoose.Schema.Types.ObjectId,
+//       type: Schema.Types.ObjectId,
 //       ref: 'Auth',
 //       required: true,
 //     },
@@ -32,7 +32,7 @@ import { IArtistSchedule } from './schedule.interface';
 
 // export default Slot;
 
-const DayScheduleSchema = new mongoose.Schema({
+const DayScheduleSchema = new Schema({
   startTime: { type: String, default: null },
   endTime: { type: String, default: null },
   startMin: { type: Number, default: null },
@@ -40,12 +40,12 @@ const DayScheduleSchema = new mongoose.Schema({
   off: { type: Boolean, default: true },
 });
 
-export const OffTimeSchema = new mongoose.Schema({
+export const OffTimeSchema = new Schema({
   startDate: { type: Date, required: true, default: null },
   endDate: { type: Date, required: true, default: null },
 });
 
-const ArtistScheduleSchema = new mongoose.Schema<IArtistSchedule>(
+const ArtistScheduleSchema = new Schema<IArtistSchedule>(
   {
     artistId: { type: Schema.Types.ObjectId, ref: 'Artist', required: true },
     weeklySchedule: {

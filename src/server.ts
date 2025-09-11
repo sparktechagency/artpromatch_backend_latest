@@ -10,7 +10,7 @@
  */
 
 import { Server } from 'http';
-import mongoose from 'mongoose';
+import { connect } from 'mongoose';
 import app from './app';
 import config from './app/config';
 import seedingAdmin from './app/utils/seeding';
@@ -39,7 +39,7 @@ process.on('unhandledRejection', (error) => {
 
 async function bootstrap() {
   try {
-    await mongoose.connect(config.db_url as string);
+    await connect(config.db_url as string);
     console.log('🛢 Database connected successfully');
 
     await seedingAdmin();

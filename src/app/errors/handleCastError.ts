@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+import { Error } from 'mongoose';
 
-const handleCastError = (err: mongoose.Error.CastError) => {
+const handleCastError = (err: Error.CastError) => {
   return {
     statusCode: 400,
     message: 'Invalid mongodb object id',

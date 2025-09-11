@@ -14,18 +14,18 @@ const getAllArtistsFolders = asyncHandler(async (req, res) => {
   });
 });
 
-// changeStatusOnFolder
-const changeStatusOnFolder = asyncHandler(async (req, res) => {
-  const id = req.params.id;
-  const permission = req.body.permission;
-  const result = await AdminService.changeStatusOnFolder(id, permission);
+// // changeStatusOnFolder
+// const changeStatusOnFolder = asyncHandler(async (req, res) => {
+//   const id = req.params.id;
+//   const permission = req.body.permission;
+//   const result = await AdminService.changeStatusOnFolder(id, permission);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Action is successful on folder!',
-    data: result,
-  });
-});
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     message: 'Action is successful on folder!',
+//     data: result,
+//   });
+// });
 
 // verifyArtistByAdmin
 const verifyArtistByAdmin = asyncHandler(async (req, res) => {
@@ -87,12 +87,26 @@ const fetchAllClients = asyncHandler(async (req, res) => {
   });
 });
 
+
+// fetchAllSecretReviews
+const fetchAllSecretReviews = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchAllSecretReviewsFromDB(req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Reviews retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
 export const AdminController = {
   getAllArtistsFolders,
-  changeStatusOnFolder,
+  // changeStatusOnFolder,
   verifyArtistByAdmin,
   verifyBusinessByAdmin,
   fetchAllArtists,
   fetchAllBusinesses,
   fetchAllClients,
+  fetchAllSecretReviews,
 };

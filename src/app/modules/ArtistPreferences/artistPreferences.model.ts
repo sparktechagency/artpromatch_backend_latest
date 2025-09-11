@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import { model, Schema } from 'mongoose';
 import { connectedAccountSchema } from '../ClientPreferences/clientPreferences.model';
 // import { cancellationPolicy } from '../Artist/artist.constant';
 // import { dateFormats, notificationChannel } from '../Client/client.constant';
@@ -58,9 +58,6 @@ const artistPreferencesSchema = new Schema<IArtistPreferences>(
   { timestamps: true, versionKey: false }
 );
 
-const ArtistPreferences = mongoose.model(
-  'ArtistPreferences',
-  artistPreferencesSchema
-);
+const ArtistPreferences = model('ArtistPreferences', artistPreferencesSchema);
 
 export default ArtistPreferences;

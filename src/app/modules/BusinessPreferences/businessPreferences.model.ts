@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import { model, Schema } from 'mongoose';
 // import {
 //   CANCELLATION_POLICY,
 //   PREFERRED_ARTIST_TYPE,
@@ -67,7 +67,7 @@ const businessPreferencesSchema = new Schema<IBusinessPreferences>(
   { timestamps: true, versionKey: false }
 );
 
-const BusinessPreferences = mongoose.model(
+const BusinessPreferences = model(
   'BusinessPreferences',
   businessPreferencesSchema
 );

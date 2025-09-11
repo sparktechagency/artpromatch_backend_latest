@@ -38,7 +38,7 @@ router
     BusinessController.updateBusinessSecuritySettings
   );
 
-// Route to block new dates manually for a business
+// updateTimeOff
 router
   .route('/time-off')
   .patch(
@@ -47,6 +47,7 @@ router
     BusinessController.updateTimeOff
   );
 
+// removeArtist
 router
   .route('/resident-artist/:artistId')
   .delete(BusinessController.removeArtist);

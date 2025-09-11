@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs';
-import mongoose from 'mongoose';
+import { model, Schema } from 'mongoose';
 import config from '../../config';
 import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth, IAuthModel } from './auth.interface';
 
-const authSchema = new mongoose.Schema<IAuth, IAuthModel>(
+const authSchema = new Schema<IAuth, IAuthModel>(
   {
     email: {
       type: String,
@@ -144,4 +144,4 @@ authSchema.methods.isPasswordCorrect = async function (password: string) {
   return await bcrypt.compare(password, this.password);
 };
 
-export const Auth = mongoose.model<IAuth, IAuthModel>('Auth', authSchema);
+export const Auth = model<IAuth, IAuthModel>('Auth', authSchema);

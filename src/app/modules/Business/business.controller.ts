@@ -55,15 +55,17 @@ const updateBusinessSecuritySettings = asyncHandler(async (req, res) => {
   });
 });
 
-const updateAvailability = asyncHandler(async (req, res) => {
-  const result = await BusinessService.updateGuestSpots(req.user, req.body);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Guest spots updated successfully!',
-    data: result,
-  });
-});
+// updateAvailability
+// const updateAvailability = asyncHandler(async (req, res) => {
+//   const result = await BusinessService.updateGuestSpotsIntoDB(req.user, req.body);
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     message: 'Guest spots updated successfully!',
+//     data: result,
+//   });
+// });
 
 const updateTimeOff = asyncHandler(async (req, res) => {
   const result = await BusinessService.updateTimeOff(req.user, req.body);
@@ -93,7 +95,7 @@ export const BusinessController = {
   updateBusinessPreferences,
   updateBusinessNotificationPreferences,
   updateBusinessSecuritySettings,
-  updateAvailability,
+  // updateAvailability,
   updateTimeOff,
   removeArtist,
 };

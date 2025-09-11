@@ -1,23 +1,41 @@
 import { Schema, model } from 'mongoose';
-import { ARTIST_TYPE, expertiseTypes } from './artist.constant';
+import {
+  ARTIST_TYPE,
+  expertiseTypes,
+  TBoost,
+  // TContact,
+  // TService,
+} from './artist.constant';
 import { IArtist } from './artist.interface';
 
-// Subschema: Contact
-const contactSchema = new Schema(
+// // Subschema: Contact
+// const contactSchema = new Schema<TContact>(
+//   {
+//     email: { type: String },
+//     phone: { type: String },
+//     address: { type: String },
+//   },
+//   { _id: false }
+// );
+
+// // Subschema: Services
+// const servicesSchema = new Schema<TService>(
+//   {
+//     name: { type: String, required: true },
+//     duration: { type: String, required: true },
+//     bufferTime: { type: String, default: '' },
+//   },
+//   { _id: false }
+// );
+
+const boostSchema = new Schema<TBoost>(
   {
-    email: { type: String },
-    phone: { type: String },
-    address: { type: String },
+    lastBoostAt: { type: Date, default: null },
+    endTime: { type: Date, default: null },
+    isActive: { type: Boolean, default: false },
   },
   { _id: false }
 );
-
-// Subschema: Services
-const servicesSchema = new Schema({
-  name: { type: String, required: true },
-  duration: { type: String, required: true },
-  bufferTime: { type: String, default: '' },
-});
 
 // Main Artist Schema
 const artistSchema = new Schema<IArtist>(
@@ -85,43 +103,40 @@ const artistSchema = new Schema<IArtist>(
       currentLocationUntil: { type: Date, default: null },
     },
 
-    idCardFront: {
-      type: String,
-      required: true,
-    },
-
     hourlyRate: {
       type: Number,
       required: true,
     },
 
+    idCardFront: {
+      type: String,
+      required: true,
+    },
     idCardBack: {
       type: String,
       required: true,
     },
-
     selfieWithId: {
       type: String,
       required: true,
     },
 
     boost: {
-      lastBoostAt: { type: Date, default: null },
-      endTime: { type: Date, default: null },
-      isActive: { type: Boolean, default: false },
+      type: boostSchema,
+      default: () => ({ lastBoostAt: null, endTime: null, isActive: false }),
     },
 
-    services: {
-      type: [servicesSchema],
-      required: true,
-    },
-
-    contact: {
-      type: contactSchema,
-    },
+    // services: {
+    //   type: [serviceSchema],
+    //   required: true,
+    // },
+    // contact: {
+    //   type: contactSchema,
+    // },
 
     description: {
       type: String,
+      required: true,
     },
 
     preferences: {
