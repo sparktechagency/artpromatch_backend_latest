@@ -290,6 +290,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 
 // getAvailabilityFromDB
 const getAvailabilityFromDB = async (artistId: string, date: Date) => {
+  const parsedDate:Date = new Date(date);
   const services = await Service.find({
     artist: artistId,
   }).lean();
@@ -306,7 +307,7 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
   const minStep = Math.min(...durBuf.map((d) => d.duration + d.buffer));
   const minServiceDuration = Math.min(...durBuf.map((d) => d.duration));
 
-  const resolved = await resolveScheduleForDate(artistId, date);
+  const resolved = await resolveScheduleForDate(artistId, parsedDate);
 
   if (!resolved)
     throw new AppError(httpStatus.NOT_FOUND, 'Schedule is not Resolved!');
@@ -328,9 +329,9 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
   let current = roundUpMinutes(startMin, 15);
 
   const dayStart = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
+    parsedDate.getFullYear(),
+    parsedDate.getMonth(),
+    parsedDate.getDate()
   );
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
@@ -346,9 +347,9 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
   }));
 
   const slots: {
-    startMin: number;
-    timeLabel: string;
-    possibleServices: any[];
+    // startMin: number;
+    startFrom: string;
+    // possibleServices: any[];
   }[] = [];
 
   while (current + minServiceDuration <= endMin) {
@@ -364,9 +365,9 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
         if (!off.startDate || !off.endDate) return false;
 
         const slotDt = new Date(
-          date.getFullYear(),
-          date.getMonth(),
-          date.getDate()
+          parsedDate.getFullYear(),
+          parsedDate.getMonth(),
+          parsedDate.getDate()
         );
         slotDt.setMinutes(current);
         return slotDt >= off.startDate && slotDt < off.endDate;
@@ -374,13 +375,13 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
 
       if (!overlaps && !inOff) {
         slots.push({
-          startMin: current,
-          timeLabel: minToTimeString(current),
-          possibleServices: fittingServices.map((s) => ({
-            id: s.id,
-            name: s.name,
-            duration: s.duration,
-          })),
+          // startMin: current,
+          startFrom: minToTimeString(current),
+          // possibleServices: fittingServices.map((s) => ({
+          //   id: s.id,
+          //   name: s.name,
+          //   duration: s.duration,
+          // })),
         });
       }
     }

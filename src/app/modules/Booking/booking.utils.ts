@@ -1,7 +1,7 @@
-import { Types } from "mongoose";
-import GuestSpot from "../GuestSpot/guest.spot.model";
-import { WeeklySchedule } from "../Schedule/schedule.interface";
-import ArtistSchedule from "../Schedule/schedule.model";
+import { Types } from 'mongoose';
+import GuestSpot from '../GuestSpot/guest.spot.model';
+import { WeeklySchedule } from '../Schedule/schedule.interface';
+import ArtistSchedule from '../Schedule/schedule.model';
 
 export const minToTimeString = (min: number) => {
   const h = Math.floor(min / 60);
@@ -20,7 +20,7 @@ export const resolveScheduleForDate = async (
   date: Date
 ) => {
   const dayName = date
-    .toLocaleString('en-US', { weekday: 'long' })
+    .toLocaleString('en-US', { weekday: 'long', timeZone: 'UTC' })
     .toLowerCase() as keyof WeeklySchedule;
 
   const scheduleDoc = await ArtistSchedule.findOne({ artistId }).lean();
