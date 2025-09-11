@@ -1,21 +1,21 @@
-import mongoose, { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { BOOKING_STATUS, PAYMENT_STATUS } from './booking.constant';
 import { IBooking } from './booking.interface';
 
 const bookingSchema = new Schema<IBooking>(
   {
     artist: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Artist',
       required: true,
     },
     client: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Client',
       required: true,
     },
     service: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Service',
       required: true,
     },

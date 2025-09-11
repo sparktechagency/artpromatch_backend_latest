@@ -2,7 +2,7 @@
 import fs from 'fs';
 import httpStatus from 'http-status';
 import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
-import mongoose from 'mongoose';
+import { startSession } from 'mongoose';
 import { z } from 'zod';
 import config from '../../config';
 import {
@@ -305,10 +305,11 @@ const createProfileIntoDB = async (
   const studioLicense = files.studioLicense?.[0]?.path || '';
 
   // Start a MongoDB session for transaction
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const session = await startSession();
 
   try {
+    session.startTransaction();
+
     // CLIENT PROFILE CREATION
     if (role === ROLE.CLIENT) {
       const isExistClient = await Client.findOne({ auth: user._id });
@@ -353,7 +354,7 @@ const createProfileIntoDB = async (
       await ClientPreferences.create([clientPreferenceData], { session });
 
       await session.commitTransaction();
-      session.endSession();
+      await session.endSession();
 
       return client;
     } else if (role === ROLE.ARTIST) {
@@ -397,7 +398,7 @@ const createProfileIntoDB = async (
       );
 
       await session.commitTransaction();
-      session.endSession();
+      await session.endSession();
 
       return artist;
     } else if (role === ROLE.BUSINESS) {
@@ -513,10 +514,11 @@ const createProfileIntoDB = async (
 //   } = payload;
 
 //   // Start a MongoDB session for transaction
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
+//   const session = await startSession();
 
 //   try {
+//   session.startTransaction();
+
 //     // CLIENT PROFILE CREATION
 //     const isExistClient = await Client.findOne({ auth: user._id });
 //     if (isExistClient) {
@@ -560,7 +562,7 @@ const createProfileIntoDB = async (
 //     await ClientPreferences.create([clientPreferenceData], { session });
 
 //     await session.commitTransaction();
-//     session.endSession();
+//     await session.endSession();
 
 //     return client;
 //   } catch (error: any) {
@@ -604,10 +606,11 @@ const createProfileIntoDB = async (
 //   const selfieWithId = files.selfieWithId?.[0]?.path || '';
 
 //   // Start a MongoDB session for transaction
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
+//   const session = await startSession();
 
 //   try {
+//   session.startTransaction();
+
 //     // ARTIST PROFILE CREATION
 //     const isExistArtist = await Artist.findOne({ auth: user._id });
 //     if (isExistArtist) {
@@ -648,7 +651,7 @@ const createProfileIntoDB = async (
 //     );
 
 //     await session.commitTransaction();
-//     session.endSession();
+//     await session.endSession();
 
 //     return artist;
 //   } catch (error: any) {
@@ -722,10 +725,11 @@ const createProfileIntoDB = async (
 //   const studioLicense = files.studioLicense?.[0]?.path || '';
 
 //   // Start a MongoDB session for transaction
-//   const session = await mongoose.startSession();
-//   session.startTransaction();
+//   const session = await startSession();
 
 //   try {
+//   session.startTransaction();
+
 //     // BUSINESS PROFILE CREATION
 //     const isExistBusiness = await Business.findOne({ auth: user._id });
 //     if (isExistBusiness) {
@@ -1211,10 +1215,11 @@ const deactivateUserAccountFromDB = async (
 
 // 15. deleteSpecificUserAccount
 const deleteSpecificUserAccount = async (user: IAuth) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const session = await startSession();
 
   try {
+    session.startTransaction();
+
     const currentUser = await Auth.findById(user._id).session(session);
     if (!currentUser)
       throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -1286,7 +1291,7 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
     }
 
     await session.commitTransaction();
-    session.endSession();
+    await session.endSession();
     return {
       email: currentUser.email,
       id: currentUser._id,
@@ -1294,7 +1299,7 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
     };
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
+    await session.endSession();
     throw error;
   }
 };

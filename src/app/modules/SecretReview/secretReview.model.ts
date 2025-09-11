@@ -11,7 +11,7 @@ const secretReviewSchema = new Schema<ISecretReview>(
     // },
     // artist: {
     //   type: Schema.Types.ObjectId,
-    //   ref: 'Client',
+    //   ref: 'Artist',
     //   required: true,
     //   unique: true,
     // },
@@ -19,11 +19,10 @@ const secretReviewSchema = new Schema<ISecretReview>(
       type: Schema.Types.ObjectId,
       ref: 'Service',
       required: true,
-      unique: true,
     },
     booking: {
       type: Schema.Types.ObjectId,
-      ref: 'Client',
+      ref: 'Booking',
       required: true,
       unique: true,
     },

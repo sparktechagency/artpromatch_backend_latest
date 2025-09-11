@@ -1,9 +1,9 @@
-import mongoose from 'mongoose';
+import { model, Schema } from 'mongoose';
 import { REQUEST_STATUS } from './request.constant';
 import { IRequest } from './request.interface';
 
 // Define the request schema
-const requestSchema = new mongoose.Schema<IRequest>(
+const requestSchema = new Schema<IRequest>(
   {
     senderType: {
       type: String,
@@ -11,12 +11,12 @@ const requestSchema = new mongoose.Schema<IRequest>(
       required: true,
     },
     artistId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Artist',
       required: true,
     },
     businessId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Business',
       required: true,
     },
@@ -29,6 +29,6 @@ const requestSchema = new mongoose.Schema<IRequest>(
   { timestamps: true, versionKey: false }
 );
 
-const RequestModel = mongoose.model<IRequest>('Request', requestSchema);
+const RequestModel = model<IRequest>('Request', requestSchema);
 
 export default RequestModel;

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MessageModel } from './message.model';
-import mongoose from 'mongoose';
+import { startSession } from 'mongoose';
 import httpStatus from 'http-status';
 import { AppError } from '../../utils';
 import { IMessage } from './message.interface';
@@ -45,28 +45,29 @@ const deleteMessage = async (messageId: string): Promise<IMessage | null> => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Message ID is required');
   }
 
-  const mongoSession = await mongoose.startSession();
-  mongoSession.startTransaction();
+  const session = await startSession();
 
   try {
+    session.startTransaction();
+
     // Soft delete
     const message = await MessageModel.findByIdAndUpdate(
       messageId,
       { isDeleted: true },
-      { new: true, session: mongoSession }
+      { new: true, session: session }
     );
 
     if (!message) {
       throw new AppError(httpStatus.NOT_FOUND, 'Message not found!');
     }
 
-    await mongoSession.commitTransaction();
-    mongoSession.endSession();
+    await session.commitTransaction();
+    await session.endSession();
 
     return message;
   } catch (error: any) {
-    await mongoSession.abortTransaction();
-    mongoSession.endSession();
+    await session.abortTransaction();
+    await session.endSession();
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
       `Failed to delete message: ${error.message}`

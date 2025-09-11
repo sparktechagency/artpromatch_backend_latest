@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
-import mongoose from 'mongoose';
+import { startSession } from 'mongoose';
 import { AppError } from '../../utils';
 import Artist from '../Artist/artist.model';
 import { ROLE } from '../Auth/auth.constant';
@@ -290,10 +290,11 @@ const acceptRequestFromArtist = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const session = await startSession();
 
   try {
+    session.startTransaction();
+
     await Business.findByIdAndUpdate(
       business._id,
       {

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from 'express';
-import mongoose from 'mongoose';
+import { Error } from 'mongoose';
 import { ZodError } from 'zod';
 import {
   handleCastError,
@@ -32,12 +32,12 @@ const globalErrorHandler = (
     statusCode = modifier.statusCode;
     message = modifier.message;
     errors = modifier.errors;
-  } else if (err instanceof mongoose.Error.ValidationError) {
+  } else if (err instanceof Error.ValidationError) {
     const modifier = handleMongooseError(err);
     statusCode = modifier.statusCode;
     message = modifier.message;
     errors = modifier.errors;
-  } else if (err instanceof mongoose.Error.CastError) {
+  } else if (err instanceof Error.CastError) {
     const modifier = handleCastError(err);
     statusCode = modifier.statusCode;
     message = modifier.message;

@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import { model, Schema } from 'mongoose';
 import { IClientPreferences } from './clientPreferences.interface';
 
 export const connectedAccountSchema = new Schema({
@@ -51,7 +51,7 @@ const clientPreferencesSchema = new Schema<IClientPreferences>(
   { timestamps: true, versionKey: false }
 );
 
-const ClientPreferences = mongoose.model<IClientPreferences>(
+const ClientPreferences = model<IClientPreferences>(
   'ClientPreferences',
   clientPreferencesSchema
 );

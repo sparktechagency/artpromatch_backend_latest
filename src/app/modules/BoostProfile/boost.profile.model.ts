@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import { model, Schema } from 'mongoose';
 import { IArtistBoost } from './boost.profile.interface';
 
 const ArtistBoostSchema = new Schema<IArtistBoost>(
@@ -43,7 +43,7 @@ const ArtistBoostSchema = new Schema<IArtistBoost>(
   { timestamps: true, versionKey: false }
 );
 
-export const ArtistBoost = mongoose.model<IArtistBoost>(
+export const ArtistBoost = model<IArtistBoost>(
   'ArtistBoost',
   ArtistBoostSchema
 );
