@@ -32,8 +32,17 @@ const bookingSchema = z.object({
   }),
 });
 
+// getAvailabilitySchema
+const getAvailabilitySchema = z.object({
+  body: z.object({
+    artistId: z.string({ required_error: 'ArtistId is required' }),
+    date: z.string({ required_error: 'Date type is required' }),
+  }),
+});
+
 export const BookingValidation = {
   bookingSchema,
+  getAvailabilitySchema,
 };
 
 export type TBookingData = z.infer<typeof bookingSchema.shape.body>;

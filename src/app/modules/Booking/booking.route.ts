@@ -22,4 +22,12 @@ router
     BookingController.ReviewAfterAServiceIsCompleted
   );
 
+router
+  .route('/get-availability')
+  .post(
+    auth(ROLE.CLIENT),
+    validateRequest(BookingValidation.getAvailabilitySchema),
+    BookingController.getAvailability
+  );
+
 export const BookingRoutes = router;

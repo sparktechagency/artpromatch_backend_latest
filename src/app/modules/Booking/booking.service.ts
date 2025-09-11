@@ -10,6 +10,12 @@ import { AppError } from '../../utils';
 import { IArtist } from '../Artist/artist.interface';
 import { IService } from '../Service/service.interface';
 import SecretReview from '../SecretReview/secretReview.model';
+import Service from '../Service/service.model';
+import {
+  minToTimeString,
+  resolveScheduleForDate,
+  roundUpMinutes,
+} from './booking.utils';
 // import Slot from '../Schedule/schedule.model';
 // import Booking from './booking.model';
 // import { TBookingData } from './booking.validation';
@@ -282,6 +288,109 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
   }
 };
 
+// getAvailabilityFromDB
+const getAvailabilityFromDB = async (artistId: string, date: Date) => {
+  const services = await Service.find({
+    artist: artistId,
+  }).lean();
+
+  if (!services?.length) return [];
+
+  const durBuf = services.map((s: IService) => ({
+    id: s._id.toString(),
+    duration: s.durationInMinutes,
+    buffer: s.bufferTimeInMinutes,
+    name: s.title,
+  }));
+
+  const minStep = Math.min(...durBuf.map((d) => d.duration + d.buffer));
+  const minServiceDuration = Math.min(...durBuf.map((d) => d.duration));
+
+  const resolved = await resolveScheduleForDate(artistId, date);
+
+  if (!resolved)
+    throw new AppError(httpStatus.NOT_FOUND, 'Schedule is not Resolved!');
+
+  const schedule = resolved.schedule;
+
+  if (
+    !schedule ||
+    schedule.off ||
+    schedule.startMin == null ||
+    schedule.endMin == null
+  )
+    return [];
+
+  // Now TypeScript knows these are numbers
+  const startMin = schedule.startMin;
+  const endMin = schedule.endMin;
+
+  let current = roundUpMinutes(startMin, 15);
+
+  const dayStart = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+  const bookings = await Booking.find({
+    artist: artistId,
+    originalDate: { $gte: dayStart, $lt: dayEnd },
+    status: { $in: ['confirmed', 'pending'] },
+  }).lean();
+
+  const busyIntervals = bookings.map((b) => ({
+    start: b.startMin,
+    end: b.endMin,
+  }));
+
+  const slots: {
+    startMin: number;
+    timeLabel: string;
+    possibleServices: any[];
+  }[] = [];
+
+  while (current + minServiceDuration <= endMin) {
+    const fittingServices = durBuf.filter(
+      (s) => current + s.duration <= endMin
+    );
+
+    if (fittingServices.length) {
+      const overlaps = busyIntervals.some(
+        (b) => current < b.end && current + minServiceDuration > b.start
+      );
+      const inOff = (resolved.offTimes || []).some((off) => {
+        if (!off.startDate || !off.endDate) return false;
+
+        const slotDt = new Date(
+          date.getFullYear(),
+          date.getMonth(),
+          date.getDate()
+        );
+        slotDt.setMinutes(current);
+        return slotDt >= off.startDate && slotDt < off.endDate;
+      });
+
+      if (!overlaps && !inOff) {
+        slots.push({
+          startMin: current,
+          timeLabel: minToTimeString(current),
+          possibleServices: fittingServices.map((s) => ({
+            id: s.id,
+            name: s.name,
+            duration: s.duration,
+          })),
+        });
+      }
+    }
+
+    current += minStep;
+  }
+
+  return slots;
+};
+
 export const BookingService = {
   // createBookingIntoDB,
   // getUserBookings,
@@ -290,4 +399,5 @@ export const BookingService = {
   // cancelBooking,
   // checkAvailability,
   ReviewAfterAServiceIsCompletedIntoDB,
+  getAvailabilityFromDB,
 };

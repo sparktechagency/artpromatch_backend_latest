@@ -32,7 +32,20 @@ const ReviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
   });
 });
 
+// getAvailability
+const getAvailability = asyncHandler(async (req, res) => {
+  const { artistId, date } = req.body;
+  const result = await BookingService.getAvailabilityFromDB(artistId, date);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Availability retrieved successfully!',
+    data: result,
+  });
+});
+
 export const BookingController = {
   // createBooking,
   ReviewAfterAServiceIsCompleted,
+  getAvailability,
 };
