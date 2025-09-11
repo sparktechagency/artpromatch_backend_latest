@@ -30,7 +30,7 @@ export const createServiceSchema = z.object({
         required_error: 'Description is required',
       })
       .min(500, 'Description must be at least 500 characters')
-      .max(1500, 'Description must be at least 1500 characters'),
+      .max(1500, 'Description cannot exceed 1500 characters'),
 
     price: z
       .number({
@@ -85,7 +85,7 @@ export const updateServiceSchema = z.object({
     description: z
       .string()
       .min(500, 'Description must be at least 500 characters')
-      .max(1500, 'Description must be at least 1500 characters')
+      .max(1500, 'Description cannot exceed 1500 characters')
       .optional(),
 
     price: z

@@ -4,7 +4,7 @@ import { FOLDER_FOR } from './folder.constant';
 
 const folderSchema = new Schema<IFolder>(
   {
-    auth: {
+    owner: {
       type: Schema.Types.ObjectId,
       ref: 'Auth',
       required: true,
@@ -17,6 +17,10 @@ const folderSchema = new Schema<IFolder>(
       type: String,
       enum: Object.values(FOLDER_FOR),
       required: true,
+    },
+    images: {
+      type: [String],
+      default: [],
     },
   },
   { timestamps: true, versionKey: false }
