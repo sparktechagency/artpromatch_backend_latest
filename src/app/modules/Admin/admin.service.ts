@@ -11,7 +11,7 @@ import { PipelineStage } from 'mongoose';
 
 // getAllArtistsFoldersFromDB
 const getAllArtistsFoldersFromDB = async () => {
-  return await Folder.find({ isPublished: false });
+  return await Folder.find();
 };
 
 // // changeStatusOnFolder

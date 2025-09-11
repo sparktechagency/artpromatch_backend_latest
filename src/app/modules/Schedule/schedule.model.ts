@@ -45,7 +45,7 @@ export const OffTimeSchema = new Schema({
   endDate: { type: Date, required: true, default: null },
 });
 
-const ArtistScheduleSchema = new Schema<IArtistSchedule>(
+const artistScheduleSchema = new Schema<IArtistSchedule>(
   {
     artistId: { type: Schema.Types.ObjectId, ref: 'Artist', required: true },
     weeklySchedule: {
@@ -69,7 +69,7 @@ const ArtistScheduleSchema = new Schema<IArtistSchedule>(
 
 const ArtistSchedule = model<IArtistSchedule>(
   'ArtistSchedule',
-  ArtistScheduleSchema
+  artistScheduleSchema
 );
 export default ArtistSchedule;
 

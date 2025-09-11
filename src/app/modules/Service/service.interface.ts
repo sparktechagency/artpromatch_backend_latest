@@ -14,6 +14,7 @@ export type TServiceImages = {
 };
 
 export interface IService extends Document {
+  _id: Types.ObjectId;
   artist: Types.ObjectId;
 
   title: string;
@@ -29,6 +30,6 @@ export interface IService extends Document {
   totalCompletedOrder: number;
   totalReviewCount: number;
   avgRating: number;
-  
+
   isDeleted: boolean;
 }
