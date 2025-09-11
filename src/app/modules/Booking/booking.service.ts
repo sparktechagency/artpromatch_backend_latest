@@ -290,7 +290,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 
 // getAvailabilityFromDB
 const getAvailabilityFromDB = async (artistId: string, date: Date) => {
-  const parsedDate:Date = new Date(date);
+  const parsedDate: Date = new Date(date);
   const services = await Service.find({
     artist: artistId,
   }).lean();
@@ -304,13 +304,20 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
     name: s.title,
   }));
 
-  const minStep = Math.min(...durBuf.map((d) => d.duration + d.buffer));
-  const minServiceDuration = Math.min(...durBuf.map((d) => d.duration));
+  const minTotalServiceTime = Math.min(
+    ...services.map(
+      (service) => service.durationInMinutes + service.bufferTimeInMinutes
+    )
+  );
+  const minServiceTime = Math.min(
+    ...services.map((service) => service.durationInMinutes)
+  );
 
   const resolved = await resolveScheduleForDate(artistId, parsedDate);
 
-  if (!resolved)
+  if (!resolved) {
     throw new AppError(httpStatus.NOT_FOUND, 'Schedule is not Resolved!');
+  }
 
   const schedule = resolved.schedule;
 
@@ -333,6 +340,7 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
     parsedDate.getMonth(),
     parsedDate.getDate()
   );
+
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
   const bookings = await Booking.find({
@@ -352,15 +360,17 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
     // possibleServices: any[];
   }[] = [];
 
-  while (current + minServiceDuration <= endMin) {
+  while (current + minServiceTime <= endMin) {
     const fittingServices = durBuf.filter(
       (s) => current + s.duration <= endMin
     );
 
     if (fittingServices.length) {
       const overlaps = busyIntervals.some(
-        (b) => current < b.end && current + minServiceDuration > b.start
+        (intervals) =>
+          current < intervals.end && current + minServiceTime > intervals.start
       );
+
       const inOff = (resolved.offTimes || []).some((off) => {
         if (!off.startDate || !off.endDate) return false;
 
@@ -369,7 +379,9 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
           parsedDate.getMonth(),
           parsedDate.getDate()
         );
+
         slotDt.setMinutes(current);
+
         return slotDt >= off.startDate && slotDt < off.endDate;
       });
 
@@ -386,7 +398,7 @@ const getAvailabilityFromDB = async (artistId: string, date: Date) => {
       }
     }
 
-    current += minStep;
+    current += minTotalServiceTime;
   }
 
   return slots;
