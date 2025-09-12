@@ -18,8 +18,18 @@ const createOrUpdateFolderSchema = z.object({
   }),
 });
 
+// removeImageFromFolderSchema
+const removeImageFromFolderSchema = z.object({
+  body: z.object({
+    imageUrl: z.string({
+      required_error: 'Image is required!',
+    }),
+  }),
+});
+
 export const FolderValidation = {
   createOrUpdateFolderSchema,
+  removeImageFromFolderSchema,
 };
 
 // export type TFolderPayload = z.infer<typeof createFolderSchema.shape.body>;

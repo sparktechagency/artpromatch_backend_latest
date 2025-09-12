@@ -1,7 +1,15 @@
 import fs from 'fs';
 
-export const deleteFiles = (files: Express.Multer.File[]) => {
+export const deleteSomeMulterFiles = (files: Express.Multer.File[]) => {
   files?.forEach((file) => fs.unlink(file.path, () => {}));
+};
+
+export const deleteSomeImages = (images: string[]) => {
+  images?.forEach((image) => fs.unlink(image, () => {}));
+};
+
+export const deleteSingleImage = (file: string) => {
+  fs.unlink(file, () => {});
 };
 
 export const toTitleCase = (str: string): string => {

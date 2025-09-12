@@ -23,8 +23,8 @@ router
 
 // updateFolder
 router
-  .route('/update/:folderId')
-  .post(
+  .route('/:folderId')
+  .patch(
     auth(ROLE.ARTIST),
     validateRequest(FolderValidation.createOrUpdateFolderSchema),
     FolderController.updateFolder
@@ -42,9 +42,10 @@ router
 // removeImageFromFolder
 router
   .route('/remove-image/:folderId')
-  .post(
+  .delete(
     auth(ROLE.ARTIST),
     upload.array('files'),
+    validateRequest(FolderValidation.removeImageFromFolderSchema),
     FolderController.removeImageFromFolder
   );
 
