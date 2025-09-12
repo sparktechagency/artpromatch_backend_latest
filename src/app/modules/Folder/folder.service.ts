@@ -3,7 +3,12 @@ import { IAuth } from '../Auth/auth.interface';
 import httpStatus from 'http-status';
 import Folder from './folder.model';
 import { IFolder } from './folder.interface';
-import fs from 'fs';
+import {
+  deleteSomeMulterFiles,
+  deleteSingleImage,
+  deleteSomeImages,
+  toTitleCase,
+} from './folder.utils';
 
 // createFolderIntoDB
 const createFolderIntoDB = async (
@@ -12,12 +17,15 @@ const createFolderIntoDB = async (
   files: Express.Multer.File[]
 ) => {
   if (files && files?.length > 50) {
-    files?.forEach((file) => fs.unlink(file.path, () => {}));
+    deleteSomeMulterFiles(files);
     throw new AppError(
       httpStatus.BAD_REQUEST,
       "You can't upload more then 50 images in a folder. Create a new one!"
     );
   }
+
+  // transfer name to Title Case
+  payload.name = toTitleCase(payload.name);
 
   const folder = await Folder.findOne({
     name: payload.name,
@@ -25,13 +33,15 @@ const createFolderIntoDB = async (
   });
 
   if (folder) {
-    files?.forEach((file) => fs.unlink(file.path, () => {}));
+    deleteSomeMulterFiles(files);
     throw new AppError(httpStatus.BAD_REQUEST, 'Folder name already exists!');
   }
 
   return await Folder.create({
     owner: userData.id,
-    images: files?.length ? files.map((file) => file.path) : [],
+    images: files?.length
+      ? files.map((file) => file.path.replace(/\\/g, '/'))
+      : [],
     ...payload,
   });
 };
@@ -48,33 +58,38 @@ const updateFolderIntoDB = async (
   });
 
   if (!folder) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Folder not found!');
+  }
+
+  // transfer name to Title Case
+  payload.name = toTitleCase(payload.name);
+
+  const duplicate = await Folder.findOne({
+    _id: { $ne: folderId },
+    owner: userData.id,
+    name: payload.name,
+  });
+
+  if (duplicate) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Folder name already exists!');
   }
 
   folder.name = payload.name;
   folder.for = payload.for;
+
   await folder.save();
 
   return folder;
 };
 
-// uploadFileToFolderIntoDB
-const uploadFileToFolderIntoDB = async (
+// addImagesToFolderIntoDB
+const addImagesToFolderIntoDB = async (
   folderId: string,
   userData: IAuth,
   files: Express.Multer.File[]
 ) => {
-  if (!files || !files?.length) {
-    files?.forEach((file) => fs.unlink(file.path, () => {}));
-    throw new AppError(httpStatus.BAD_REQUEST, 'Files are required');
-  }
-
-  if (files && files?.length > 50) {
-    files?.forEach((file) => fs.unlink(file.path, () => {}));
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "You can't upload more then 50 images in a folder!"
-    );
+  if (!files || !files.length) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Files are required!');
   }
 
   const folder = await Folder.findOne({
@@ -83,22 +98,70 @@ const uploadFileToFolderIntoDB = async (
   });
 
   if (!folder) {
-    files?.forEach((file) => fs.unlink(file.path, () => {}));
-    throw new AppError(httpStatus.BAD_REQUEST, 'Folder name already exists!');
+    deleteSomeMulterFiles(files);
+    throw new AppError(httpStatus.NOT_FOUND, 'Folder not found!');
   }
 
-  if (folder?.images.length + files?.length > 50) {
-    files?.forEach((file) => fs.unlink(file.path, () => {}));
+  if (folder.images.length + files.length > 50) {
+    deleteSomeMulterFiles(files);
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      "You can't upload more then 50 images in a folder!"
+      "You can't upload more than 50 images in a folder. Create a new one!"
     );
   }
 
-  folder.images = [...folder.images, ...files.map((file) => file.path)];
-  await folder.save();
+  // folder.images.push(...files.map((file) => file.path.replace(/\\/g, '/')));
 
-  return folder;
+  const newFiles = files.map((file) => file.path.replace(/\\/g, '/'));
+  // folder.images.push(
+  //   ...newFiles.filter((file) => !folder.images.includes(file))
+  // );
+  // await folder.save();
+
+  // $push does't avoid duplicate push
+  // const updatedFolder = await Folder.findByIdAndUpdate(
+  //   folderId,
+  //   { $push: { images: { $each: newFiles } } },
+  //   { new: true }
+  // );
+
+  // $addToSet avoids duplicate push
+  const updatedFolder = await Folder.findByIdAndUpdate(
+    folderId,
+    { $addToSet: { images: { $each: newFiles } } },
+    { new: true }
+  );
+
+  // return folder;
+  return updatedFolder;
+};
+
+// removeImageFromFolderFromDB
+const removeImageFromFolderFromDB = async (
+  folderId: string,
+  imageUrl: string
+) => {
+  const folder = await Folder.findById(folderId);
+
+  if (!folder) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Folder not found!');
+  }
+
+  // Check if image exists in the folder
+  if (!folder.images.includes(imageUrl)) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Image not found in this folder!');
+  }
+
+  // Remove image from DB
+  const updatedFolder = await Folder.findByIdAndUpdate(
+    folderId,
+    { $pull: { images: imageUrl } },
+    { new: true }
+  );
+
+  // Remove file physically from storage
+  deleteSingleImage(imageUrl);
+  return updatedFolder;
 };
 
 // removeFolderFromDB
@@ -109,7 +172,7 @@ const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
     if (!folder) {
       throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists!');
     }
-    folder.images?.forEach((images) => fs.unlink(images, () => {}));
+    deleteSomeImages(folder.images);
   } else {
     const folder = await Folder.findOneAndDelete({
       _id: folderId,
@@ -119,7 +182,7 @@ const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
     if (!folder) {
       throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists!');
     }
-    folder.images?.forEach((images) => fs.unlink(images, () => {}));
+    deleteSomeImages(folder.images);
   }
 
   return null;
@@ -128,6 +191,7 @@ const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
 export const FolderService = {
   createFolderIntoDB,
   updateFolderIntoDB,
-  uploadFileToFolderIntoDB,
+  addImagesToFolderIntoDB,
+  removeImageFromFolderFromDB,
   removeFolderFromDB,
 };

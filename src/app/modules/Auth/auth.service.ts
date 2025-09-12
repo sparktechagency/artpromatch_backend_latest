@@ -294,15 +294,17 @@ const createProfileIntoDB = async (
   } = payload;
 
   // Extract file paths for ID verification images and business documents
-  const idCardFront = files.idFrontPart?.[0]?.path || '';
-  const idCardBack = files.idBackPart?.[0]?.path || '';
-  const selfieWithId = files.selfieWithId?.[0]?.path || '';
+  const idCardFront = files.idFrontPart?.[0]?.path.replace(/\\/g, '/') || '';
+  const idCardBack = files.idBackPart?.[0]?.path.replace(/\\/g, '/') || '';
+  const selfieWithId = files.selfieWithId?.[0]?.path.replace(/\\/g, '/') || '';
 
   // Business-specific file extractions
   const registrationCertificate =
-    files.registrationCertificate?.[0]?.path || '';
-  const taxIdOrEquivalent = files.taxIdOrEquivalent?.[0]?.path || '';
-  const studioLicense = files.studioLicense?.[0]?.path || '';
+    files.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || '';
+  const taxIdOrEquivalent =
+    files.taxIdOrEquivalent?.[0]?.path.replace(/\\/g, '/') || '';
+  const studioLicense =
+    files.studioLicense?.[0]?.path.replace(/\\/g, '/') || '';
 
   // Start a MongoDB session for transaction
   const session = await startSession();
@@ -601,9 +603,9 @@ const createProfileIntoDB = async (
 //   const { location, artistType, expertise, city } = payload;
 
 //   // Extract file paths for ID verification images and business documents
-//   const idCardFront = files.idFrontPart?.[0]?.path || '';
-//   const idCardBack = files.idBackPart?.[0]?.path || '';
-//   const selfieWithId = files.selfieWithId?.[0]?.path || '';
+//   const idCardFront = files.idFrontPart?.[0]?.path.replace(/\\/g, '/') || '';
+//   const idCardBack = files.idBackPart?.[0]?.path.replace(/\\/g, '/') || '';
+//   const selfieWithId = files.selfieWithId?.[0]?.path.replace(/\\/g, '/') || '';
 
 //   // Start a MongoDB session for transaction
 //   const session = await startSession();
@@ -671,7 +673,7 @@ const createProfileIntoDB = async (
 //             // eslint-disable-next-line no-console
 //             console.warn(
 //               'Failed to delete uploaded file:',
-//               file.path,
+//               file.path.replace(/\\/g, '/'),
 //               deleteErr
 //             );
 //           }
@@ -720,9 +722,9 @@ const createProfileIntoDB = async (
 
 //   // Business-specific file extractions
 //   const registrationCertificate =
-//     files.registrationCertificate?.[0]?.path || '';
-//   const taxIdOrEquivalent = files.taxIdOrEquivalent?.[0]?.path || '';
-//   const studioLicense = files.studioLicense?.[0]?.path || '';
+//     files.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || '';
+//   const taxIdOrEquivalent = files.taxIdOrEquivalent?.[0]?.path.replace(/\\/g, '/') || '';
+//   const studioLicense = files.studioLicense?.[0]?.path.replace(/\\/g, '/') || '';
 
 //   // Start a MongoDB session for transaction
 //   const session = await startSession();
@@ -796,7 +798,7 @@ const createProfileIntoDB = async (
 //             // eslint-disable-next-line no-console
 //             console.warn(
 //               'Failed to delete uploaded file:',
-//               file.path,
+//               file.path.replace(/\\/g, '/'),
 //               deleteErr
 //             );
 //           }
@@ -925,7 +927,7 @@ const updateProfilePhotoIntoDB = async (
 
   const res = await Auth.findByIdAndUpdate(
     user._id,
-    { image: file.path },
+    { image: file.path.replace(/\\/g, '/') },
     { new: true }
   ).select('fullName email image role isProfile phoneNumber');
 

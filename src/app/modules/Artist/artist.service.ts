@@ -162,7 +162,7 @@ const addFlashesIntoDB = async (
     artist._id,
     {
       $push: {
-        flashes: { $each: files.map((file) => file.path) },
+        flashes: { $each: files.map((file) => file.path.replace(/\\/g, '/')) },
       },
     },
     { new: true }
@@ -198,7 +198,9 @@ const addPortfolioImages = async (
     artist._id,
     {
       $push: {
-        portfolio: { $each: files.map((file) => file.path) },
+        portfolio: {
+          $each: files.map((file) => file.path.replace(/\\/g, '/')),
+        },
       },
     },
     { new: true }
@@ -633,8 +635,10 @@ const createService = async (
   if (!artist) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
   }
-  const thumbnail = files?.thumbnail[0]?.path || '';
-  const images = files?.images?.map((image) => image.path || '');
+  const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
+  const images = files?.images?.map(
+    (image) => image.path.replace(/\\/g, '/') || ''
+  );
 
   const serviceData = {
     ...payload,

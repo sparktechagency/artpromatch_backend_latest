@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { FOLDER_FOR } from './folder.constant';
 
-// createFolderSchema
-const createFolderSchema = z.object({
+// createOrUpdateFolderSchema
+const createOrUpdateFolderSchema = z.object({
   body: z.object({
     name: z
       .string({
@@ -18,8 +18,18 @@ const createFolderSchema = z.object({
   }),
 });
 
+// removeImageFromFolderSchema
+const removeImageFromFolderSchema = z.object({
+  body: z.object({
+    imageUrl: z.string({
+      required_error: 'Image is required!',
+    }),
+  }),
+});
+
 export const FolderValidation = {
-  createFolderSchema,
+  createOrUpdateFolderSchema,
+  removeImageFromFolderSchema,
 };
 
 // export type TFolderPayload = z.infer<typeof createFolderSchema.shape.body>;

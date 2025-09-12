@@ -38,13 +38,13 @@ const updateFolder = asyncHandler(async (req, res) => {
   });
 });
 
-// uploadFileToFolder
-const uploadFileToFolder = asyncHandler(async (req, res) => {
+// addImagesToFolder
+const addImagesToFolder = asyncHandler(async (req, res) => {
   const { folderId } = req.params;
   const userData = req.user;
   const files = req.files as Express.Multer.File[];
 
-  const result = await FolderService.uploadFileToFolderIntoDB(
+  const result = await FolderService.addImagesToFolderIntoDB(
     folderId,
     userData,
     files
@@ -52,7 +52,24 @@ const uploadFileToFolder = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Files uploaded successfully!',
+    message: 'Images uploaded successfully!',
+    data: result,
+  });
+});
+
+// removeImageFromFolder
+const removeImageFromFolder = asyncHandler(async (req, res) => {
+  const { folderId } = req.params;
+  const { imageUrl } = req.body;
+
+  const result = await FolderService.removeImageFromFolderFromDB(
+    folderId,
+    imageUrl
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Image removed successfully!',
     data: result,
   });
 });
@@ -73,6 +90,7 @@ const removeFolder = asyncHandler(async (req, res) => {
 export const FolderController = {
   createFolder,
   updateFolder,
-  uploadFileToFolder,
+  addImagesToFolder,
+  removeImageFromFolder,
   removeFolder,
 };
