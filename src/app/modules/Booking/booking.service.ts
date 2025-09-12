@@ -113,116 +113,133 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 };
 
 // getAvailabilityFromDB
-const getAvailabilityFromDB = async (artistId: string, date: Date) => {
-  const parsedDate: Date = new Date(date);
-  const services = await Service.find({
-    artist: artistId,
-  }).lean();
+// const getAvailabilityFromDB = async (artistId: string, serviceId: string, date: Date,) => {
+//   console.log(serviceId)
+//   const service = await Service.findById(serviceId).lean();
+//   if (!service) throw new AppError(httpStatus.NOT_FOUND, 'service not found');
+//   const parsedDate = new Date(date);
+//   const duration = service.durationInMinutes;
+//   const buffer = service.bufferTimeInMinutes;
+//   const totalTime = duration + buffer;
 
-  if (!services?.length) return [];
+//   // Resolve schedule (guestSpot > offTime > weeklySchedule)
+//   const resolved = await resolveScheduleForDate(artistId, parsedDate);
+//   const schedule = resolved.schedule;
 
-  const durBuf = services.map((s: IService) => ({
-    id: s._id.toString(),
-    duration: s.durationInMinutes,
-    buffer: s.bufferTimeInMinutes,
-    name: s.title,
-  }));
+//   if (!schedule || schedule.off || schedule.startMin == null || schedule.endMin == null) {
+//     return [];
+//   }
 
-  const minTotalServiceTime = Math.min(
-    ...services.map(
-      (service) => service.durationInMinutes + service.bufferTimeInMinutes
-    )
-  );
-  const minServiceTime = Math.min(
-    ...services.map((service) => service.durationInMinutes)
-  );
+//   // If offTime covers the date → no slots
+//   if (resolved.offTime?.startDate && resolved.offTime?.endDate) {
+//     if (date >= resolved.offTime.startDate && date <= resolved.offTime.endDate) {
+//       return [];
+//     }
+//   }
 
+//   const startMin = schedule.startMin;
+//   const endMin = schedule.endMin;
+//   let current = roundUpMinutes(startMin, 15);
+
+//   const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+//   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+//   const bookings = await Booking.find({
+//     artist: artistId,
+//     originalDate: { $gte: dayStart, $lt: dayEnd },
+//     status: { $in: ["pending", "confirmed"] },
+//   }).lean();
+
+//   const busyIntervals = bookings.map((b) => ({ start: b.startMin, end: b.endMin }));
+
+//   const slots: { startFrom: string }[] = [];
+
+//   while (current + duration <= endMin) {
+//     const overlaps = busyIntervals.some(
+//       (i) => current < i.end && current + duration > i.start
+//     );
+
+//     if (!overlaps) {
+//       slots.push({ startFrom: minToTimeString(current) });
+//     }
+
+//     current += totalTime;
+//   }
+
+//   return slots;
+// };
+
+const getAvailabilityFromDB = async (
+  artistId: string,
+  serviceId: string,
+  date: Date
+) => {
+  const parsedDate = new Date(date);
+
+  // 1. Get the service
+  const service = await Service.findOne({ _id: serviceId, artist: artistId }).lean();
+  if (!service) return [];
+
+  const duration = service.durationInMinutes;
+  const buffer = service.bufferTimeInMinutes;
+  const totalServiceTime = duration + buffer;
+
+  // 2. Resolve schedule
   const resolved = await resolveScheduleForDate(artistId, parsedDate);
+  if (!resolved || !resolved.schedule || resolved.schedule.off) return [];
 
-  if (!resolved) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Schedule is not Resolved!');
-  }
+  const { startMin, endMin } = resolved.schedule;
+  if (startMin == null || endMin == null) return [];
 
-  const schedule = resolved.schedule;
-
-  if (
-    !schedule ||
-    schedule.off ||
-    schedule.startMin == null ||
-    schedule.endMin == null
-  )
-    return [];
-
-  // Now TypeScript knows these are numbers
-  const startMin = schedule.startMin;
-  const endMin = schedule.endMin;
-
-  let current = roundUpMinutes(startMin, 15);
-
-  const dayStart = new Date(
-    parsedDate.getFullYear(),
-    parsedDate.getMonth(),
-    parsedDate.getDate()
-  );
-
+  // 3. Get existing bookings
+  const dayStart = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
   const bookings = await Booking.find({
     artist: artistId,
     originalDate: { $gte: dayStart, $lt: dayEnd },
     status: { $in: ['confirmed', 'pending'] },
-  }).lean();
+  })
+    .sort({ startMin: 1 }) // Sort by start time
+    .lean();
 
-  const busyIntervals = bookings.map((b) => ({
-    start: b.startMin,
-    end: b.endMin,
-  }));
+  const slots: { startFrom: string }[] = [];
+  let current = startMin;
 
-  const slots: {
-    // startMin: number;
-    startFrom: string;
-    // possibleServices: any[];
-  }[] = [];
+  for (let i = 0; i <= bookings.length; i++) {
+    const nextBooking = bookings[i];
+    const nextBookingStart = nextBooking ? nextBooking.startMin : endMin;
 
-  while (current + minServiceTime <= endMin) {
-    const fittingServices = durBuf.filter(
-      (s) => current + s.duration <= endMin
-    );
+    // Fit as many slots before the next booking
+    while (current + duration <= nextBookingStart) {
+      // Check offTime
+      let inOff = false;
+      if (resolved.offTime?.startDate && resolved.offTime?.endDate) {
+        const slotStartDate = new Date(parsedDate);
+        slotStartDate.setHours(0, 0, 0, 0);
+        slotStartDate.setMinutes(current);
 
-    if (fittingServices.length) {
-      const overlaps = busyIntervals.some(
-        (intervals) =>
-          current < intervals.end && current + minServiceTime > intervals.start
-      );
+        const slotEndDate = new Date(parsedDate);
+        slotEndDate.setHours(0, 0, 0, 0);
+        slotEndDate.setMinutes(current + duration);
 
-      const inOff = (resolved.offTimes || []).some((off) => {
-        if (!off.startDate || !off.endDate) return false;
-
-        const slotDt = new Date(
-          parsedDate.getFullYear(),
-          parsedDate.getMonth(),
-          parsedDate.getDate()
-        );
-
-        slotDt.setMinutes(current);
-
-        return slotDt >= off.startDate && slotDt < off.endDate;
-      });
-
-      if (!overlaps && !inOff) {
-        slots.push({
-          // startMin: current,
-          startFrom: minToTimeString(current),
-          // possibleServices: fittingServices.map((s) => ({
-          //   id: s.id,
-          //   name: s.name,
-          //   duration: s.duration,
-          // })),
-        });
+        inOff =
+          slotStartDate >= resolved.offTime.startDate &&
+          slotEndDate <= resolved.offTime.endDate;
       }
+
+      if (!inOff && current + duration <= endMin) {
+        slots.push({ startFrom: minToTimeString(current) });
+      }
+
+      // Move forward by total service time (duration + buffer)
+      current += totalServiceTime;
     }
 
-    current += minTotalServiceTime;
+    // Jump current to after this booking
+    if (nextBooking) {
+      current = Math.max(current, nextBooking.endMin + buffer);
+    }
   }
 
   return slots;

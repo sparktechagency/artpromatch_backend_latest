@@ -72,5 +72,5 @@ export interface IArtistSchedule {
   artistId: Types.ObjectId;
   weeklySchedule: WeeklySchedule;
   activeGuestSpot: Types.ObjectId | null;
-  offTimes: [offTimes];
+  offTime: offTimes;
 }

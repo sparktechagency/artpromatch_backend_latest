@@ -45,8 +45,8 @@ const createBooking = asyncHandler(async (req, res) => {
 
 // getAvailability
 const getAvailability = asyncHandler(async (req, res) => {
-  const { artistId, date } = req.body;
-  const result = await BookingService.getAvailabilityFromDB(artistId, date);
+  const { artistId, serviceId, date } = req.body;
+  const result = await BookingService.getAvailabilityFromDB(artistId,serviceId,date);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

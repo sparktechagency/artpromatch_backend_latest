@@ -1,11 +1,11 @@
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { z } from 'zod';
+import { dateFormats, notificationChannel } from '../Client/client.constant';
 import {
   ARTIST_TYPE,
   cancellationPolicy,
   expertiseTypes,
 } from './artist.constant';
-import { dateFormats, notificationChannel } from '../Client/client.constant';
 
 // Define the validation schemas under the "body" object for each section
 const artistProfileSchema = z.object({
@@ -180,6 +180,15 @@ const timeOffSchema = z.object({
   }),
 });
 
+const setOffTimeSchema = z.object({
+  body: z.object({
+    startDate: z.coerce.date(),
+    endDate: z.coerce.date(),
+  }),
+});
+
+export type TSetOffTime = z.infer<typeof setOffTimeSchema.shape.body>;
+
 export const ArtistValidation = {
   artistProfileSchema,
   artistPreferencesSchema,
@@ -188,6 +197,7 @@ export const ArtistValidation = {
   updateSchema,
   availabilitySchema,
   timeOffSchema,
+  setOffTimeSchema
 };
 
 // Type definitions based on the updated schemas
@@ -204,5 +214,3 @@ export type TUpdateArtistPrivacySecurityPayload = z.infer<
   typeof artistPrivacySecuritySchema.shape.body
 >;
 export type TUpdateArtistPayload = z.infer<typeof updateSchema.shape.body>;
-
-

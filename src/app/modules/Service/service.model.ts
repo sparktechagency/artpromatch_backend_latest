@@ -47,9 +47,10 @@ const serviceSchema = new Schema<IService>(
       type: Number,
       default: 0,
     },
-    bodyParts:{
+    bodyPart:{
       type: String,
       enum: Object.values(TattooBodyParts),
+      required: true
     },
     totalCompletedOrder: {
       type: Number,

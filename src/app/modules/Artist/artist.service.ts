@@ -18,6 +18,7 @@ import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
+  TSetOffTime,
   TUpdateArtistNotificationPayload,
   TUpdateArtistPayload,
   TUpdateArtistPreferencesPayload,
@@ -31,7 +32,8 @@ import config from '../../config';
 
 import Service from '../Service/service.model';
 import ArtistSchedule from '../Schedule/schedule.model';
-import { WeeklySchedule } from '../Schedule/schedule.interface';
+import { offTimes, WeeklySchedule } from '../Schedule/schedule.interface';
+import Booking from '../Booking/booking.model';
 
 // update profile
 const updateProfile = async (
@@ -374,88 +376,100 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   return updatedSchedule;
 };
 
-// For availability
-// const updateAvailability = async (user: IAuth, data: any) => {
-//   // Find the artist
-//   const artist = await Artist.findOne({ auth: user._id });
-//   if (!artist) {
-//     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-//   }
-
-//   // Update availability slots
-//   const slots = data.slots; // This would be an array of time slots
-//   // Assuming you store the time slots in the artist schema or in a related collection
-//   await Slot.updateMany(
-//     { auth: artist.auth },
-//     { $set: { slots } } // Update the slots for the artist
-//   );
-
-//   return artist;
-// };
 
 // update time off
-const updateTimeOff = async (user: IAuth, payload: { dates: string[] }) => {
-  // Handle time-off (if needed, set blocked dates, etc.)
-  // Assuming time off is stored as an array of dates that are blocked
+const setTimeOffInDb = async (user:IAuth, payload:TSetOffTime) => {
+  const artist = await Artist.findOne({ auth: user.id}).select('_id');
+  if(!artist) throw new AppError(httpStatus.NOT_FOUND, "Artist not found");
 
-  const artist = await Artist.findOne({ auth: user._id });
+  const { startDate, endDate } = payload;
 
-  if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  if (endDate <= startDate) {
+    throw new AppError(httpStatus.BAD_REQUEST, "End date must be after start date");
   }
 
-  // Convert the string dates in the payload to Date objects
-  const newDates = payload.dates.map((date) => new Date(date));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  // Validate the payload dates to ensure they are in the future
-  newDates.forEach((date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to midnight for accurate comparison
+  const schedule = await ArtistSchedule.findOne({ _id: artist._id });
+  if (!schedule) throw new AppError(httpStatus.NOT_FOUND, "Artist schedule not found");
 
-    if (today > date) {
+  const existing = schedule.offTime;
+
+  /**
+   * Case 1: OffTime already active (ongoing right now)
+   */
+  if (existing?.startDate && existing.startDate < today && existing.endDate && today <= existing.endDate) {
+    if (endDate <= existing.endDate) {
+      throw new AppError(httpStatus.BAD_REQUEST, "End date must extend current offTime");
+    }
+
+    const hasBookings = await Booking.exists({
+      artist: artist._id,
+      originalDate: { $gte: existing.endDate, $lt: endDate },
+      status: { $in: ["pending", "confirmed"] },
+    });
+
+    if (hasBookings) {
       throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Selected date cannot be in the past. Please choose a future date.'
+        httpStatus.CONFLICT,
+        "Cannot extend offTime — bookings exist in new range"
       );
     }
+
+    schedule.offTime.endDate = endDate;
+    await schedule.save();
+    return schedule.offTime;
+  }
+
+  /**
+   * Case 2: Old offTime expired — override if no conflicts
+   */
+  if (existing?.endDate && existing.endDate < today) {
+    const hasBookings = await Booking.exists({
+      artist: artist._id,
+      originalDate: { $gte: startDate, $lt: endDate },
+      status: { $in: ["pending", "confirmed"] },
+    });
+
+    if (hasBookings) {
+      throw new AppError(
+        httpStatus.CONFLICT,
+        "Cannot override expired offTime — bookings exist in new period"
+      );
+    }
+
+    schedule.offTime = { startDate, endDate };
+    await schedule.save();
+    return schedule.offTime;
+  }
+
+  /**
+   * Case 3: New future offTime
+   */
+  if (startDate < today) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Start date cannot be in the past");
+  }
+
+  const hasBookings = await Booking.exists({
+    artist: artist._id,
+    originalDate: { $gte: startDate, $lt: endDate },
+    status: { $in: ["pending", "confirmed"] },
   });
 
-  // Get the current date and set the time to midnight to ignore the time part
-  const currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0); // Set to midnight for correct comparison
-  const currentDateString = currentDate.toISOString(); // Convert to ISO string for accurate comparison
-
-  // Remove past dates from timeOff
-  await Artist.updateOne(
-    { _id: artist._id },
-    {
-      $pull: {
-        timeOff: { $lt: currentDateString }, // Remove past dates from timeOff
-      },
-    }
-  );
-
-  // Add the time-off dates
-  const result = await Artist.updateOne(
-    { _id: artist._id },
-    {
-      $addToSet: {
-        timeOff: { $each: newDates.map((date) => date.toISOString()) }, // Add new dates without duplicates
-      },
-    }
-  );
-
-  if (result.modifiedCount === 0) {
+  if (hasBookings) {
     throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      'Failed to update time off'
+      httpStatus.CONFLICT,
+      "Cannot set offTime — bookings exist in this period"
     );
   }
 
-  const updatedArtist = await Artist.findById(artist._id);
-  return updatedArtist;
+  schedule.offTime = { startDate, endDate };
+  await schedule.save();
+  return schedule.offTime;
 };
 
+// create connceted account and onvoparding link for artist into db
 const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
   userData: JwtPayload
 ) => {
@@ -551,79 +565,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
   }
 };
 
-// get availability excluding time off
-// const getAvailabilityExcludingTimeOff = async (
-//   artistId: string,
-//   month: number,
-//   year: number
-// ) => {
-//   const artist = await Artist.findById(artistId);
-
-//   if (!artist) {
-//     throw new AppError(status.NOT_FOUND, 'Artist not found!');
-//   }
-
-//   // Fetch the available slots for the artist
-//   const availableSlots = await Slot.find({ auth: artist.auth }).select(
-//     'day slots'
-//   );
-
-//   // Fetch the artist's time off (days when they are not available)
-//   const offDay = artist.timeOff.map((off) => moment(off).format('YYYY-MM-DD'));
-
-//   // Get the total days for the given month and year
-
-//   const totalDays = new Date(
-//     new Date().getFullYear(),
-//     month, // this is dynamic data from frontend
-//     0
-//   ).getDate();
-
-//   // Fetch booking data for the artist for upcoming dates
-//   const bookingData = await Booking.find({
-//     artist: artist._id,
-//     date: { $gt: new Date() },
-//     status: { $ne: 'cancelled' },
-//   }).populate('slot');
-
-//   // Generate the calendar data by iterating through each day of the month
-//   const calendarData = [];
-
-//   for (let day = 1; day <= totalDays; day++) {
-//     const currentDate = moment(`${year}-${month}-${day}`, 'YYYY-MM-DD'); // The current date in the loop
-//     const dayName = currentDate.format('dddd'); // Name of the day (e.g., Monday, Tuesday)
-
-//     // Check if this day is a time off day for the artist
-//     const isOffDay = offDay.includes(currentDate.format('YYYY-MM-DD'));
-
-//     // Get the available slots for this day
-//     const availableSlotsForDay =
-//       availableSlots.find((slot) => slot.day === dayName)?.slots || [];
-
-//     // Exclude booked slots for this day
-//     const availableTimeSlots = availableSlotsForDay.filter((slot) => {
-//       return !bookingData.some((booking) => {
-//         // Check if the booking is on the same day and if the slot time matches
-//         return (
-//           moment(booking.date).isSame(currentDate, 'day') &&
-//           booking.slotTimeId.toString() === (slot._id as ObjectId).toString()
-//         );
-//       });
-//     });
-
-//     // Add the data for this day to the calendar data
-//     calendarData.push({
-//       date: currentDate.format('YYYY-MM-DD'),
-//       dayName,
-//       availableSlots: isOffDay ? [] : availableTimeSlots, // If it's an off day, no available slots
-//       isUnavailable: isOffDay || availableTimeSlots.length === 0, // If it's an off day or no available slots, mark it as unavailable
-//     });
-//   }
-
-//   // Return the calendar data
-//   return { calendarData };
-// };
-
+// create service
 const createService = async (
   user: IAuth,
   payload: TServicePayload,
@@ -724,7 +666,7 @@ export const ArtistService = {
   saveAvailabilityIntoDB,
   fetchAllArtistsFromDB,
   // updateAvailability,
-  updateTimeOff,
+  setTimeOffInDb,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createService,
   getServicesByArtistFromDB,
