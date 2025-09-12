@@ -10,6 +10,33 @@ import {
   toTitleCase,
 } from './folder.utils';
 
+// getAllFoldersFromDB
+const getAllFoldersFromDB = async (userData: IAuth) => {
+  const folders = await Folder.find({ owner: userData.id }).sort({
+    name: 1,
+  });
+
+  if (!folders || folders.length === 0) {
+    throw new AppError(httpStatus.NOT_FOUND, 'No folders found for this user!');
+  }
+
+  return folders;
+};
+
+// getSingleFolderFromDB
+const getSingleFolderFromDB = async (userData: IAuth, folderId: string) => {
+  const folder = await Folder.findOne({
+    _id: folderId,
+    owner: userData.id,
+  });
+
+  if (!folder) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Folder not found!');
+  }
+
+  return folder;
+};
+
 // createFolderIntoDB
 const createFolderIntoDB = async (
   userData: IAuth,
@@ -189,6 +216,8 @@ const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
 };
 
 export const FolderService = {
+  getAllFoldersFromDB,
+  getSingleFolderFromDB,
   createFolderIntoDB,
   updateFolderIntoDB,
   addImagesToFolderIntoDB,
