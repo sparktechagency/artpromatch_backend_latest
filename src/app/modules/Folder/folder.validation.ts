@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { FOLDER_FOR } from './folder.constant';
 
-// createFolderSchema
-const createFolderSchema = z.object({
+// createOrUpdateFolderSchema
+const createOrUpdateFolderSchema = z.object({
   body: z.object({
     name: z
       .string({
@@ -19,7 +19,7 @@ const createFolderSchema = z.object({
 });
 
 export const FolderValidation = {
-  createFolderSchema,
+  createOrUpdateFolderSchema,
 };
 
 // export type TFolderPayload = z.infer<typeof createFolderSchema.shape.body>;

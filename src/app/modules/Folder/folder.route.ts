@@ -2,10 +2,12 @@ import { Router } from 'express';
 import { auth } from '../../middlewares';
 import { FolderValidation } from './folder.validation';
 import { FolderController } from './folder.controller';
-// import { upload } from '../../lib';
-import { validateRequest } from '../../middlewares/validateRequest';
 import { ROLE } from '../Auth/auth.constant';
 import { upload } from '../../lib';
+import {
+  validateRequest,
+  validateRequestFromFormData,
+} from '../../middlewares/validateRequest';
 
 const router = Router();
 
@@ -15,29 +17,40 @@ router
   .post(
     auth(ROLE.ARTIST),
     upload.array('files'),
-    validateRequest(FolderValidation.createFolderSchema),
+    validateRequestFromFormData(FolderValidation.createOrUpdateFolderSchema),
     FolderController.createFolder
   );
 
 // updateFolder
-router.route('/update/:folderId').post(
-  auth(ROLE.ARTIST),
-  validateRequest(FolderValidation.createFolderSchema),
-  FolderController.updateFolder
-);
-
-// uploadFileToFolder
 router
-  .route('/upload:folderId')
+  .route('/update/:folderId')
+  .post(
+    auth(ROLE.ARTIST),
+    validateRequest(FolderValidation.createOrUpdateFolderSchema),
+    FolderController.updateFolder
+  );
+
+// addImagesToFolder
+router
+  .route('/add/:folderId')
   .post(
     auth(ROLE.ARTIST),
     upload.array('files'),
-    FolderController.uploadFileToFolder
+    FolderController.addImagesToFolder
+  );
+
+// removeImageFromFolder
+router
+  .route('/remove-image/:folderId')
+  .post(
+    auth(ROLE.ARTIST),
+    upload.array('files'),
+    FolderController.removeImageFromFolder
   );
 
 // removeFolder
 router
-  .route('/:folderId')
+  .route('/remove-folder/:folderId')
   .delete(
     auth(ROLE.ARTIST, ROLE.ADMIN, ROLE.SUPER_ADMIN),
     FolderController.removeFolder
