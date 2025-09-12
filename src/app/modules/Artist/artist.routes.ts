@@ -119,8 +119,8 @@ router
   .route('/time-off')
   .patch(
     auth(ROLE.ARTIST),
-    validateRequest(ArtistValidation.timeOffSchema),
-    ArtistController.updateTimeOff
+    validateRequest(ArtistValidation.setOffTimeSchema),
+    ArtistController.setTimeOff
   );
 
 router

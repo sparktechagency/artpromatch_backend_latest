@@ -36,6 +36,7 @@ const bookingSchema = z.object({
 const getAvailabilitySchema = z.object({
   body: z.object({
     artistId: z.string({ required_error: 'ArtistId is required' }),
+    serviceId: z.string({ required_error: 'ServiceId is required' }),
     date: z.string({ required_error: 'Date type is required' }),
   }),
 });

@@ -62,7 +62,7 @@ const artistScheduleSchema = new Schema<IArtistSchedule>(
       ref: 'GuestSpot',
       default: null,
     },
-    offTimes: [OffTimeSchema],
+    offTime: OffTimeSchema,
   },
   { timestamps: true, versionKey: false }
 );

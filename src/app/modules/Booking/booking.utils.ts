@@ -14,35 +14,26 @@ export const roundUpMinutes = (min: number, step = 15) => {
   return Math.ceil(min / step) * step;
 };
 
+
 export const resolveScheduleForDate = async (artistId: string, date: Date) => {
   const dayName = date
-    .toLocaleString('en-US', { weekday: 'long', timeZone: 'UTC' })
+    .toLocaleString("en-US", { weekday: "long", timeZone: "UTC" })
     .toLowerCase() as keyof WeeklySchedule;
-
+   
+  console.log(dayName)
   const scheduleDoc = await ArtistSchedule.findOne({ artistId }).lean();
-  if (!scheduleDoc) {
-    throw new Error('Artist schedule not found');
-  }
+  if (!scheduleDoc) throw new Error("Artist schedule not found");
 
-  // Guest Spot check
+  // ✅ First check guest spot
   if (scheduleDoc.activeGuestSpot) {
-    const guestSpot = await GuestSpot.findById(
-      scheduleDoc.activeGuestSpot
-    ).lean();
-
+    const guestSpot = await GuestSpot.findById(scheduleDoc.activeGuestSpot).lean();
     if (guestSpot?.isActive) {
-      const dateOnly = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      );
-
+      const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const gsStartOnly = new Date(
         guestSpot.startDate.getFullYear(),
         guestSpot.startDate.getMonth(),
         guestSpot.startDate.getDate()
       );
-
       const gsEndOnly = new Date(
         guestSpot.endDate.getFullYear(),
         guestSpot.endDate.getMonth(),
@@ -56,18 +47,23 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
             endMin: guestSpot.endMin,
             off: false,
           },
-
-          offTimes: guestSpot.offTimes || [],
+          offTime: guestSpot.offTime || null,
         };
       }
     }
   }
 
-  // Weekly schedule fallback
-  const daySchedule = scheduleDoc.weeklySchedule?.[dayName];
+  // ✅ Then check offTime (object)
+  if (scheduleDoc.offTime?.startDate && scheduleDoc.offTime?.endDate) {
+    const offStart = new Date(scheduleDoc.offTime.startDate);
+    const offEnd = new Date(scheduleDoc.offTime.endDate);
 
-  return {
-    schedule: daySchedule || { off: true },
-    offTimes: scheduleDoc.offTimes || [],
-  };
+    if (date >= offStart && date <= offEnd) {
+      return { schedule: { off: true }, offTime: scheduleDoc.offTime };
+    }
+  }
+
+  // ✅ Fallback weekly schedule
+  const daySchedule = scheduleDoc.weeklySchedule?.[dayName];
+  return { schedule: daySchedule || { off: true }, offTime: scheduleDoc.offTime || null };
 };

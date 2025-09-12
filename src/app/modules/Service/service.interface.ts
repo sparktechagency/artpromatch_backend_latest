@@ -15,13 +15,13 @@ export type TServiceImages = {
 
 export const TattooBodyParts = {
   // Arms
-  UPPER_ARM: "upper_arm",
+  UPPER_ARM: "upper arm",
   FOREARM: "forearm",
-  HALF_SLEEVE: "half_sleeve",
-  FULL_SLEEVE: "full_sleeve",
+  HALF_SLEEVE: "half sleeve",
+  FULL_SLEEVE: "full sleeve",
   ELBOW: "elbow",
   WRIST: "wrist",
-  FULL_HAND: "full_hand",
+  FULL_HAND: "full hand",
   FINGERS: "fingers",
 
   // Legs
@@ -34,9 +34,9 @@ export const TattooBodyParts = {
 
   // Torso
   CHEST: "chest",
-  BACK_UPPER: "back_upper",
-  BACK_LOWER: "back_lower",
-  BACK_FULL: "back_full",
+  BACK_UPPER: "back upper",
+  BACK_LOWER: "back lower",
+  BACK_FULL: "back full",
   SHOULDER: "shoulder",
   NECK: "neck",
   NAPE: "nape",
@@ -48,7 +48,7 @@ export const TattooBodyParts = {
   // Face / Head
   BEHIND_EAR: "behind_ear",
   FACE: "face",
-};
+} as const;
 export type TattooBodyPart = (typeof TattooBodyParts)[keyof typeof TattooBodyParts]
 
 
@@ -62,7 +62,7 @@ export interface IService extends Document {
 
   thumbnail: string;
   images: string[];
-  bodyParts: TattooBodyPart;
+  bodyPart: TattooBodyPart;
   durationInMinutes: number;
   bufferTimeInMinutes: number;
 

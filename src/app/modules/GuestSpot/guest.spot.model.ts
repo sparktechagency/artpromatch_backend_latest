@@ -37,7 +37,7 @@ const GuestSpotSchema = new Schema<IGuestSpot>(
       required: true,
     },
 
-    offTimes: [OffTimeSchema],
+    offTime: [OffTimeSchema],
 
     isActive: {
       type: Boolean,

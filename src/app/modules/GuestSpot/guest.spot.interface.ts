@@ -13,7 +13,7 @@ export interface IGuestSpot extends Document {
   startMin: number;
   endMin: number;
 
-  offTimes: [offTimes];
+  offTime: offTimes;
 
   isActive: boolean;
 }

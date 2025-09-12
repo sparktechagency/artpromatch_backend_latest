@@ -139,8 +139,8 @@ const fetchAllArtists = asyncHandler(async (req, res) => {
 // });
 
 // update timeoff
-const updateTimeOff = asyncHandler(async (req, res) => {
-  const result = await ArtistService.updateTimeOff(req.user, req.body);
+const setTimeOff = asyncHandler(async (req, res) => {
+  const result = await ArtistService.setTimeOffInDb(req.user, req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -244,7 +244,7 @@ export const ArtistController = {
   saveAvailability,
   fetchAllArtists,
   // updateAvailability,
-  updateTimeOff,
+  setTimeOff,
   getServicesByArtist,
   createConnectedAccountAndOnboardingLinkForArtist,
   // getAvailabilityExcludingTimeOff,
