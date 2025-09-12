@@ -11,6 +11,14 @@ import {
 
 const router = Router();
 
+// getAllFolders
+router.route('/').get(auth(ROLE.ARTIST), FolderController.getAllFolders);
+
+// getSingleFolder
+router
+  .route('/:folderId')
+  .get(auth(ROLE.ARTIST), FolderController.getSingleFolder);
+
 // createFolder
 router
   .route('/')

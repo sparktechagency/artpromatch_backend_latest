@@ -3,6 +3,29 @@ import { asyncHandler } from '../../utils';
 import { FolderService } from './folder.service';
 import sendResponse from '../../utils/sendResponse';
 
+// getAllFolders
+const getAllFolders = asyncHandler(async (req, res) => {
+  const result = await FolderService.getAllFoldersFromDB(req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Folders retrieved successfully!',
+    data: result,
+  });
+});
+
+// getSingleFolder
+const getSingleFolder = asyncHandler(async (req, res) => {
+  const { folderId } = req.params;
+  const result = await FolderService.getSingleFolderFromDB(req.user, folderId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Folder retrieved successfully!',
+    data: result,
+  });
+});
+
 // createFolder
 const createFolder = asyncHandler(async (req, res) => {
   const files = req.files as Express.Multer.File[];
@@ -88,6 +111,8 @@ const removeFolder = asyncHandler(async (req, res) => {
 });
 
 export const FolderController = {
+  getAllFolders,
+  getSingleFolder,
   createFolder,
   updateFolder,
   addImagesToFolder,
