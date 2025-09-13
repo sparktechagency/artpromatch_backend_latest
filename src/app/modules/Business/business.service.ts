@@ -164,6 +164,8 @@ const updateBusinessSecuritySettings = async (
 //   return business;
 // };
 
+
+// updateTimeOff
 const updateTimeOff = async (user: IAuth, data: any) => {
   // Handle time-off for business (if needed)
   // Assuming time-off is stored as blocked dates for a business
@@ -180,6 +182,8 @@ const updateTimeOff = async (user: IAuth, data: any) => {
   return business;
 };
 
+
+// removeArtistFromDB
 const removeArtistFromDB = async (user: IAuth, artistId: string) => {
   const business = await Business.findOne({ auth: user._id });
 

@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
-import { OffTimeSchema } from '../Schedule/schedule.model';
-import { IGuestSpot } from './guest.spot.interface';
+import { offDaysSchema } from '../Schedule/schedule.model';
+import { IGuestSpot } from './guestSpot.interface';
 
 const GuestSpotSchema = new Schema<IGuestSpot>(
   {
@@ -20,7 +20,7 @@ const GuestSpotSchema = new Schema<IGuestSpot>(
     },
 
     startTime: {
-      type: String, // 9: 00 am 10: 00 pm
+      type: String, // 9: 00 am - 10: 00 pm
       required: true,
     },
     endTime: {
@@ -28,16 +28,16 @@ const GuestSpotSchema = new Schema<IGuestSpot>(
       required: true,
     },
 
-    startMin: {
-      type: Number, // 540 1320
+    startTimeinMinute: {
+      type: Number, // 540 - 1320
       required: true,
     },
-    endMin: {
+    endTimeinMinute: {
       type: Number,
       required: true,
     },
 
-    offTime: [OffTimeSchema],
+    offDays: offDaysSchema,
 
     isActive: {
       type: Boolean,

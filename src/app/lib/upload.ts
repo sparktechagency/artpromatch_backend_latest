@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../utils';
 import httpStatus from 'http-status';
 import fs from 'fs';
@@ -38,7 +38,8 @@ const storage = multer.diskStorage({
       .replace(fileExt, '')
       .toLocaleLowerCase()
       .split(' ')
-      .join('-')}-${uuidv4()}`;
+      .join('-')}-${Date.now()}`;
+    // .join('-')}-${uuidv4()}`;
 
     callback(null, fileName + fileExt);
   },

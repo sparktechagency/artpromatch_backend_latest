@@ -1,5 +1,5 @@
 import { Document, Types } from 'mongoose';
-import { offTimes } from '../Schedule/schedule.interface';
+import { offDays } from '../Schedule/schedule.interface';
 
 export interface IGuestSpot extends Document {
   artist: Types.ObjectId;
@@ -10,10 +10,10 @@ export interface IGuestSpot extends Document {
   startTime: string;
   endTime: string;
 
-  startMin: number;
-  endMin: number;
+  startTimeinMinute: number;
+  endTimeinMinute: number;
 
-  offTime: offTimes;
+  offDays: offDays;
 
   isActive: boolean;
 }

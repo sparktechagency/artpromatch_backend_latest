@@ -82,6 +82,11 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       required: true,
     },
+    
+    isInGuestSpot: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true, versionKey: false }
 );

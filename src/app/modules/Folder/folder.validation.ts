@@ -21,7 +21,7 @@ const createOrUpdateFolderSchema = z.object({
 // removeImageFromFolderSchema
 const removeImageFromFolderSchema = z.object({
   body: z.object({
-    imageUrl: z.string({
+    image: z.string({
       required_error: 'Image is required!',
     }),
   }),

@@ -1,68 +1,69 @@
 import { z } from 'zod';
 import { WEEK_DAYS } from '../modules/Artist/artist.constant';
-
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+
 dayjs.extend(customParseFormat);
+
 // Helper function to validate time format and convert to minutes for comparison
 // const timeFormat = /^\d{2}:\d{2}$/;
 
 // Function to compare start and end time
-const validateTimeSlot = (startTime: string, endTime: string) => {
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
+// const validateTimeSlot = (startTime: string, endTime: string) => {
+//   const [startHour, startMinute] = startTime.split(':').map(Number);
+//   const [endHour, endMinute] = endTime.split(':').map(Number);
 
-  // Convert times to minutes
-  const startTimeInMinutes = startHour * 60 + startMinute;
-  const endTimeInMinutes = endHour * 60 + endMinute;
+//   // Convert times to minutes
+//   const startTimeInMinutes = startHour * 60 + startMinute;
+//   const endTimeInMinutes = endHour * 60 + endMinute;
 
-  return endTimeInMinutes > startTimeInMinutes;
-};
+//   return endTimeInMinutes > startTimeInMinutes;
+// };
 
 // Helper function to check for duplicate time slots
-const hasDuplicateSlots = (slots: { start: string; end: string }[]) => {
-  const times = slots.map((slot) => `${slot.start}-${slot.end}`);
-  return new Set(times).size !== times.length; // If the size of the set is different, duplicates exist
-};
+// const hasDuplicateSlots = (slots: { start: string; end: string }[]) => {
+//   const times = slots.map((slot) => `${slot.start}-${slot.end}`);
+//   return new Set(times).size !== times.length; // If the size of the set is different, duplicates exist
+// };
 
 // Helper function to check if any time slots overlap
-const hasOverlap = (slots: { start: string; end: string }[]) => {
-  const times = slots.map((slot) => ({
-    start: slot.start,
-    end: slot.end,
-    startInMinutes: convertToMinutes(slot.start),
-    endInMinutes: convertToMinutes(slot.end),
-  }));
+// const hasOverlap = (slots: { start: string; end: string }[]) => {
+//   const times = slots.map((slot) => ({
+//     start: slot.start,
+//     end: slot.end,
+//     startInMinutes: convertToMinutes(slot.start),
+//     endInMinutes: convertToMinutes(slot.end),
+//   }));
 
-  for (let i = 0; i < times.length; i++) {
-    for (let j = i + 1; j < times.length; j++) {
-      const slot1 = times[i];
-      const slot2 = times[j];
+//   for (let i = 0; i < times.length; i++) {
+//     for (let j = i + 1; j < times.length; j++) {
+//       const slot1 = times[i];
+//       const slot2 = times[j];
 
-      // Check if slot1 overlaps with slot2
-      if (
-        slot1.startInMinutes < slot2.endInMinutes &&
-        slot1.endInMinutes > slot2.startInMinutes
-      ) {
-        return true;
-      }
-    }
-  }
+//       // Check if slot1 overlaps with slot2
+//       if (
+//         slot1.startInMinutes < slot2.endInMinutes &&
+//         slot1.endInMinutes > slot2.startInMinutes
+//       ) {
+//         return true;
+//       }
+//     }
+//   }
 
-  return false;
-};
+//   return false;
+// };
 
 // Convert time to minutes
-const convertToMinutes = (time: string) => {
-  const [hour, minute] = time.split(':').map(Number);
-  return hour * 60 + minute;
-};
+// const convertToMinutes = (time: string) => {
+//   const [hour, minute] = time.split(':').map(Number);
+//   return hour * 60 + minute;
+// };
 
 // Check time valid range
-const isValidTimeRange = (time: string) => {
-  const [hour, minute] = time.split(':').map(Number);
-  return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
-};
+// const isValidTimeRange = (time: string) => {
+//   const [hour, minute] = time.split(':').map(Number);
+//   return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+// };
 
 // Zod validation schema
 // const createSchema = z.object({
@@ -126,14 +127,15 @@ const dayScheduleSchema = z
     }
   );
 
-export const weeklyScheduleSchema = z.object(
+const weeklyScheduleSchema = z.object(
   WEEK_DAYS.reduce((acc, day) => {
     acc[day] = dayScheduleSchema.nullable().default(null);
     return acc;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }, {} as Record<(typeof WEEK_DAYS)[number], any>)
 );
 
-export const availabilitySchema = z.object({
+const availabilitySchema = z.object({
   body: z.object({
     weeklySchedule: weeklyScheduleSchema,
   }),
