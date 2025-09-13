@@ -32,7 +32,7 @@ import config from '../../config';
 
 import Service from '../Service/service.model';
 import ArtistSchedule from '../Schedule/schedule.model';
-import { offTimes, WeeklySchedule } from '../Schedule/schedule.interface';
+import { WeeklySchedule } from '../Schedule/schedule.interface';
 import Booking from '../Booking/booking.model';
 
 // update profile
@@ -378,44 +378,55 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   return updatedSchedule;
 };
 
-
 // update time off
-const setTimeOffInDb = async (user:IAuth, payload:TSetOffTime) => {
-  const artist = await Artist.findOne({ auth: user.id}).select('_id');
-  if(!artist) throw new AppError(httpStatus.NOT_FOUND, "Artist not found");
+const setTimeOffInDb = async (user: IAuth, payload: TSetOffTime) => {
+  const artist = await Artist.findOne({ auth: user._id }).select('_id');
+  if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
 
   const { startDate, endDate } = payload;
 
   if (endDate <= startDate) {
-    throw new AppError(httpStatus.BAD_REQUEST, "End date must be after start date");
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'End date must be after start date'
+    );
   }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const schedule = await ArtistSchedule.findOne({ _id: artist._id });
-  if (!schedule) throw new AppError(httpStatus.NOT_FOUND, "Artist schedule not found");
+  if (!schedule)
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist schedule not found');
 
   const existing = schedule.offTime;
 
   /**
    * Case 1: OffTime already active (ongoing right now)
    */
-  if (existing?.startDate && existing.startDate < today && existing.endDate && today <= existing.endDate) {
+  if (
+    existing?.startDate &&
+    existing.startDate < today &&
+    existing.endDate &&
+    today <= existing.endDate
+  ) {
     if (endDate <= existing.endDate) {
-      throw new AppError(httpStatus.BAD_REQUEST, "End date must extend current offTime");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'End date must extend current offTime'
+      );
     }
 
     const hasBookings = await Booking.exists({
       artist: artist._id,
       originalDate: { $gte: existing.endDate, $lt: endDate },
-      status: { $in: ["pending", "confirmed"] },
+      status: { $in: ['pending', 'confirmed'] },
     });
 
     if (hasBookings) {
       throw new AppError(
         httpStatus.CONFLICT,
-        "Cannot extend offTime — bookings exist in new range"
+        'Cannot extend offTime — bookings exist in new range'
       );
     }
 
@@ -431,13 +442,13 @@ const setTimeOffInDb = async (user:IAuth, payload:TSetOffTime) => {
     const hasBookings = await Booking.exists({
       artist: artist._id,
       originalDate: { $gte: startDate, $lt: endDate },
-      status: { $in: ["pending", "confirmed"] },
+      status: { $in: ['pending', 'confirmed'] },
     });
 
     if (hasBookings) {
       throw new AppError(
         httpStatus.CONFLICT,
-        "Cannot override expired offTime — bookings exist in new period"
+        'Cannot override expired offTime — bookings exist in new period'
       );
     }
 
@@ -450,19 +461,22 @@ const setTimeOffInDb = async (user:IAuth, payload:TSetOffTime) => {
    * Case 3: New future offTime
    */
   if (startDate < today) {
-    throw new AppError(httpStatus.BAD_REQUEST, "Start date cannot be in the past");
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Start date cannot be in the past'
+    );
   }
 
   const hasBookings = await Booking.exists({
     artist: artist._id,
     originalDate: { $gte: startDate, $lt: endDate },
-    status: { $in: ["pending", "confirmed"] },
+    status: { $in: ['pending', 'confirmed'] },
   });
 
   if (hasBookings) {
     throw new AppError(
       httpStatus.CONFLICT,
-      "Cannot set offTime — bookings exist in this period"
+      'Cannot set offTime — bookings exist in this period'
     );
   }
 
@@ -478,7 +492,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
   try {
     // Step 1: Find Artist
     const artist = await Artist.findOne(
-      { auth: userData.id },
+      { auth: userData._id },
       { _id: 1, stripeAccountId: 1, isStripeReady: 1, auth: 1 }
     ).populate('auth');
 
@@ -573,7 +587,7 @@ const createService = async (
   payload: TServicePayload,
   files: TServiceImages
 ): Promise<IService> => {
-  const artist = await Artist.findOne({ auth: user.id });
+  const artist = await Artist.findOne({ auth: user._id });
   if (!artist) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
   }
@@ -595,7 +609,7 @@ const createService = async (
 
 // getServicesByArtistFromDB
 const getServicesByArtistFromDB = async (user: IAuth) => {
-  const artist = await Artist.findOne({ auth: user.id });
+  const artist = await Artist.findOne({ auth: user._id });
   if (!artist) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found');
   }

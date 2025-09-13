@@ -40,7 +40,7 @@ const DayScheduleSchema = new Schema({
   off: { type: Boolean, default: true },
 });
 
-export const OffTimeSchema = new Schema({
+export const offDaysSchema = new Schema({
   startDate: { type: Date, required: true, default: null },
   endDate: { type: Date, required: true, default: null },
 });
@@ -48,6 +48,7 @@ export const OffTimeSchema = new Schema({
 const artistScheduleSchema = new Schema<IArtistSchedule>(
   {
     artistId: { type: Schema.Types.ObjectId, ref: 'Artist', required: true },
+
     weeklySchedule: {
       monday: { type: DayScheduleSchema, required: false },
       tuesday: { type: DayScheduleSchema, required: false },
@@ -57,12 +58,14 @@ const artistScheduleSchema = new Schema<IArtistSchedule>(
       saturday: { type: DayScheduleSchema, required: false },
       sunday: { type: DayScheduleSchema, required: false },
     },
+
     activeGuestSpot: {
       type: Schema.Types.ObjectId,
       ref: 'GuestSpot',
       default: null,
     },
-    offTime: OffTimeSchema,
+
+    offDays: offDaysSchema,
   },
   { timestamps: true, versionKey: false }
 );

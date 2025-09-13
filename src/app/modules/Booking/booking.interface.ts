@@ -25,6 +25,8 @@ export interface IBooking extends Document {
   review?: string;
   rating?: number;
 
+  isInGuestSpot: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }

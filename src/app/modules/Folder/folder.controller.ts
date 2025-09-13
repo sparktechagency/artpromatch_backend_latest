@@ -83,11 +83,11 @@ const addImagesToFolder = asyncHandler(async (req, res) => {
 // removeImageFromFolder
 const removeImageFromFolder = asyncHandler(async (req, res) => {
   const { folderId } = req.params;
-  const { imageUrl } = req.body;
+  const { image } = req.body;
 
   const result = await FolderService.removeImageFromFolderFromDB(
     folderId,
-    imageUrl
+    image
   );
 
   sendResponse(res, {

@@ -1,4 +1,4 @@
-import GuestSpot from '../GuestSpot/guest.spot.model';
+import GuestSpot from '../GuestSpot/guestSpot.model';
 import { WeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 

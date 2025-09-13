@@ -1,11 +1,11 @@
 import fs from 'fs';
 
 export const deleteSomeMulterFiles = (files: Express.Multer.File[]) => {
-  files?.forEach((file) => fs.unlink(file.path, () => {}));
+  files?.forEach((file) => deleteSingleImage(file.path));
 };
 
 export const deleteSomeImages = (images: string[]) => {
-  images?.forEach((image) => fs.unlink(image, () => {}));
+  images?.forEach((image) => deleteSingleImage(image));
 };
 
 export const deleteSingleImage = (file: string) => {

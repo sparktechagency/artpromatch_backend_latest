@@ -12,7 +12,7 @@ import {
 
 // getAllFoldersFromDB
 const getAllFoldersFromDB = async (userData: IAuth) => {
-  const folders = await Folder.find({ owner: userData.id }).sort({
+  const folders = await Folder.find({ owner: userData._id }).sort({
     name: 1,
   });
 
@@ -27,7 +27,7 @@ const getAllFoldersFromDB = async (userData: IAuth) => {
 const getSingleFolderFromDB = async (userData: IAuth, folderId: string) => {
   const folder = await Folder.findOne({
     _id: folderId,
-    owner: userData.id,
+    owner: userData._id,
   });
 
   if (!folder) {
@@ -56,7 +56,7 @@ const createFolderIntoDB = async (
 
   const folder = await Folder.findOne({
     name: payload.name,
-    owner: userData.id,
+    owner: userData._id,
   });
 
   if (folder) {
@@ -65,7 +65,7 @@ const createFolderIntoDB = async (
   }
 
   return await Folder.create({
-    owner: userData.id,
+    owner: userData._id,
     images: files?.length
       ? files.map((file) => file.path.replace(/\\/g, '/'))
       : [],
@@ -81,7 +81,7 @@ const updateFolderIntoDB = async (
 ) => {
   const folder = await Folder.findOne({
     _id: folderId,
-    owner: userData.id,
+    owner: userData._id,
   });
 
   if (!folder) {
@@ -93,7 +93,7 @@ const updateFolderIntoDB = async (
 
   const duplicate = await Folder.findOne({
     _id: { $ne: folderId },
-    owner: userData.id,
+    owner: userData._id,
     name: payload.name,
   });
 
@@ -121,7 +121,7 @@ const addImagesToFolderIntoDB = async (
 
   const folder = await Folder.findOne({
     _id: folderId,
-    owner: userData.id,
+    owner: userData._id,
   });
 
   if (!folder) {
@@ -203,7 +203,7 @@ const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
   } else {
     const folder = await Folder.findOneAndDelete({
       _id: folderId,
-      owner: userData.id,
+      owner: userData._id,
     });
 
     if (!folder) {
