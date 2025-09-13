@@ -9,7 +9,6 @@ const serviceSchema = new Schema<IService>(
       required: true,
       index: true,
     },
-
     title: {
       type: String,
       required: true,
@@ -17,10 +16,6 @@ const serviceSchema = new Schema<IService>(
     },
     description: {
       type: String,
-      required: true,
-    },
-    price: {
-      type: Number,
       required: true,
     },
 
@@ -39,18 +34,37 @@ const serviceSchema = new Schema<IService>(
       required: [true, 'Images array must contain between 2 and 5 items!'],
     },
 
-    durationInMinutes: {
-      type: Number,
+    sessionType: {
+      type: String,
+      enum: ['short', 'long'],
       required: true,
     },
+    pricingType: { type: String, enum: ['hourly', 'fixed'], default: 'fixed' },
+    hourlyRate: { type: Number},
+    fixedPrice: { type: Number},
+    totalDuration: {
+      type: String,
+      required: true,
+    },
+
+    sessionDuration: { type: String, required: true },
+
+    totalDurationInMin: {
+      type: Number,
+      required: true
+    },
+
+    sessionDurationInMin: { type: Number, required: true },
+    numberOfSessions: { type: Number, required: true },
+
     bufferTimeInMinutes: {
       type: Number,
       default: 0,
     },
-    bodyPart:{
+    bodyLocation: {
       type: String,
       enum: Object.values(TattooBodyParts),
-      required: true
+      required: true,
     },
     totalCompletedOrder: {
       type: Number,
@@ -64,7 +78,6 @@ const serviceSchema = new Schema<IService>(
       type: Number,
       default: 0,
     },
-
     isDeleted: {
       type: Boolean,
       default: false,

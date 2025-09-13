@@ -34,6 +34,8 @@ import Service from '../Service/service.model';
 import ArtistSchedule from '../Schedule/schedule.model';
 import { offTimes, WeeklySchedule } from '../Schedule/schedule.interface';
 import Booking from '../Booking/booking.model';
+import { parseDurationToMinutes } from '../Service/service.zod';
+import { number } from 'zod';
 
 // update profile
 const updateProfile = async (
@@ -581,10 +583,16 @@ const createService = async (
   const images = files?.images?.map(
     (image) => image.path.replace(/\\/g, '/') || ''
   );
-
+   const totalDurationInMinutes = parseDurationToMinutes(payload.totalDuration);
+   const sessionInMinutes = parseDurationToMinutes(payload.sessionDuration);
+   console.log({totalDurationInMinutes,sessionInMinutes})
+  const numberOfSessions = Math.ceil(totalDurationInMinutes / sessionInMinutes);
   const serviceData = {
     ...payload,
     artist: artist._id,
+    totalDurationInMin: totalDurationInMinutes,
+    sessionDurationInMin: sessionInMinutes,
+    numberOfSessions: numberOfSessions,
     thumbnail: thumbnail,
     images: images,
   };
@@ -597,32 +605,13 @@ const createService = async (
 const getServicesByArtistFromDB = async (user: IAuth) => {
   const artist = await Artist.findOne({ auth: user.id });
   if (!artist) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
 
   const artistObjectId = new Types.ObjectId(artist._id);
 
   const result = await Service.aggregate([
     { $match: { artist: artistObjectId } },
-
-    // {
-    //   $lookup: {
-    //     from: 'artists',
-    //     localField: 'artist',
-    //     foreignField: '_id',
-    //     as: 'artistInfo',
-    //   },
-    // },
-
-    // { $unwind: { path: '$artistInfo', preserveNullAndEmptyArrays: true } },
-
-    // {
-    //   $addFields: {
-    //     price: {
-    //       $multiply: ['$duration', { $divide: ['$artistInfo.hourlyRate', 60] }],
-    //     },
-    //   },
-    // },
 
     {
       $project: {
@@ -646,17 +635,15 @@ const getServicesByArtistFromDB = async (user: IAuth) => {
 //get all services of an artist
 // Update service
 const updateServiceById = async (id: string, data: Partial<IService>) => {
+  const serviceExists = await Service.findById(id);
+  if(!serviceExists) throw new AppError(httpStatus.NOT_FOUND, 'service not found')
   const service = await Service.findByIdAndUpdate(id, data, { new: true });
-  if (!service) throw new Error('Service not found');
+  if (!service) throw new AppError(httpStatus.BAD_REQUEST, 'failed to update service');  
   return service;
 };
 
 // Delete service
-const deleteServiceById = async (id: string) => {
-  const service = await Service.findByIdAndDelete(id);
-  if (!service) throw new Error('Service not found');
-  return service;
-};
+
 
 export const ArtistService = {
   updateProfile,
@@ -675,5 +662,5 @@ export const ArtistService = {
   createService,
   getServicesByArtistFromDB,
   updateServiceById,
-  deleteServiceById,
+
 };

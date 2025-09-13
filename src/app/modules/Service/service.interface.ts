@@ -3,8 +3,13 @@ import { Document, Types } from 'mongoose';
 export interface TServicePayload {
   title: string;
   description: string;
-  price: number;
-  durationInMinutes: number;
+  bodyLocatioin: string;
+  totalDuration: string;
+  sessionDuration: string;
+  category: "short" | "long";
+  pricingType: "hourly" | "fixed"
+  hourlyRate?: number;
+  fixedPrice?: number;
   bufferTimeInMinutes: number;
 }
 
@@ -58,17 +63,21 @@ export interface IService extends Document {
 
   title: string;
   description: string;
-  price: number;
-
   thumbnail: string;
   images: string[];
-  bodyPart: TattooBodyPart;
-  durationInMinutes: number;
+  bodyLocation: TattooBodyPart;
+  sessionType: 'short' | 'long';
+  pricingType: "hourly" | "fixed";
+  hourlyRate?: number;
+  fixedPrice?: number;
+  totalDuration: string;
+  totalDurationInMin: number;
+  sessionDuration: string;
+  sessionDurationInMin:number;
+  numberOfSessions: number;
   bufferTimeInMinutes: number;
-
   totalCompletedOrder: number;
   totalReviewCount: number;
   avgRating: number;
-
   isDeleted: boolean;
 }

@@ -1,8 +1,9 @@
 import httpStatus from 'http-status';
-import { asyncHandler } from '../../utils';
-import { ArtistService } from './artist.service';
+import { AppError, asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 import { TServiceImages } from '../Service/service.interface';
+import Service from '../Service/service.model';
+import { ArtistService } from './artist.service';
 
 // update profile
 const updateProfile = asyncHandler(async (req, res) => {
@@ -202,12 +203,14 @@ const updateService = asyncHandler(async (req, res) => {
 // deleteService
 const deleteService = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  await ArtistService.deleteServiceById(id);
-
+  const serviceExists = await Service.findById(id);
+  if (!serviceExists)
+    throw new AppError(httpStatus.NOT_FOUND, 'service not found');
+  await Service.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Service deleted successfully!',
-    data: null,
+    data:null
   });
 });
 
