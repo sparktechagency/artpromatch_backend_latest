@@ -122,7 +122,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //   const buffer = service.bufferTimeInMinutes;
 //   const totalTime = duration + buffer;
 
-//   // Resolve schedule (guestSpot > offTime > weeklySchedule)
+//   // Resolve schedule (guestSpot > offDays > weeklySchedule)
 //   const resolved = await resolveScheduleForDate(artistId, parsedDate);
 //   const schedule = resolved.schedule;
 
@@ -130,9 +130,9 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //     return [];
 //   }
 
-//   // If offTime covers the date → no slots
-//   if (resolved.offTime?.startDate && resolved.offTime?.endDate) {
-//     if (date >= resolved.offTime.startDate && date <= resolved.offTime.endDate) {
+//   // If offDays covers the date → no slots
+//   if (resolved.offDays?.startDate && resolved.offDays?.endDate) {
+//     if (date >= resolved.offDays.startDate && date <= resolved.offDays.endDate) {
 //       return [];
 //     }
 //   }
@@ -212,9 +212,9 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 
 //     // Fit as many slots before the next booking
 //     while (current + duration <= nextBookingStart) {
-//       // Check offTime
+//       // Check offDays
 //       let inOff = false;
-//       if (resolved.offTime?.startDate && resolved.offTime?.endDate) {
+//       if (resolved.offDays?.startDate && resolved.offDays?.endDate) {
 //         const slotStartDate = new Date(parsedDate);
 //         slotStartDate.setHours(0, 0, 0, 0);
 //         slotStartDate.setMinutes(current);
@@ -224,8 +224,8 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //         slotEndDate.setMinutes(current + duration);
 
 //         inOff =
-//           slotStartDate >= resolved.offTime.startDate &&
-//           slotEndDate <= resolved.offTime.endDate;
+//           slotStartDate >= resolved.offDays.startDate &&
+//           slotEndDate <= resolved.offDays.endDate;
 //       }
 
 //       if (!inOff && current + duration <= endMin) {

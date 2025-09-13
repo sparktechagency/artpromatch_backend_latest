@@ -43,27 +43,27 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
       if (dateOnly >= gsStartOnly && dateOnly <= gsEndOnly) {
         return {
           schedule: {
-            startMin: guestSpot.startMin,
-            endMin: guestSpot.endMin,
+            startTimeinMinute: guestSpot.startTimeinMinute,
+            endTimeinMinute: guestSpot.endTimeinMinute,
             off: false,
           },
-          offTime: guestSpot.offTime || null,
+          offDays: guestSpot.offDays || null,
         };
       }
     }
   }
 
-  // ✅ Then check offTime (object)
-  if (scheduleDoc.offTime?.startDate && scheduleDoc.offTime?.endDate) {
-    const offStart = new Date(scheduleDoc.offTime.startDate);
-    const offEnd = new Date(scheduleDoc.offTime.endDate);
+  // ✅ Then check offDays (object)
+  if (scheduleDoc.offDays?.startDate && scheduleDoc.offDays?.endDate) {
+    const offStart = new Date(scheduleDoc.offDays.startDate);
+    const offEnd = new Date(scheduleDoc.offDays.endDate);
 
     if (date >= offStart && date <= offEnd) {
-      return { schedule: { off: true }, offTime: scheduleDoc.offTime };
+      return { schedule: { off: true }, offDays: scheduleDoc.offDays };
     }
   }
 
   // ✅ Fallback weekly schedule
   const daySchedule = scheduleDoc.weeklySchedule?.[dayName];
-  return { schedule: daySchedule || { off: true }, offTime: scheduleDoc.offTime || null };
+  return { schedule: daySchedule || { off: true }, offDays: scheduleDoc.offDays || null };
 };
