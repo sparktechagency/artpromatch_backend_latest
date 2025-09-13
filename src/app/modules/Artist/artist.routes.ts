@@ -10,51 +10,55 @@ import { validateRequestFromFormData } from '../../middlewares/validateRequest';
 
 const router = Router();
 
-// Route for updating artist profile
+// getAllArtists
+router.route('/').get(ArtistController.getAllArtists);
+
+// updateArtistPersonalInfo
 router
   .route('/')
   .patch(
     auth(ROLE.ARTIST),
     validateRequest(ArtistValidation.updateSchema),
     ArtistController.updateArtistPersonalInfo
-  )
-  .get(ArtistController.fetchAllArtists);
+  );
 
+// updateArtistProfile
 router
   .route('/profile')
   .patch(
     auth(ROLE.ARTIST),
     validateRequest(ArtistValidation.artistProfileSchema),
-    ArtistController.updateProfile
+    ArtistController.updateArtistProfile
   );
 
-// Route for updating artist preferences
+// updateArtistPreferences
 router
   .route('/preferences')
   .patch(
     auth(ROLE.ARTIST),
     validateRequest(ArtistValidation.artistPreferencesSchema),
-    ArtistController.updatePreferences
+    ArtistController.updateArtistPreferences
   );
 
-// Route for updating artist notification preferences
+// updateArtistNotificationPreferences
 router
   .route('/notification-preferences')
   .patch(
     auth(ROLE.ARTIST),
     validateRequest(ArtistValidation.artistNotificationSchema),
-    ArtistController.updateNotificationPreferences
+    ArtistController.updateArtistNotificationPreferences
   );
 
-// Route for updating artist privacy and security settings
+// updateArtistPrivacySecuritySettings
 router
   .route('/privacy-security')
   .patch(
     auth(ROLE.ARTIST),
     validateRequest(ArtistValidation.artistPrivacySecuritySchema),
-    ArtistController.updatePrivacySecuritySettings
+    ArtistController.updateArtistPrivacySecuritySettings
   );
 
+// updateArtistFlashes
 router
   .route('/flashes')
   .post(
@@ -63,6 +67,7 @@ router
     ArtistController.updateArtistFlashes
   );
 
+// updateArtistPortfolio
 router
   .route('/portfolio')
   .post(
@@ -71,6 +76,7 @@ router
     ArtistController.updateArtistPortfolio
   );
 
+// addArtistService
 router.route('/service/create').post(
   upload.fields([
     { name: 'images', maxCount: 5 },
@@ -78,51 +84,55 @@ router.route('/service/create').post(
   ]),
   auth(ROLE.ARTIST),
   validateRequestFromFormData(ArtistServiceValidation.createServiceSchema),
-  ArtistController.addService
+  ArtistController.addArtistService
 );
 
+// getServicesByArtist
 router
   .route('/services')
   .get(auth(ROLE.ARTIST), ArtistController.getServicesByArtist);
 
-router
-  .route('/service/update/:id')
-  .post(
-    auth(ROLE.ARTIST),
-    // validateRequest(ArtistServiceValidation.updateServiceSchema),
-    ArtistController.updateService
-  );
+// updateArtistService
+router.route('/service/update/:id').post(
+  auth(ROLE.ARTIST),
+  // validateRequest(ArtistServiceValidation.updateServiceSchema),
+  ArtistController.updateArtistServiceById
+);
 
+// deleteArtistService
 router
   .route('/service/delete/:id')
-  .post(auth(ROLE.ARTIST), ArtistController.deleteService);
+  .post(auth(ROLE.ARTIST), ArtistController.deleteArtistService);
 
+// removeImage
 router
   .route('/remove-image')
   .delete(auth(ROLE.ARTIST), ArtistController.removeImage);
 
+// saveArtistAvailability
 router
   .route('/availability')
   .post(
     auth(ROLE.ARTIST),
     validateRequest(SlotValidation.availabilitySchema),
-    ArtistController.saveAvailability
+    ArtistController.saveArtistAvailability
   );
 
-// Route to manage artist's weekly availability
+// getAvailabilityExcludingTimeOff
 // router
 //   .route('/availability/:id')
 //   .get(ArtistController.getAvailabilityExcludingTimeOff)
 
-// Route to manage artist's manually booked hours
+// setArtistTimeOff
 router
   .route('/days-off')
   .patch(
     auth(ROLE.ARTIST),
-    validateRequest(ArtistValidation.setoffDaysSchema),
-    ArtistController.setTimeOff
+    validateRequest(ArtistValidation.setOffDaysSchema),
+    ArtistController.setArtistTimeOff
   );
 
+// createConnectedAccountAndOnboardingLinkForArtist
 router
   .route('/create-onboarding-account')
   .post(

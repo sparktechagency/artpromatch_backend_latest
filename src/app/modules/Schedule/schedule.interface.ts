@@ -45,32 +45,32 @@ import { Types } from 'mongoose';
 
 // One break per day, always 7 days in DB
 
-export interface DaySchedule {
+export interface IDaySchedule {
   startTime: string | null;
+  startTimeinMinute: number | null;
   endTime: string | null;
-  startMin: number | null;
-  endMin: number | null;
+  endTimeinMinute: number | null;
   off: boolean;
 }
 
-export interface WeeklySchedule {
-  monday: DaySchedule;
-  tuesday: DaySchedule;
-  wednesday: DaySchedule;
-  thursday: DaySchedule;
-  friday: DaySchedule;
-  saturday: DaySchedule;
-  sunday: DaySchedule;
+export interface IWeeklySchedule {
+  monday: IDaySchedule;
+  tuesday: IDaySchedule;
+  wednesday: IDaySchedule;
+  thursday: IDaySchedule;
+  friday: IDaySchedule;
+  saturday: IDaySchedule;
+  sunday: IDaySchedule;
 }
 
-export interface offDays {
+export interface IOffDays {
   startDate: Date | null;
   endDate: Date | null;
 }
 
 export interface IArtistSchedule {
   artistId: Types.ObjectId;
-  weeklySchedule: WeeklySchedule;
+  weeklySchedule: IWeeklySchedule;
   activeGuestSpot: Types.ObjectId | null;
-  offDays: offDays;
+  offDays: IOffDays;
 }

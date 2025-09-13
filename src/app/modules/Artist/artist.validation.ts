@@ -180,14 +180,14 @@ const timeOffSchema = z.object({
   }),
 });
 
-const setoffDaysSchema = z.object({
+const setOffDaysSchema = z.object({
   body: z.object({
     startDate: z.coerce.date(),
     endDate: z.coerce.date(),
   }),
 });
 
-export type TSetoffDays = z.infer<typeof setoffDaysSchema.shape.body>;
+export type TSetOffDays = z.infer<typeof setOffDaysSchema.shape.body>;
 
 export const ArtistValidation = {
   artistProfileSchema,
@@ -197,7 +197,7 @@ export const ArtistValidation = {
   updateSchema,
   availabilitySchema,
   timeOffSchema,
-  setoffDaysSchema
+  setOffDaysSchema,
 };
 
 // Type definitions based on the updated schemas

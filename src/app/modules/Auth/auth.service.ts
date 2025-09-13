@@ -1057,7 +1057,7 @@ const verifyOtpForForgetPassword = async (payload: {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid OTP!');
   }
 
-  // ✅ OTP verified → issue reset password token
+  // OTP verified → issue reset password token
   const resetPasswordToken = jwt.sign(
     {
       email: user.email,

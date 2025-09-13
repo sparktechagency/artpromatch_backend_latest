@@ -10,12 +10,7 @@ import { AppError } from '../../utils';
 import { IArtist } from '../Artist/artist.interface';
 import { IService } from '../Service/service.interface';
 import SecretReview from '../SecretReview/secretReview.model';
-import Service from '../Service/service.model';
-import {
-  minToTimeString,
-  resolveScheduleForDate,
-  roundUpMinutes,
-} from './booking.utils';
+
 import { TBookingData } from './booking.validation';
 
 type TReviewData = {
@@ -126,7 +121,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //   const resolved = await resolveScheduleForDate(artistId, parsedDate);
 //   const schedule = resolved.schedule;
 
-//   if (!schedule || schedule.off || schedule.startMin == null || schedule.endMin == null) {
+//   if (!schedule || schedule.off || schedule.startTimeinMinute == null || schedule.endTimeinMinute == null) {
 //     return [];
 //   }
 
@@ -137,9 +132,9 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //     }
 //   }
 
-//   const startMin = schedule.startMin;
-//   const endMin = schedule.endMin;
-//   let current = roundUpMinutes(startMin, 15);
+//   const startTimeinMinute = schedule.startTimeinMinute;
+//   const endTimeinMinute = schedule.endTimeinMinute;
+//   let current = roundUpMinutes(startTimeinMinute, 15);
 
 //   const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 //   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
@@ -150,11 +145,11 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //     status: { $in: ["pending", "confirmed"] },
 //   }).lean();
 
-//   const busyIntervals = bookings.map((b) => ({ start: b.startMin, end: b.endMin }));
+//   const busyIntervals = bookings.map((b) => ({ start: b.startTimeinMinute, end: b.endTimeinMinute }));
 
 //   const slots: { startFrom: string }[] = [];
 
-//   while (current + duration <= endMin) {
+//   while (current + duration <= endTimeinMinute) {
 //     const overlaps = busyIntervals.some(
 //       (i) => current < i.end && current + duration > i.start
 //     );
@@ -188,8 +183,8 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //   const resolved = await resolveScheduleForDate(artistId, parsedDate);
 //   if (!resolved || !resolved.schedule || resolved.schedule.off) return [];
 
-//   const { startMin, endMin } = resolved.schedule;
-//   if (startMin == null || endMin == null) return [];
+//   const { startTimeinMinute, endTimeinMinute } = resolved.schedule;
+//   if (startTimeinMinute == null || endTimeinMinute == null) return [];
 
 //   // 3. Get existing bookings
 //   const dayStart = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
@@ -200,15 +195,15 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //     originalDate: { $gte: dayStart, $lt: dayEnd },
 //     status: { $in: ['confirmed', 'pending'] },
 //   })
-//     .sort({ startMin: 1 }) // Sort by start time
+//     .sort({ startTimeinMinute: 1 }) // Sort by start time
 //     .lean();
 
 //   const slots: { startFrom: string }[] = [];
-//   let current = startMin;
+//   let current = startTimeinMinute;
 
 //   for (let i = 0; i <= bookings.length; i++) {
 //     const nextBooking = bookings[i];
-//     const nextBookingStart = nextBooking ? nextBooking.startMin : endMin;
+//     const nextBookingStart = nextBooking ? nextBooking.startTimeinMinute : endTimeinMinute;
 
 //     // Fit as many slots before the next booking
 //     while (current + duration <= nextBookingStart) {
@@ -228,7 +223,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //           slotEndDate <= resolved.offDays.endDate;
 //       }
 
-//       if (!inOff && current + duration <= endMin) {
+//       if (!inOff && current + duration <= endTimeinMinute) {
 //         slots.push({ startFrom: minToTimeString(current) });
 //       }
 
@@ -238,7 +233,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 
 //     // Jump current to after this booking
 //     if (nextBooking) {
-//       current = Math.max(current, nextBooking.endMin + buffer);
+//       current = Math.max(current, nextBooking.endTimeinMinute + buffer);
 //     }
 //   }
 
