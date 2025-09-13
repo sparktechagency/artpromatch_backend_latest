@@ -12,7 +12,7 @@ const getTimestamp = () => {
   return new Date().toLocaleString(); // e.g. "4/18/2025, 2:35:10 PM"
 };
 
-// ✅ Log success message to success.txt
+// Log success message to success.txt
 const logSuccess = (message: string) => {
   const logLine = `[SUCCESS] ${getTimestamp()} - ${message}\n`;
   fs.appendFileSync(path.join(logsDir, 'success.txt'), logLine, 'utf8');

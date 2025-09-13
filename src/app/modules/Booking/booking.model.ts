@@ -29,11 +29,11 @@ const bookingSchema = new Schema<IBooking>(
     //   type: String,
     //   required: true,
     // },
-    startMin: {
+    startTimeinMinute: {
       type: Number,
       required: true,
     },
-    endMin: {
+    endTimeinMinute: {
       type: Number,
       required: true,
     },
@@ -82,7 +82,7 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       required: true,
     },
-    
+
     isInGuestSpot: {
       type: Boolean,
       default: false,

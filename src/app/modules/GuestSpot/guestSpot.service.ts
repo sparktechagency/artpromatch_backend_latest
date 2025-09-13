@@ -4,7 +4,7 @@ import httpStatus from 'http-status';
 import Booking from '../Booking/booking.model';
 import GuestSpot from './guestSpot.model';
 import { convertTimeToMinutes } from './guestSpot.utils';
-import { offDays } from '../Schedule/schedule.interface';
+import { IOffDays } from '../Schedule/schedule.interface';
 import Artist from '../Artist/artist.model';
 
 // createGuestSpotIntoDB
@@ -20,7 +20,7 @@ const createGuestSpotIntoDB = async (
     endDate: Date;
     startTime: string;
     endTime: string;
-    offDays?: offDays;
+    offDays?: IOffDays;
   }
 ) => {
   const artist = await Artist.findOne({ auth: userData._id });
@@ -42,8 +42,8 @@ const createGuestSpotIntoDB = async (
     originalDate: { $gte: startDate, $lte: endDate },
     // $or: [
     //   {
-    startMin: { $lt: endTimeinMinute },
-    endMin: { $gt: startTimeinMinute },
+    startTimeinMinute: { $lt: endTimeinMinute },
+    endTimeinMinute: { $gt: startTimeinMinute },
     //   },
     // ],
   });
@@ -118,7 +118,7 @@ const updateGuestSpotIntoDB = async (
     endDate: Date;
     startTime: string;
     endTime: string;
-    offDays?: offDays;
+    offDays?: IOffDays;
   }
 ) => {
   const artist = await Artist.findOne({ auth: userData._id });
@@ -160,8 +160,8 @@ const updateGuestSpotIntoDB = async (
     artist: artist._id,
     isInGuestSpot: false,
     originalDate: { $gte: startDate, $lte: endDate },
-    startMin: { $lt: endTimeinMinute },
-    endMin: { $gt: startTimeinMinute },
+    startTimeinMinute: { $lt: endTimeinMinute },
+    endTimeinMinute: { $gt: startTimeinMinute },
   });
 
   if (bookingAtMain) {
@@ -176,8 +176,8 @@ const updateGuestSpotIntoDB = async (
     artist: artist._id,
     isInGuestSpot: true,
     originalDate: { $gte: startDate, $lte: endDate },
-    startMin: { $lt: endTimeinMinute },
-    endMin: { $gt: startTimeinMinute },
+    startTimeinMinute: { $lt: endTimeinMinute },
+    endTimeinMinute: { $gt: startTimeinMinute },
   });
 
   if (bookingAtGuestSpot) {

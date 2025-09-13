@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { IArtistSchedule } from './schedule.interface';
+import { IDaySchedule, IArtistSchedule, IOffDays } from './schedule.interface';
 // import { WEEK_DAYS } from '../Artist/artist.constant';
 // import { ISlot } from './slot.interface';
 
@@ -32,15 +32,15 @@ import { IArtistSchedule } from './schedule.interface';
 
 // export default Slot;
 
-const DayScheduleSchema = new Schema({
+const DayScheduleSchema = new Schema<IDaySchedule>({
   startTime: { type: String, default: null },
   endTime: { type: String, default: null },
-  startMin: { type: Number, default: null },
-  endMin: { type: Number, default: null },
+  startTimeinMinute: { type: Number, default: null },
+  endTimeinMinute: { type: Number, default: null },
   off: { type: Boolean, default: true },
 });
 
-export const offDaysSchema = new Schema({
+export const offDaysSchema = new Schema<IOffDays>({
   startDate: { type: Date, required: true, default: null },
   endDate: { type: Date, required: true, default: null },
 });

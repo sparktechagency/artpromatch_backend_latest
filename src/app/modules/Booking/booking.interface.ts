@@ -9,8 +9,8 @@ export interface IBooking extends Document {
 
   originalDate: Date | null;
   // day: TWeekDay;
-  startMin: number;
-  endMin: number;
+  startTimeinMinute: number;
+  endTimeinMinute: number;
   status: TBookingStatus;
 
   serviceName: string;
