@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { asyncHandler } from '../../utils';
-import { RequestService } from './request.service';
 import sendResponse from '../../utils/sendResponse';
+import { RequestService } from './request.service';
 
 const createRequest = asyncHandler(async (req, res) => {
   const result = await RequestService.createRequestIntoDB(req.user, req.body);

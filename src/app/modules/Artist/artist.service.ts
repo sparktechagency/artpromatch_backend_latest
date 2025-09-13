@@ -18,7 +18,7 @@ import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
-  TSetOffTime,
+  TSetoffDays,
   TUpdateArtistNotificationPayload,
   TUpdateArtistPayload,
   TUpdateArtistPreferencesPayload,
@@ -381,7 +381,7 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
 };
 
 // update time off
-const setTimeOffInDb = async (user: IAuth, payload: TSetOffTime) => {
+const setTimeOffInDb = async (user: IAuth, payload: TSetoffDays) => {
   const artist = await Artist.findOne({ auth: user._id }).select('_id');
   if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
 
@@ -401,10 +401,10 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetOffTime) => {
   if (!schedule)
     throw new AppError(httpStatus.NOT_FOUND, 'Artist schedule not found');
 
-  const existing = schedule.offTime;
+  const existing = schedule.offDays;
 
   /**
-   * Case 1: OffTime already active (ongoing right now)
+   * Case 1: offDays already active (ongoing right now)
    */
   if (
     existing?.startDate &&
@@ -415,7 +415,7 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetOffTime) => {
     if (endDate <= existing.endDate) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'End date must extend current offTime'
+        'End date must extend current offDays'
       );
     }
 
@@ -428,17 +428,17 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetOffTime) => {
     if (hasBookings) {
       throw new AppError(
         httpStatus.CONFLICT,
-        'Cannot extend offTime — bookings exist in new range'
+        'Cannot extend offDays — bookings exist in new range'
       );
     }
 
-    schedule.offTime.endDate = endDate;
+    schedule.offDays.endDate = endDate;
     await schedule.save();
-    return schedule.offTime;
+    return schedule.offDays;
   }
 
   /**
-   * Case 2: Old offTime expired — override if no conflicts
+   * Case 2: Old offDays expired — override if no conflicts
    */
   if (existing?.endDate && existing.endDate < today) {
     const hasBookings = await Booking.exists({
@@ -450,17 +450,17 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetOffTime) => {
     if (hasBookings) {
       throw new AppError(
         httpStatus.CONFLICT,
-        'Cannot override expired offTime — bookings exist in new period'
+        'Cannot override expired offDays — bookings exist in new period'
       );
     }
 
-    schedule.offTime = { startDate, endDate };
+    schedule.offDays = { startDate, endDate };
     await schedule.save();
-    return schedule.offTime;
+    return schedule.offDays;
   }
 
   /**
-   * Case 3: New future offTime
+   * Case 3: New future offDays
    */
   if (startDate < today) {
     throw new AppError(
@@ -478,13 +478,13 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetOffTime) => {
   if (hasBookings) {
     throw new AppError(
       httpStatus.CONFLICT,
-      'Cannot set offTime — bookings exist in this period'
+      'Cannot set offDays — bookings exist in this period'
     );
   }
 
-  schedule.offTime = { startDate, endDate };
+  schedule.offDays = { startDate, endDate };
   await schedule.save();
-  return schedule.offTime;
+  return schedule.offDays;
 };
 
 // create connceted account and onvoparding link for artist into db

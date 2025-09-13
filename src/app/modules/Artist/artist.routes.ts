@@ -116,10 +116,10 @@ router
 
 // Route to manage artist's manually booked hours
 router
-  .route('/time-off')
+  .route('/days-off')
   .patch(
     auth(ROLE.ARTIST),
-    validateRequest(ArtistValidation.setOffTimeSchema),
+    validateRequest(ArtistValidation.setoffDaysSchema),
     ArtistController.setTimeOff
   );
 
