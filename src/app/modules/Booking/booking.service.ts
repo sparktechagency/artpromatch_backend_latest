@@ -169,81 +169,81 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 //   return slots;
 // };
 
-const getAvailabilityFromDB = async (
-  artistId: string,
-  serviceId: string,
-  date: Date
-) => {
-  const parsedDate = new Date(date);
+// const getAvailabilityFromDB = async (
+//   artistId: string,
+//   serviceId: string,
+//   date: Date
+// ) => {
+//   const parsedDate = new Date(date);
 
-  // 1. Get the service
-  const service = await Service.findOne({ _id: serviceId, artist: artistId }).lean();
-  if (!service) return [];
+//   // 1. Get the service
+//   const service = await Service.findOne({ _id: serviceId, artist: artistId }).lean();
+//   if (!service) return [];
 
-  const duration = service.durationInMinutes;
-  const buffer = service.bufferTimeInMinutes;
-  const totalServiceTime = duration + buffer;
+//   const duration = service.durationInMinutes;
+//   const buffer = service.bufferTimeInMinutes;
+//   const totalServiceTime = duration + buffer;
 
-  // 2. Resolve schedule
-  const resolved = await resolveScheduleForDate(artistId, parsedDate);
-  if (!resolved || !resolved.schedule || resolved.schedule.off) return [];
+//   // 2. Resolve schedule
+//   const resolved = await resolveScheduleForDate(artistId, parsedDate);
+//   if (!resolved || !resolved.schedule || resolved.schedule.off) return [];
 
-  const { startMin, endMin } = resolved.schedule;
-  if (startMin == null || endMin == null) return [];
+//   const { startMin, endMin } = resolved.schedule;
+//   if (startMin == null || endMin == null) return [];
 
-  // 3. Get existing bookings
-  const dayStart = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
-  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+//   // 3. Get existing bookings
+//   const dayStart = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+//   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  const bookings = await Booking.find({
-    artist: artistId,
-    originalDate: { $gte: dayStart, $lt: dayEnd },
-    status: { $in: ['confirmed', 'pending'] },
-  })
-    .sort({ startMin: 1 }) // Sort by start time
-    .lean();
+//   const bookings = await Booking.find({
+//     artist: artistId,
+//     originalDate: { $gte: dayStart, $lt: dayEnd },
+//     status: { $in: ['confirmed', 'pending'] },
+//   })
+//     .sort({ startMin: 1 }) // Sort by start time
+//     .lean();
 
-  const slots: { startFrom: string }[] = [];
-  let current = startMin;
+//   const slots: { startFrom: string }[] = [];
+//   let current = startMin;
 
-  for (let i = 0; i <= bookings.length; i++) {
-    const nextBooking = bookings[i];
-    const nextBookingStart = nextBooking ? nextBooking.startMin : endMin;
+//   for (let i = 0; i <= bookings.length; i++) {
+//     const nextBooking = bookings[i];
+//     const nextBookingStart = nextBooking ? nextBooking.startMin : endMin;
 
-    // Fit as many slots before the next booking
-    while (current + duration <= nextBookingStart) {
-      // Check offTime
-      let inOff = false;
-      if (resolved.offTime?.startDate && resolved.offTime?.endDate) {
-        const slotStartDate = new Date(parsedDate);
-        slotStartDate.setHours(0, 0, 0, 0);
-        slotStartDate.setMinutes(current);
+//     // Fit as many slots before the next booking
+//     while (current + duration <= nextBookingStart) {
+//       // Check offTime
+//       let inOff = false;
+//       if (resolved.offTime?.startDate && resolved.offTime?.endDate) {
+//         const slotStartDate = new Date(parsedDate);
+//         slotStartDate.setHours(0, 0, 0, 0);
+//         slotStartDate.setMinutes(current);
 
-        const slotEndDate = new Date(parsedDate);
-        slotEndDate.setHours(0, 0, 0, 0);
-        slotEndDate.setMinutes(current + duration);
+//         const slotEndDate = new Date(parsedDate);
+//         slotEndDate.setHours(0, 0, 0, 0);
+//         slotEndDate.setMinutes(current + duration);
 
-        inOff =
-          slotStartDate >= resolved.offTime.startDate &&
-          slotEndDate <= resolved.offTime.endDate;
-      }
+//         inOff =
+//           slotStartDate >= resolved.offTime.startDate &&
+//           slotEndDate <= resolved.offTime.endDate;
+//       }
 
-      if (!inOff && current + duration <= endMin) {
-        slots.push({ startFrom: minToTimeString(current) });
-      }
+//       if (!inOff && current + duration <= endMin) {
+//         slots.push({ startFrom: minToTimeString(current) });
+//       }
 
-      // Move forward by total service time (duration + buffer)
-      current += totalServiceTime;
-    }
+//       // Move forward by total service time (duration + buffer)
+//       current += totalServiceTime;
+//     }
 
-    // Jump current to after this booking
-    if (nextBooking) {
-      current = Math.max(current, nextBooking.endMin + buffer);
-    }
-  }
+//     // Jump current to after this booking
+//     if (nextBooking) {
+//       current = Math.max(current, nextBooking.endMin + buffer);
+//     }
+//   }
 
-  return slots;
-};
+//   return slots;
+// };
 
 export const BookingService = {
   createBookingIntoDB,
@@ -253,7 +253,7 @@ export const BookingService = {
   // cancelBooking,
   // checkAvailability,
   ReviewAfterAServiceIsCompletedIntoDB,
-  getAvailabilityFromDB,
+  // getAvailabilityFromDB,
 };
 
 

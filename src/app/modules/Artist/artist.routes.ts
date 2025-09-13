@@ -89,7 +89,7 @@ router
   .route('/service/update/:id')
   .post(
     auth(ROLE.ARTIST),
-    validateRequest(ArtistServiceValidation.updateServiceSchema),
+    // validateRequest(ArtistServiceValidation.updateServiceSchema),
     ArtistController.updateService
   );
 
