@@ -60,22 +60,13 @@ export type TattooBodyPart = (typeof TattooBodyParts)[keyof typeof TattooBodyPar
 export interface IService extends Document {
   _id: Types.ObjectId;
   artist: Types.ObjectId;
-
   title: string;
   description: string;
   thumbnail: string;
   images: string[];
   bodyLocation: TattooBodyPart;
   sessionType: 'short' | 'long';
-  pricingType: "hourly" | "fixed";
-  hourlyRate?: number;
-  fixedPrice?: number;
-  totalDuration: string;
-  totalDurationInMin: number;
-  sessionDuration: string;
-  sessionDurationInMin:number;
-  numberOfSessions: number;
-  bufferTimeInMinutes: number;
+  price: number
   totalCompletedOrder: number;
   totalReviewCount: number;
   avgRating: number;

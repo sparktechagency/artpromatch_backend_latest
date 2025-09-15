@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
 // MongoDB ObjectId regex
-const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+
 
 // Booking validation schema
+
+const objectIdPattern = /^[0-9a-fA-F]{24}$/;
 const bookingSchema = z.object({
   body: z.object({
     service: z.string({ required_error: 'Service is required' }),
@@ -32,6 +34,39 @@ const bookingSchema = z.object({
   }),
 });
 
+
+
+const createBookingSchema = z.object({
+  body: z.object({
+    serviceId: z.string({ required_error: 'Service is required' }),
+
+    preferredStartDate: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+        'Invalid date format'
+      )
+      .transform((str) => {
+        const date = new Date(str);
+        if (isNaN(date.getTime())) throw new Error('Invalid date string');
+        return date;
+      }),
+
+    preferredEndDate: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+        'Invalid date format'
+      )
+      .transform((str) => {
+        const date = new Date(str);
+        if (isNaN(date.getTime())) throw new Error('Invalid date string');
+        return date;
+      }),
+
+  }),
+});
+
 // getAvailabilitySchema
 const getAvailabilitySchema = z.object({
   body: z.object({
@@ -44,6 +79,7 @@ const getAvailabilitySchema = z.object({
 export const BookingValidation = {
   bookingSchema,
   getAvailabilitySchema,
+  createBookingSchema
 };
 
-export type TBookingData = z.infer<typeof bookingSchema.shape.body>;
+export type TBookingData = z.infer<typeof createBookingSchema.shape.body>;

@@ -6,7 +6,7 @@ import httpStatus from 'http-status';
 import { startSession } from 'mongoose';
 import { IAuth } from '../Auth/auth.interface';
 
-const stripe = new Stripe(config.stripe.secret_key!);
+const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
 // const stripe = new Stripe(config.stripe.secret_key!, {
 //   apiVersion: '2025-01-27.acacia' as any,

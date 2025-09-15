@@ -34,8 +34,7 @@ import Service from '../Service/service.model';
 import ArtistSchedule from '../Schedule/schedule.model';
 import { WeeklySchedule } from '../Schedule/schedule.interface';
 import Booking from '../Booking/booking.model';
-import { parseDurationToMinutes } from '../Service/service.zod';
-import { number } from 'zod';
+
 
 // update profile
 const updateProfile = async (
@@ -597,16 +596,10 @@ const createService = async (
   const images = files?.images?.map(
     (image) => image.path.replace(/\\/g, '/') || ''
   );
-   const totalDurationInMinutes = parseDurationToMinutes(payload.totalDuration);
-   const sessionInMinutes = parseDurationToMinutes(payload.sessionDuration);
-   console.log({totalDurationInMinutes,sessionInMinutes})
-  const numberOfSessions = Math.ceil(totalDurationInMinutes / sessionInMinutes);
+   
   const serviceData = {
     ...payload,
     artist: artist._id,
-    totalDurationInMin: totalDurationInMinutes,
-    sessionDurationInMin: sessionInMinutes,
-    numberOfSessions: numberOfSessions,
     thumbnail: thumbnail,
     images: images,
   };
