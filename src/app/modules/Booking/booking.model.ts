@@ -80,6 +80,19 @@ const bookingSchema = new Schema<IBooking>(
     rating: { type: Number, min: 1, max: 5 },
 
     isInGuestSpot: { type: Boolean, default: false },
+    review: {
+      type: String,
+      required: true,
+    },
+    rating: {
+      type: String,
+      required: true,
+    },
+
+    isInGuestSpot: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true, versionKey: false }
 );

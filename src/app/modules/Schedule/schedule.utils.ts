@@ -1,4 +1,4 @@
-import { DaySchedule, WeeklySchedule } from './schedule.interface';
+import { IDaySchedule, IWeeklySchedule } from './schedule.interface';
 
 // Convert HH:mm to total minutes
 export const toMinutes = (time: string) => {
@@ -47,7 +47,7 @@ export const removeDuplicateSlots = (
 
 // format day
 
-export const formatDay = (day: DaySchedule) => ({
+export const formatDay = (day: IDaySchedule) => ({
   startTime: day.startTime,
   endTime: day.endTime,
   off: day.off,
@@ -60,13 +60,13 @@ export const splitIntoHourlySlots = (
 ): { start: string; end: string }[] => {
   const result: { start: string; end: string }[] = [];
 
-  const startMin = toMinutes(start);
-  const endMin = toMinutes(end);
+  const startTimeinMinute = toMinutes(start);
+  const endTimeinMinute = toMinutes(end);
 
-  if (startMin >= endMin) return result;
+  if (startTimeinMinute >= endTimeinMinute) return result;
 
-  let current = startMin;
-  while (current + 60 <= endMin) {
+  let current = startTimeinMinute;
+  while (current + 60 <= endTimeinMinute) {
     result.push({
       start: toTimeString(current),
       end: toTimeString(current + 60),
@@ -100,19 +100,19 @@ function timeToMinutes(timeStr: string) {
   return hours * 60 + minutes;
 }
 
-const defaultDaySchedule = (): DaySchedule => ({
+const defaultDaySchedule = (): IDaySchedule => ({
   startTime: null,
   endTime: null,
-  startMin: null,
-  endMin: null,
+  startTimeinMinute: null,
+  endTimeinMinute: null,
   off: true,
 });
 
 export const normalizeWeeklySchedule = (
-  input: Partial<WeeklySchedule>,
-  existing?: WeeklySchedule
-): WeeklySchedule => {
-  const days: (keyof WeeklySchedule)[] = [
+  input: Partial<IWeeklySchedule>,
+  existing?: IWeeklySchedule
+): IWeeklySchedule => {
+  const days: (keyof IWeeklySchedule)[] = [
     'monday',
     'tuesday',
     'wednesday',
@@ -122,7 +122,7 @@ export const normalizeWeeklySchedule = (
     'sunday',
   ];
 
-  const normalized: WeeklySchedule = {} as WeeklySchedule;
+  const normalized: IWeeklySchedule = {} as IWeeklySchedule;
 
   for (const day of days) {
     const incoming = input[day];
@@ -140,12 +140,12 @@ export const normalizeWeeklySchedule = (
       normalized[day] = {
         startTime: incoming.startTime ?? prev?.startTime ?? null,
         endTime: incoming.endTime ?? prev?.endTime ?? null,
-        startMin: incoming.startTime
+        startTimeinMinute: incoming.startTime
           ? timeToMinutes(incoming.startTime)
-          : prev?.startMin ?? null,
-        endMin: incoming.endTime
+          : prev?.startTimeinMinute ?? null,
+        endTimeinMinute: incoming.endTime
           ? timeToMinutes(incoming.endTime)
-          : prev?.endMin ?? null,
+          : prev?.endTimeinMinute ?? null,
         off: false,
       };
     }

@@ -13,31 +13,74 @@ import {
 } from '../Service/service.interface';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
-
 import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
-  TSetoffDays,
+  TSetOffDays,
   TUpdateArtistNotificationPayload,
   TUpdateArtistPayload,
   TUpdateArtistPreferencesPayload,
   TUpdateArtistPrivacySecurityPayload,
   TUpdateArtistProfilePayload,
 } from './artist.validation';
-
 import stripe from '../Payment/payment.service';
 import { JwtPayload } from 'jsonwebtoken';
 import config from '../../config';
-
 import Service from '../Service/service.model';
 import ArtistSchedule from '../Schedule/schedule.model';
-import { WeeklySchedule } from '../Schedule/schedule.interface';
+import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import Booking from '../Booking/booking.model';
 
+// getAllArtistsFromDB
+const getAllArtistsFromDB = async (query: Record<string, unknown>) => {
+  const artistsQuery = new QueryBuilder(
+    Artist.find().populate([
+      {
+        path: 'auth',
+        select: 'fullName image phoneNumber',
+      },
+      {
+        path: 'portfolio.folder',
+        select: 'name images createdAt',
+      },
+    ]),
+    query
+  )
+    .search([])
+    .fields()
+    .filter()
+    .paginate()
+    .sort();
 
-// update profile
-const updateProfile = async (
+  const data = await artistsQuery.modelQuery;
+  const meta = await artistsQuery.countTotal();
+
+  return { data, meta };
+};
+
+// update artist person info into db
+const updateArtistPersonalInfoIntoDB = async (
+  user: IAuth,
+  payload: TUpdateArtistPayload
+) => {
+  const artist = await Artist.findOne({ auth: user._id });
+
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  }
+
+  await ArtistPreferences.findOneAndUpdate({ artistId: artist._id }, payload, {
+    new: true,
+  });
+
+  return await Artist.findOneAndUpdate({ auth: user._id }, payload, {
+    new: true,
+  }).populate('preferences');
+};
+
+// updateArtistProfileIntoDB
+const updateArtistProfileIntoDB = async (
   user: IAuth,
   payload: TUpdateArtistProfilePayload
 ) => {
@@ -63,8 +106,8 @@ const updateProfile = async (
   return result;
 };
 
-// update preferrence
-const updatePreferences = async (
+// updateArtistPreferencesIntoDB
+const updateArtistPreferencesIntoDB = async (
   user: IAuth,
   payload: TUpdateArtistPreferencesPayload
 ) => {
@@ -90,8 +133,8 @@ const updatePreferences = async (
   return artistPreferences;
 };
 
-// update Notification preferrence
-const updateNotificationPreferences = async (
+// updateArtistNotificationPreferencesIntoDB
+const updateArtistNotificationPreferencesIntoDB = async (
   user: IAuth,
   payload: TUpdateArtistNotificationPayload
 ) => {
@@ -117,8 +160,8 @@ const updateNotificationPreferences = async (
   return artistPreferences;
 };
 
-// update privacy security
-const updatePrivacySecuritySettings = async (
+// updateArtistPrivacySecuritySettingsIntoDB
+const updateArtistPrivacySecuritySettingsIntoDB = async (
   user: IAuth,
   payload: TUpdateArtistPrivacySecurityPayload
 ) => {
@@ -144,8 +187,8 @@ const updatePrivacySecuritySettings = async (
   return artistPreferences;
 };
 
-// add flashes
-const addFlashesIntoDB = async (
+// updateArtistFlashesIntoDB
+const updateArtistFlashesIntoDB = async (
   user: IAuth,
   files: Express.Multer.File[] | undefined
 ) => {
@@ -172,8 +215,8 @@ const addFlashesIntoDB = async (
   );
 };
 
-// add portfolio
-const addPortfolioImages = async (
+// updateArtistPortfolioIntoDB
+const updateArtistPortfolioIntoDB = async (
   user: IAuth,
   files: Express.Multer.File[] | undefined
 ) => {
@@ -210,8 +253,100 @@ const addPortfolioImages = async (
   );
 };
 
-// remove image
-const removeImage = async (user: IAuth, filePath: string) => {
+// addArtistServiceIntoDB
+const addArtistServiceIntoDB = async (
+  user: IAuth,
+  payload: TServicePayload,
+  files: TServiceImages
+): Promise<IService> => {
+  const artist = await Artist.findOne({ auth: user._id });
+  if (!artist) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
+  }
+
+  const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
+  const images = files?.images?.map(
+    (image) => image.path.replace(/\\/g, '/') || ''
+  );
+
+  const totalDurationInMinutes = parseDurationToMinutes(payload.totalDuration);
+  const sessionInMinutes = parseDurationToMinutes(payload.sessionDuration);
+  const numberOfSessions = Math.ceil(totalDurationInMinutes / sessionInMinutes);
+
+  const serviceData = {
+    ...payload,
+    artist: artist._id,
+    totalDurationInMin: totalDurationInMinutes,
+    sessionDurationInMin: sessionInMinutes,
+    numberOfSessions: numberOfSessions,
+    thumbnail: thumbnail,
+    images: images,
+  };
+
+  const service = await Service.create(serviceData);
+  return service;
+};
+
+// getServicesByArtistFromDB
+const getServicesByArtistFromDB = async (user: IAuth) => {
+  const artist = await Artist.findOne({ auth: user._id });
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+  }
+
+  const artistObjectId = new Types.ObjectId(artist._id);
+
+  const result = await Service.aggregate([
+    { $match: { artist: artistObjectId } },
+
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        price: 1,
+        durationInMinutes: 1,
+        bufferTimeInMinutes: 1,
+        thumbnail: 1,
+        images: 1,
+        totalCompletedOrder: 1,
+        totalReviewCount: 1,
+        avgRating: 1,
+      },
+    },
+  ]);
+
+  return result;
+};
+
+// updateArtistServiceByIdIntoDB
+const updateArtistServiceByIdIntoDB = async (
+  id: string,
+  data: Partial<IService>
+) => {
+  const serviceExists = await Service.findById(id);
+  if (!serviceExists)
+    throw new AppError(httpStatus.NOT_FOUND, 'service not found');
+  const service = await Service.findByIdAndUpdate(id, data, { new: true });
+  if (!service)
+    throw new AppError(httpStatus.BAD_REQUEST, 'failed to update service');
+  return service;
+};
+
+// deleteArtistServiceFromDB
+const deleteArtistServiceFromDB = async (id: string) => {
+  const serviceExists = await Service.findById(id);
+
+  if (!serviceExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'service not found');
+  }
+
+  await Service.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
+
+  return null;
+};
+
+// removeImageFromDB
+const removeImageFromDB = async (user: IAuth, filePath: string) => {
   const artist = await Artist.findOne({
     auth: user._id,
   });
@@ -245,105 +380,11 @@ const removeImage = async (user: IAuth, filePath: string) => {
   return updatedArtist;
 };
 
-// update artist person info into db
-const updateArtistPersonalInfoIntoDB = async (
+// saveArtistAvailabilityIntoDB
+const saveArtistAvailabilityIntoDB = async (
   user: IAuth,
-  payload: TUpdateArtistPayload
+  payload: TAvailability
 ) => {
-  const artist = await Artist.findOne({ auth: user._id });
-
-  if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-  }
-
-  await ArtistPreferences.findOneAndUpdate({ artistId: artist._id }, payload, {
-    new: true,
-  });
-
-  return await Artist.findOneAndUpdate({ auth: user._id }, payload, {
-    new: true,
-  }).populate('preferences');
-};
-
-// save availbility into db
-// const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
-//   const { day, slots } = payload;
-
-//   // Step 1: Normalize into 1-hour blocks
-//   const hourlySlots = slots.flatMap((slot) =>
-//     splitIntoHourlySlots(slot.start, slot.end)
-//   );
-
-//   console.log('hourlyslots', hourlySlots);
-//   // Step 2: Deduplicate within request
-//   const uniqueSlots = removeDuplicateSlots(hourlySlots);
-
-//   console.log('uniqueslots', uniqueSlots);
-//   // Step 3: Fetch existing slots for that day
-//   const existing = await Slot.findOne({ auth: user._id, day });
-
-//   if (existing) {
-//     const existingSlots = existing.slots;
-
-//     // Step 4: Check overlap
-//     if (hasOverlap(existingSlots, uniqueSlots)) {
-//       throw new AppError(
-//         status.BAD_REQUEST,
-//         'New slots overlap with existing slots'
-//       );
-//     }
-
-//     // Step 5: Merge, dedupe, and sort
-//     const merged = removeDuplicateSlots([
-//       ...existingSlots,
-//       ...uniqueSlots,
-//     ]).sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
-
-//     // Step 6: Save
-//     existing.set('slots', merged);
-//     await existing.save();
-//     return existing;
-//   } else {
-//     // First time adding slots
-//     return await Slot.create({
-//       auth: user._id,
-//       day,
-//       slots: uniqueSlots,
-//     });
-//   }
-// };
-
-/* ------ */
-
-// fetch all artist from db
-const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
-  const artistsQuery = new QueryBuilder(
-    Artist.find().populate([
-      {
-        path: 'auth',
-        select: 'fullName image phoneNumber',
-      },
-      {
-        path: 'portfolio.folder',
-        select: 'name images createdAt',
-      },
-    ]),
-    query
-  )
-    .search([])
-    .fields()
-    .filter()
-    .paginate()
-    .sort();
-
-  const data = await artistsQuery.modelQuery;
-  const meta = await artistsQuery.countTotal();
-
-  return { data, meta };
-};
-
-// save availability
-const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   const { weeklySchedule: inputSchedule } = payload;
 
   const artist: IArtist = await Artist.findOne({ auth: user._id }).select(
@@ -371,8 +412,8 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
   }
 
   await schedule.save();
-  const updatedSchedule: Partial<Record<keyof WeeklySchedule, any>> = {};
-  for (const day of Object.keys(inputSchedule) as (keyof WeeklySchedule)[]) {
+  const updatedSchedule: Partial<Record<keyof IWeeklySchedule, any>> = {};
+  for (const day of Object.keys(inputSchedule) as (keyof IWeeklySchedule)[]) {
     updatedSchedule[day] = formatDay(schedule.weeklySchedule[day]);
   }
 
@@ -380,7 +421,7 @@ const saveAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
 };
 
 // update time off
-const setTimeOffInDb = async (user: IAuth, payload: TSetoffDays) => {
+const setArtistTimeOffIntoDB = async (user: IAuth, payload: TSetOffDays) => {
   const artist = await Artist.findOne({ auth: user._id }).select('_id');
   if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
 
@@ -414,7 +455,7 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetoffDays) => {
     if (endDate <= existing.endDate) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'End date must extend current offDays'
+        'End date must extend current Off Days'
       );
     }
 
@@ -427,7 +468,7 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetoffDays) => {
     if (hasBookings) {
       throw new AppError(
         httpStatus.CONFLICT,
-        'Cannot extend offDays — bookings exist in new range'
+        'Cannot extend Off Days — bookings exist in new range'
       );
     }
 
@@ -449,7 +490,7 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetoffDays) => {
     if (hasBookings) {
       throw new AppError(
         httpStatus.CONFLICT,
-        'Cannot override expired offDays — bookings exist in new period'
+        'Cannot override expired Off Days — bookings exist in new period'
       );
     }
 
@@ -477,7 +518,7 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetoffDays) => {
   if (hasBookings) {
     throw new AppError(
       httpStatus.CONFLICT,
-      'Cannot set offDays — bookings exist in this period'
+      'Cannot set Off Days — bookings exist in this period'
     );
   }
 
@@ -486,7 +527,7 @@ const setTimeOffInDb = async (user: IAuth, payload: TSetoffDays) => {
   return schedule.offDays;
 };
 
-// create connceted account and onvoparding link for artist into db
+// createConnectedAccountAndOnboardingLinkForArtistIntoDb
 const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
   userData: JwtPayload
 ) => {
@@ -580,8 +621,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
       'Stripe onboarding service unavailable'
     );
   }
-};
-
+  
 // create service
 const createService = async (
   user: IAuth,
@@ -614,60 +654,69 @@ const getServicesByArtistFromDB = async (user: IAuth) => {
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
+// saveArtistAvailabilityIntoDB
+// const saveArtistAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
+//   const { day, slots } = payload;
 
-  const artistObjectId = new Types.ObjectId(artist._id);
+//   // Step 1: Normalize into 1-hour blocks
+//   const hourlySlots = slots.flatMap((slot) =>
+//     splitIntoHourlySlots(slot.start, slot.end)
+//   );
 
-  const result = await Service.aggregate([
-    { $match: { artist: artistObjectId } },
+//   console.log('hourlyslots', hourlySlots);
+//   // Step 2: Deduplicate within request
+//   const uniqueSlots = removeDuplicateSlots(hourlySlots);
 
-    {
-      $project: {
-        _id: 1,
-        title: 1,
-        price: 1,
-        durationInMinutes: 1,
-        bufferTimeInMinutes: 1,
-        thumbnail: 1,
-        images: 1,
-        totalCompletedOrder: 1,
-        totalReviewCount: 1,
-        avgRating: 1,
-      },
-    },
-  ]);
+//   console.log('uniqueslots', uniqueSlots);
+//   // Step 3: Fetch existing slots for that day
+//   const existing = await Slot.findOne({ auth: user._id, day });
 
-  return result;
-};
+//   if (existing) {
+//     const existingSlots = existing.slots;
 
-//get all services of an artist
-// Update service
-const updateServiceById = async (id: string, data: Partial<IService>) => {
-  const serviceExists = await Service.findById(id);
-  if(!serviceExists) throw new AppError(httpStatus.NOT_FOUND, 'service not found')
-  const service = await Service.findByIdAndUpdate(id, data, { new: true });
-  if (!service) throw new AppError(httpStatus.BAD_REQUEST, 'failed to update service');  
-  return service;
-};
+//     // Step 4: Check overlap
+//     if (hasOverlap(existingSlots, uniqueSlots)) {
+//       throw new AppError(
+//         status.BAD_REQUEST,
+//         'New slots overlap with existing slots'
+//       );
+//     }
 
-// Delete service
+//     // Step 5: Merge, dedupe, and sort
+//     const merged = removeDuplicateSlots([
+//       ...existingSlots,
+//       ...uniqueSlots,
+//     ]).sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
 
+//     // Step 6: Save
+//     existing.set('slots', merged);
+//     await existing.save();
+//     return existing;
+//   } else {
+//     // First time adding slots
+//     return await Slot.create({
+//       auth: user._id,
+//       day,
+//       slots: uniqueSlots,
+//     });
+//   }
+// };
 
 export const ArtistService = {
-  updateProfile,
-  updatePreferences,
-  updateNotificationPreferences,
-  updatePrivacySecuritySettings,
-  addFlashesIntoDB,
-  addPortfolioImages,
-  removeImage,
+  getAllArtistsFromDB,
   updateArtistPersonalInfoIntoDB,
-  saveAvailabilityIntoDB,
-  fetchAllArtistsFromDB,
-  // updateAvailability,
-  setTimeOffInDb,
-  createConnectedAccountAndOnboardingLinkForArtistIntoDb,
-  createService,
+  updateArtistProfileIntoDB,
+  updateArtistPreferencesIntoDB,
+  updateArtistNotificationPreferencesIntoDB,
+  updateArtistPrivacySecuritySettingsIntoDB,
+  updateArtistFlashesIntoDB,
+  updateArtistPortfolioIntoDB,
+  addArtistServiceIntoDB,
   getServicesByArtistFromDB,
-  updateServiceById,
-
+  updateArtistServiceByIdIntoDB,
+  deleteArtistServiceFromDB,
+  removeImageFromDB,
+  saveArtistAvailabilityIntoDB,
+  setArtistTimeOffIntoDB,
+  createConnectedAccountAndOnboardingLinkForArtistIntoDb,
 };

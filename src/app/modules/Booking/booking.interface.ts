@@ -15,7 +15,7 @@ export interface IBooking extends Document{
   artist: Types.ObjectId;
   client: Types.ObjectId;
   service: Types.ObjectId;
-
+  
   preferredDate?: {
     startDate: Date;
     endDate: Date;

@@ -1,5 +1,5 @@
 import GuestSpot from '../GuestSpot/guestSpot.model';
-import { WeeklySchedule } from '../Schedule/schedule.interface';
+import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 
 export const minToTimeString = (min: number) => {
@@ -14,21 +14,25 @@ export const roundUpMinutes = (min: number, step = 15) => {
   return Math.ceil(min / step) * step;
 };
 
-
 export const resolveScheduleForDate = async (artistId: string, date: Date) => {
   const dayName = date
-    .toLocaleString("en-US", { weekday: "long", timeZone: "UTC" })
-    .toLowerCase() as keyof WeeklySchedule;
-   
-  console.log(dayName)
-  const scheduleDoc = await ArtistSchedule.findOne({ artistId }).lean();
-  if (!scheduleDoc) throw new Error("Artist schedule not found");
+    .toLocaleString('en-US', { weekday: 'long', timeZone: 'UTC' })
+    .toLowerCase() as keyof IWeeklySchedule;
 
-  // ✅ First check guest spot
+  const scheduleDoc = await ArtistSchedule.findOne({ artistId }).lean();
+  if (!scheduleDoc) throw new Error('Artist schedule not found');
+
+  // First check guest spot
   if (scheduleDoc.activeGuestSpot) {
-    const guestSpot = await GuestSpot.findById(scheduleDoc.activeGuestSpot).lean();
+    const guestSpot = await GuestSpot.findById(
+      scheduleDoc.activeGuestSpot
+    ).lean();
     if (guestSpot?.isActive) {
-      const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dateOnly = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
       const gsStartOnly = new Date(
         guestSpot.startDate.getFullYear(),
         guestSpot.startDate.getMonth(),
@@ -53,7 +57,7 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
     }
   }
 
-  // ✅ Then check offDays (object)
+  // Then check offDays (object)
   if (scheduleDoc.offDays?.startDate && scheduleDoc.offDays?.endDate) {
     const offStart = new Date(scheduleDoc.offDays.startDate);
     const offEnd = new Date(scheduleDoc.offDays.endDate);
@@ -63,7 +67,10 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
     }
   }
 
-  // ✅ Fallback weekly schedule
+  // Fallback weekly schedule
   const daySchedule = scheduleDoc.weeklySchedule?.[dayName];
-  return { schedule: daySchedule || { off: true }, offDays: scheduleDoc.offDays || null };
+  return {
+    schedule: daySchedule || { off: true },
+    offDays: scheduleDoc.offDays || null,
+  };
 };

@@ -1,93 +1,18 @@
 import httpStatus from 'http-status';
-import { AppError, asyncHandler } from '../../utils';
+import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 import { TServiceImages } from '../Service/service.interface';
-import Service from '../Service/service.model';
 import { ArtistService } from './artist.service';
 
-// update profile
-const updateProfile = asyncHandler(async (req, res) => {
-  const result = await ArtistService.updateProfile(req.user, req.body);
+// getAllArtists
+const getAllArtists = asyncHandler(async (req, res) => {
+  const result = await ArtistService.getAllArtistsFromDB(req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Artist profile updated successfully!',
-    data: result,
-  });
-});
-
-// update preferrence
-const updatePreferences = asyncHandler(async (req, res) => {
-  const result = await ArtistService.updatePreferences(req.user, req.body);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Artist preferences updated successfully!',
-    data: result,
-  });
-});
-
-// update notification prefereence
-const updateNotificationPreferences = asyncHandler(async (req, res) => {
-  const result = await ArtistService.updateNotificationPreferences(
-    req.user,
-    req.body
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Artist notification preferences updated successfully!',
-    data: result,
-  });
-});
-
-// update Privacy security settings
-const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
-  const result = await ArtistService.updatePrivacySecuritySettings(
-    req.user,
-    req.body
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Artist privacy and security settings updated successfully!',
-    data: result,
-  });
-});
-
-// update artist flashes
-const updateArtistFlashes = asyncHandler(async (req, res) => {
-  const files = req.files as Express.Multer.File[] | undefined;
-  const result = await ArtistService.addFlashesIntoDB(req.user, files);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Flashes updated successfully!',
-    data: result,
-  });
-});
-
-//update artist
-const updateArtistPortfolio = asyncHandler(async (req, res) => {
-  const files = req.files as Express.Multer.File[] | undefined;
-  const result = await ArtistService.addPortfolioImages(req.user, files);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Portfolio updated successfully!',
-    data: result,
-  });
-});
-
-// remove image
-const removeImage = asyncHandler(async (req, res) => {
-  const filePath = req.body.filePath;
-  const result = await ArtistService.removeImage(req.user, filePath);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Flash removed successfully!',
-    data: result,
+    message: 'Artists retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -105,71 +30,97 @@ const updateArtistPersonalInfo = asyncHandler(async (req, res) => {
   });
 });
 
-// save availibility
-const saveAvailability = asyncHandler(async (req, res) => {
-  const result = await ArtistService.saveAvailabilityIntoDB(req.user, req.body);
+// updateArtistProfile
+const updateArtistProfile = asyncHandler(async (req, res) => {
+  const result = await ArtistService.updateArtistProfileIntoDB(
+    req.user,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Saved availability successfully!',
+    message: 'Artist profile updated successfully!',
     data: result,
   });
 });
 
-// fetch all artist
-const fetchAllArtists = asyncHandler(async (req, res) => {
-  const result = await ArtistService.fetchAllArtistsFromDB(req.query);
+// updateArtistPreferences
+const updateArtistPreferences = asyncHandler(async (req, res) => {
+  const result = await ArtistService.updateArtistPreferencesIntoDB(
+    req.user,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Artists retrieved successfully!',
-    data: result.data,
-    meta: result.meta,
-  });
-});
-
-// For availability
-// const updateAvailability = asyncHandler(async (req, res) => {
-//   const result = await ArtistService.updateAvailability(req.user, req.body);
-
-//   sendResponse(res, {
-//     statusCode: httpStatus.OK,
-//     message: 'Availability updated successfully!',
-//     data: result,
-//   });
-// });
-
-// update timeoff
-const setTimeOff = asyncHandler(async (req, res) => {
-  const result = await ArtistService.setTimeOffInDb(req.user, req.body);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Time off updated successfully!',
+    message: 'Artist preferences updated successfully!',
     data: result,
   });
 });
 
-// update timeoff
-const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
-  async (req, res) => {
-    const result =
-      await ArtistService.createConnectedAccountAndOnboardingLinkForArtistIntoDb(
-        req.user
-      );
+// updateArtistNotificationPreferences
+const updateArtistNotificationPreferences = asyncHandler(async (req, res) => {
+  const result = await ArtistService.updateArtistNotificationPreferencesIntoDB(
+    req.user,
+    req.body
+  );
 
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      message: 'Onboarding account url is generated successfully!',
-      data: result,
-    });
-  }
-);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist notification preferences updated successfully!',
+    data: result,
+  });
+});
 
-// addService
-const addService = asyncHandler(async (req, res) => {
+// updateArtistPrivacySecuritySettings
+const updateArtistPrivacySecuritySettings = asyncHandler(async (req, res) => {
+  const result = await ArtistService.updateArtistPrivacySecuritySettingsIntoDB(
+    req.user,
+    req.body
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist privacy and security settings updated successfully!',
+    data: result,
+  });
+});
+
+// update artist flashes
+const updateArtistFlashes = asyncHandler(async (req, res) => {
+  const files = req.files as Express.Multer.File[] | undefined;
+  const result = await ArtistService.updateArtistFlashesIntoDB(req.user, files);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Flashes updated successfully!',
+    data: result,
+  });
+});
+
+// update artist
+const updateArtistPortfolio = asyncHandler(async (req, res) => {
+  const files = req.files as Express.Multer.File[] | undefined;
+  const result = await ArtistService.updateArtistPortfolioIntoDB(
+    req.user,
+    files
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Portfolio updated successfully!',
+    data: result,
+  });
+});
+
+// addArtistService
+const addArtistService = asyncHandler(async (req, res) => {
   const files = req.files as TServiceImages;
-  const result = await ArtistService.createService(req.user, req.body, files);
+  const result = await ArtistService.addArtistServiceIntoDB(
+    req.user,
+    req.body,
+    files
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -188,10 +139,13 @@ const getServicesByArtist = asyncHandler(async (req, res) => {
   });
 });
 
-// updateService
-const updateService = asyncHandler(async (req, res) => {
+// updateArtistServiceById
+const updateArtistServiceById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const result = await ArtistService.updateServiceById(id, req.body);
+  const result = await ArtistService.updateArtistServiceByIdIntoDB(
+    id,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -200,19 +154,70 @@ const updateService = asyncHandler(async (req, res) => {
   });
 });
 
-// deleteService
-const deleteService = asyncHandler(async (req, res) => {
+// deleteArtistService
+const deleteArtistService = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const serviceExists = await Service.findById(id);
-  if (!serviceExists)
-    throw new AppError(httpStatus.NOT_FOUND, 'service not found');
-  await Service.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
+  const result = await ArtistService.deleteArtistServiceFromDB(id);
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Service deleted successfully!',
-    data:null
+    data: result,
   });
 });
+
+// removeimage
+const removeImage = asyncHandler(async (req, res) => {
+  const filePath = req.body.filePath;
+  const result = await ArtistService.removeImageFromDB(req.user, filePath);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Flash removed successfully!',
+    data: result,
+  });
+});
+
+// saveArtistAvailability
+const saveArtistAvailability = asyncHandler(async (req, res) => {
+  const result = await ArtistService.saveArtistAvailabilityIntoDB(
+    req.user,
+    req.body
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Saved availability successfully!',
+    data: result,
+  });
+});
+
+// setArtistTimeOff
+const setArtistTimeOff = asyncHandler(async (req, res) => {
+  const result = await ArtistService.setArtistTimeOffIntoDB(req.user, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Time off updated successfully!',
+    data: result,
+  });
+});
+
+// createConnectedAccountAndOnboardingLinkForArtist
+const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
+  async (req, res) => {
+    const result =
+      await ArtistService.createConnectedAccountAndOnboardingLinkForArtistIntoDb(
+        req.user
+      );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      message: 'Onboarding account url is generated successfully!',
+      data: result,
+    });
+  }
+);
 
 // get availibility
 // const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
@@ -232,23 +237,34 @@ const deleteService = asyncHandler(async (req, res) => {
 //   });
 // });
 
+// For availability
+// const updateAvailability = asyncHandler(async (req, res) => {
+//   const result = await ArtistService.updateAvailability(req.user, req.body);
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     message: 'Availability updated successfully!',
+//     data: result,
+//   });
+// });
+
 export const ArtistController = {
-  addService,
-  updateService,
-  deleteService,
-  updateProfile,
-  updatePreferences,
-  updateNotificationPreferences,
-  updatePrivacySecuritySettings,
-  updateArtistFlashes,
-  removeImage,
+  getAllArtists,
   updateArtistPersonalInfo,
+  updateArtistProfile,
+  updateArtistPreferences,
+  updateArtistNotificationPreferences,
+  updateArtistPrivacySecuritySettings,
+  updateArtistFlashes,
   updateArtistPortfolio,
-  saveAvailability,
-  fetchAllArtists,
-  // updateAvailability,
-  setTimeOff,
+  addArtistService,
   getServicesByArtist,
+  updateArtistServiceById,
+  deleteArtistService,
+  removeImage,
+  saveArtistAvailability,
+  setArtistTimeOff,
   createConnectedAccountAndOnboardingLinkForArtist,
+  // updateAvailability,
   // getAvailabilityExcludingTimeOff,
 };
