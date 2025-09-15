@@ -4,13 +4,18 @@ import httpStatus from 'http-status';
 // import { AppError } from '../../utils';
 // import Artist from '../Artist/artist.model';
 import { startSession } from 'mongoose';
-import { IAuth } from '../Auth/auth.interface';
-import Booking from './booking.model';
 import { AppError } from '../../utils';
 import { IArtist } from '../Artist/artist.interface';
-import { IService } from '../Service/service.interface';
+import { IAuth } from '../Auth/auth.interface';
 import SecretReview from '../SecretReview/secretReview.model';
+import { IService } from '../Service/service.interface';
+import Booking from './booking.model';
 
+import Stripe from 'stripe';
+import config from '../../config';
+import Artist from '../Artist/artist.model';
+import Client from '../Client/client.model';
+import Service from '../Service/service.model';
 import { TBookingData } from './booking.validation';
 
 type TReviewData = {
@@ -20,11 +25,93 @@ type TReviewData = {
   secretReviewForAdmin: string;
 };
 
-const createBookingIntoDB = async (
-  user: IAuth,
-  payload: TBookingData,
-) => {
-  
+const stripe = new Stripe(config.stripe.stripe_secret_key as string,{});
+
+const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
+  const client = await Client.findOne({ auth: user.id });
+  if (!client) throw new AppError(httpStatus.NOT_FOUND, 'client not found');
+
+  const service = await Service.findById(payload.serviceId);
+  if (!service) throw new AppError(httpStatus.NOT_FOUND, 'service not found');
+
+  const artist = await Artist.findById(service.artist);
+
+  if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
+
+  const existingArtistBooking = await Booking.findOne({
+    artist: artist._id,
+    service: service._id,
+    status: 'pending',
+  });
+
+  if (existingArtistBooking) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Artist is already booked for this service'
+    );
+  }
+
+  const existingClientPending = await Booking.findOne({
+    client: client._id,
+    status: 'pending',
+  });
+
+  if (existingClientPending) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You already have a pending booking request'
+    );
+  }
+
+   const bookingPayload = {
+    artist: artist._id,
+    client: client._id,
+    service: service._id,
+    preferredDate: {
+      startDate: payload.preferredStartDate,
+      endDate: payload.preferredEndDate,
+    },
+    serviceName: service.title,
+    bodyPart: service.bodyLocation,
+    price: service.price
+  };
+
+  const booking = await Booking.create(bookingPayload);
+
+  if(!booking) throw new AppError(httpStatus.BAD_REQUEST,'failed to create booking')
+
+  const checkoutSession: any = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'payment',
+    payment_intent_data: { capture_method: 'manual' },
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: service.title,
+            description: service.description,
+          },
+          unit_amount: Math.round(service.price * 100),
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      bookingId: booking._id.toString(),
+      client: client._id.toString(),
+      service: service._id.toString(),
+    },
+    success_url: `${process.env.CLIENT_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.CLIENT_URL}/booking/cancel`,
+  } as Stripe.Checkout.SessionCreateParams);
+
+ 
+  console.log(checkoutSession.url)
+  return {
+    bookingId: booking._id,
+    checkoutUrl: checkoutSession.url,
+  };
 };
 
 // ReviewAfterAServiceIsCompletedIntoDB
@@ -250,7 +337,6 @@ export const BookingService = {
   ReviewAfterAServiceIsCompletedIntoDB,
   // getAvailabilityFromDB,
 };
-
 
 /*
 import Stripe from 'stripe';

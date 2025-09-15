@@ -22,13 +22,13 @@ router
     BookingController.ReviewAfterAServiceIsCompleted
   );
 
-// router
-//   .route('/create')
-//   .post(
-//     auth(ROLE.CLIENT),
-//     validateRequest(BookingValidation.getAvailabilitySchema),
-//     BookingController.getAvailability
-//   );
+router
+  .route('/create')
+  .post(
+    auth(ROLE.CLIENT),
+    validateRequest(BookingValidation.createBookingSchema),
+    BookingController.createBooking
+  );
 
 // router
 //   .route('/get-availability')

@@ -82,48 +82,12 @@ export function parseDurationToMinutes(value: string): number {
 
 const createServiceSchema = z.object({
   body: z.object({
-    title: z.string().min(8),
-    description: z.string().min(100).max(1500),
+    title: z.string({ required_error: 'title is required' }).min(8),
+    description: z.string({ required_error: 'description is required' }).min(100).max(1500),
     bodyLocation: z.nativeEnum(TattooBodyParts),
     sessionType: z.enum(["short", "long"]),
-    pricingType: z.enum(["hourly", "fixed"]),
-    hourlyRate: z.number().optional(),
-    fixedPrice: z.number().optional(),
-    totalDuration: z.string(),
-    sessionDuration: z.string(),
-    bufferTimeInMinutes: z
-      .string()
-      .default('0m')
-      .transform((val, ctx) => {
-        try {
-          return parseDurationToMinutes(val); // e.g. "30m" → 30
-        } catch {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Invalid buffer format. Use like '15m' or '1h'",
-          });
-          return z.NEVER;
-        }
-      })
-      .refine((val) => val >= 0 && val <= 120, {
-        message: 'Buffer time must be between 0 and 120 minutes',
-      }),
-  }).superRefine((data, ctx) => {
-    if (data.pricingType === "hourly" && (!data.hourlyRate || data.hourlyRate <= 0)) {
-      ctx.addIssue({
-        path: ["hourlyRate"],
-        code: z.ZodIssueCode.custom,
-        message: "hourlyRate is required for hourly pricing",
-      });
-    }
-    if (data.pricingType === "fixed" && (!data.fixedPrice || data.fixedPrice <= 0)) {
-      ctx.addIssue({
-        path: ["fixedPrice"],
-        code: z.ZodIssueCode.custom,
-        message: "fixedPrice is required for fixed pricing",
-      });
-    }
-  }),
+    price: z.number({ required_error: 'Price is required' }),
+  })
 });
 
 // export const updateServiceSchema = z.object({

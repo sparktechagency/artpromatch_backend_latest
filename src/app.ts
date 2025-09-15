@@ -17,6 +17,8 @@ import { globalErrorHandler, notFound } from './app/utils';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import initSocketIo from './app/socket/chat.socket';
+import { stripeWebhookHandler } from './app/lib/stripe.webhookt';
+
 
 const app: Application = express();
 
@@ -57,7 +59,7 @@ app.use(
     ],
   })
 );
-
+app.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
 app.use(cookieParser());
 app.use(morgan('dev'));
 

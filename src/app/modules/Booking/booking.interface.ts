@@ -1,32 +1,47 @@
 import { Document, Types } from 'mongoose';
 // import { TWeekDay } from '../Artist/artist.constant';
-import { TBookingStatus, TPaymentStatus } from './booking.constant';
+import { TBookingStatus, TPaymentStatus,  } from './booking.constant';
 
-export interface IBooking extends Document {
+export interface IBookingSession {
+  sessionNumber: number;
+  startMin: number; // minutes from midnight
+  endMin: number;
+  date: Date;
+  status: "scheduled" | "completed" | "cancelled";
+}
+
+export interface IBooking extends Document{
+  _id: Types.ObjectId
   artist: Types.ObjectId;
   client: Types.ObjectId;
   service: Types.ObjectId;
+  
+  preferredDate?: {
+    startDate: Date;
+    endDate: Date;
+  };
+  
+  demoImage: string;
+  sessions: IBookingSession[];
 
-  originalDate: Date | null;
-  // day: TWeekDay;
-  startTimeinMinute: number;
-  endTimeinMinute: number;
+  // Booking-level status
   status: TBookingStatus;
 
   serviceName: string;
   price: number;
-  serviceLocation: string;
   bodyPart: string;
 
-  paymentIntentId: string;
-  chargeId: string;
+  // Payment (global, not per session)
+  paymentIntentId?: string;
   paymentStatus: TPaymentStatus;
 
+  // If booking cancelled (by artist usually)
+  cancelledAt?: Date | null;
+
+  // Review and rating
   review?: string;
   rating?: number;
 
   isInGuestSpot: boolean;
 
-  createdAt: Date;
-  updatedAt: Date;
 }

@@ -2,78 +2,84 @@ import { Schema, model } from 'mongoose';
 import { BOOKING_STATUS, PAYMENT_STATUS } from './booking.constant';
 import { IBooking } from './booking.interface';
 
+
+export const sessionSchema = new Schema(
+  {
+    sessionNumber: { type: Number, default: 0},
+    startMin: { type: Number, default: 0 },    
+    endMin: { type: Number, default: 0 },        
+    date: { type: Date, default: null },
+    status: {
+      type: String,
+      enum: ["pending", "scheduled", "completed", "cancelled"],
+      default: "pending",
+    },
+  }
+);
+
+
 const bookingSchema = new Schema<IBooking>(
   {
     artist: {
       type: Schema.Types.ObjectId,
-      ref: 'Artist',
+      ref: "Artist",
       required: true,
+      index: true,
     },
     client: {
       type: Schema.Types.ObjectId,
-      ref: 'Client',
+      ref: "Client",
       required: true,
+      index: true,
     },
     service: {
       type: Schema.Types.ObjectId,
-      ref: 'Service',
+      ref: "Service",
       required: true,
+      index: true,
     },
 
-    originalDate: {
-      type: Date,
-      required: true,
-      default: null,
+    // Client preferred date range
+    preferredDate: {
+      startDate: { type: Date, required: true },
+      endDate: { type: Date, required: true },
     },
-    // day: {
-    //   type: String,
-    //   required: true,
-    // },
-    startTimeinMinute: {
-      type: Number,
-      required: true,
+   
+    demoImage: {
+      type: String,
+      default: ""
     },
-    endTimeinMinute: {
-      type: Number,
-      required: true,
-    },
+    // Sessions array (subdocument schema)
+    sessions: [sessionSchema],
+
+    // Booking-level status
     status: {
       type: String,
       enum: Object.values(BOOKING_STATUS),
-      default: 'confirmed',
+      default: "pending",
     },
 
-    serviceName: {
-      type: String,
-      required: true,
-    },
-    price: {
-      type: Number,
-      required: true,
-    },
-    serviceLocation: {
-      type: String,
-      required: true,
-    },
-    bodyPart: {
-      type: String,
-      required: true,
-    },
+    serviceName: { type: String, required: true },
+    price: { type: Number, required: true },
+    bodyPart: { type: String, required: true },
 
-    paymentIntentId: {
-      type: String,
-      required: true,
-    },
-    chargeId: {
-      type: String,
-      required: true,
-    },
+    // --- Payment (global) ---
+    paymentIntentId: { type: String },
+
     paymentStatus: {
       type: String,
       enum: Object.values(PAYMENT_STATUS),
-      default: 'pending',
+      default: "pending",
     },
 
+    // If cancelled
+    cancelledAt: { type: Date, default: null },
+
+    // Feedback
+    review: { type: String },
+    rating: { type: Number, min: 1, max: 5 },
+
+    isInGuestSpot: { type: Boolean, default: false },
     review: {
       type: String,
       required: true,
@@ -90,6 +96,7 @@ const bookingSchema = new Schema<IBooking>(
   },
   { timestamps: true, versionKey: false }
 );
+
 
 const Booking = model<IBooking>('Booking', bookingSchema);
 export default Booking;

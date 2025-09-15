@@ -11,6 +11,7 @@ import {
 import { Types } from 'mongoose';
 
 export interface IClient extends Document {
+  _id: Types.ObjectId
   image?: string;
   location: { type: 'Point'; coordinates: [number, number] };
   radius: number;

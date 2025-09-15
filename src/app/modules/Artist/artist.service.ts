@@ -31,7 +31,6 @@ import Service from '../Service/service.model';
 import ArtistSchedule from '../Schedule/schedule.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import Booking from '../Booking/booking.model';
-import { parseDurationToMinutes } from '../Service/service.zod';
 
 // getAllArtistsFromDB
 const getAllArtistsFromDB = async (query: Record<string, unknown>) => {
@@ -622,8 +621,39 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
       'Stripe onboarding service unavailable'
     );
   }
+  
+// create service
+const createService = async (
+  user: IAuth,
+  payload: TServicePayload,
+  files: TServiceImages
+): Promise<IService> => {
+  const artist = await Artist.findOne({ auth: user._id });
+  if (!artist) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
+  }
+  const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
+  const images = files?.images?.map(
+    (image) => image.path.replace(/\\/g, '/') || ''
+  );
+   
+  const serviceData = {
+    ...payload,
+    artist: artist._id,
+    thumbnail: thumbnail,
+    images: images,
+  };
+
+  const service = await Service.create(serviceData);
+  return service;
 };
 
+// getServicesByArtistFromDB
+const getServicesByArtistFromDB = async (user: IAuth) => {
+  const artist = await Artist.findOne({ auth: user._id });
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+  }
 // saveArtistAvailabilityIntoDB
 // const saveArtistAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
 //   const { day, slots } = payload;
