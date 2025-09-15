@@ -254,38 +254,38 @@ const updateArtistPortfolioIntoDB = async (
 };
 
 // addArtistServiceIntoDB
-const addArtistServiceIntoDB = async (
-  user: IAuth,
-  payload: TServicePayload,
-  files: TServiceImages
-): Promise<IService> => {
-  const artist = await Artist.findOne({ auth: user._id });
-  if (!artist) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
-  }
+// const addArtistServiceIntoDB = async (
+//   user: IAuth,
+//   payload: TServicePayload,
+//   files: TServiceImages
+// ): Promise<IService> => {
+//   const artist = await Artist.findOne({ auth: user._id });
+//   if (!artist) {
+//     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
+//   }
 
-  const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
-  const images = files?.images?.map(
-    (image) => image.path.replace(/\\/g, '/') || ''
-  );
+//   const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
+//   const images = files?.images?.map(
+//     (image) => image.path.replace(/\\/g, '/') || ''
+//   );
 
-  const totalDurationInMinutes = parseDurationToMinutes(payload.totalDuration);
-  const sessionInMinutes = parseDurationToMinutes(payload.sessionDuration);
-  const numberOfSessions = Math.ceil(totalDurationInMinutes / sessionInMinutes);
+//   const totalDurationInMinutes = parseDurationToMinutes(payload.totalDuration);
+//   const sessionInMinutes = parseDurationToMinutes(payload.sessionDuration);
+//   const numberOfSessions = Math.ceil(totalDurationInMinutes / sessionInMinutes);
 
-  const serviceData = {
-    ...payload,
-    artist: artist._id,
-    totalDurationInMin: totalDurationInMinutes,
-    sessionDurationInMin: sessionInMinutes,
-    numberOfSessions: numberOfSessions,
-    thumbnail: thumbnail,
-    images: images,
-  };
+//   const serviceData = {
+//     ...payload,
+//     artist: artist._id,
+//     totalDurationInMin: totalDurationInMinutes,
+//     sessionDurationInMin: sessionInMinutes,
+//     numberOfSessions: numberOfSessions,
+//     thumbnail: thumbnail,
+//     images: images,
+//   };
 
-  const service = await Service.create(serviceData);
-  return service;
-};
+//   const service = await Service.create(serviceData);
+//   return service;
+// };
 
 // getServicesByArtistFromDB
 const getServicesByArtistFromDB = async (user: IAuth) => {
@@ -621,7 +621,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
       'Stripe onboarding service unavailable'
     );
   }
-  
+}
 // create service
 const createService = async (
   user: IAuth,
@@ -649,11 +649,6 @@ const createService = async (
 };
 
 // getServicesByArtistFromDB
-const getServicesByArtistFromDB = async (user: IAuth) => {
-  const artist = await Artist.findOne({ auth: user._id });
-  if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
-  }
 // saveArtistAvailabilityIntoDB
 // const saveArtistAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
 //   const { day, slots } = payload;
@@ -711,7 +706,7 @@ export const ArtistService = {
   updateArtistPrivacySecuritySettingsIntoDB,
   updateArtistFlashesIntoDB,
   updateArtistPortfolioIntoDB,
-  addArtistServiceIntoDB,
+  // addArtistServiceIntoDB,
   getServicesByArtistFromDB,
   updateArtistServiceByIdIntoDB,
   deleteArtistServiceFromDB,
@@ -719,4 +714,5 @@ export const ArtistService = {
   saveArtistAvailabilityIntoDB,
   setArtistTimeOffIntoDB,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
-};
+  createService,
+}
