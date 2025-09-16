@@ -72,7 +72,7 @@ const bookingSchema = new Schema<IBooking>(
     cancelledAt: { type: Date, default: null },
     cancelBy: { type: String, enum: ['artist', 'client'] },
     // Feedback
-    review: { type: String },
+       review: { type: String },
     rating: { type: Number, min: 1, max: 5 },
 
     isInGuestSpot: { type: Boolean, default: false },
