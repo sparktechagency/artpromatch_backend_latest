@@ -28,6 +28,7 @@ import { IAuth } from './auth.interface';
 import { Auth } from './auth.model';
 import { AuthValidation, TProfilePayload } from './auth.validation';
 import sendOtpSms from '../../utils/sendOtpSms';
+import { getLocationName } from './auth.utils';
 
 const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
 
@@ -274,7 +275,7 @@ const createProfileIntoDB = async (
   // Destructure relevant fields from the payload
   const {
     role,
-    location,
+    mainLocation,
 
     radius,
     lookingFor,
@@ -306,6 +307,9 @@ const createProfileIntoDB = async (
   const studioLicense =
     files.studioLicense?.[0]?.path.replace(/\\/g, '/') || '';
 
+  // stringLocation
+  const stringLocation = getLocationName(mainLocation?.coordinates as number[]);
+
   // Start a MongoDB session for transaction
   const session = await startSession();
 
@@ -325,7 +329,8 @@ const createProfileIntoDB = async (
       const clientPayload = {
         auth: user._id,
         role,
-        location,
+        location: mainLocation,
+        stringLocation,
         radius,
         lookingFor,
         favoriteTattoos,
@@ -373,7 +378,9 @@ const createProfileIntoDB = async (
         auth: user._id,
         type: artistType,
         expertise,
-        location,
+        mainLocation,
+        stringLocation,
+        currentLocation: mainLocation,
         city,
         idCardFront,
         idCardBack,
@@ -418,7 +425,8 @@ const createProfileIntoDB = async (
         studioName,
         businessType,
         servicesOffered,
-        location,
+        location: mainLocation,
+        stringLocation,
         city,
         contact: {
           phone: contactNumber,

@@ -14,6 +14,7 @@ export interface IArtist extends Document {
   isStripeReady: boolean;
 
   mainLocation: { type: 'Point'; coordinates: [number, number] };
+  stringLocation: string;
   currentLocation: {
     type: 'Point';
     coordinates: [number, number];

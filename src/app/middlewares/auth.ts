@@ -58,7 +58,7 @@ const auth = (...requiredRoles: TRole[]) => {
     ) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'Your profile is not activated by admin yet'
+        'Your profile is not activated by admin yet!'
       );
     } else if (user.role === ROLE.CLIENT && !user.isActive) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');

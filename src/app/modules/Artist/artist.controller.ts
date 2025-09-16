@@ -6,7 +6,7 @@ import { ArtistService } from './artist.service';
 
 // getAllArtists
 const getAllArtists = asyncHandler(async (req, res) => {
-  const result = await ArtistService.getAllArtistsFromDB(req.query);
+  const result = await ArtistService.getAllArtistsFromDB(req.query, req.user);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

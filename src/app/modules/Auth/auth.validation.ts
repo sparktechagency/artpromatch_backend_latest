@@ -124,7 +124,7 @@ const createProfileSchema = z.object({
         invalid_type_error: 'Role must be CLIENT, ARTIST or BUSINESS',
       }),
 
-      location: z
+      mainLocation: z
         .object({
           // type: z.literal('Point').default('Point'), // Type must be 'Point'
           coordinates: z
@@ -231,7 +231,7 @@ const createProfileSchema = z.object({
           });
         }
 
-        if (!data.location) {
+        if (!data.mainLocation) {
           ctx.addIssue({
             path: ['location'],
             code: z.ZodIssueCode.custom,
@@ -265,7 +265,7 @@ const createProfileSchema = z.object({
           });
         }
 
-        if (!data.location) {
+        if (!data.mainLocation) {
           ctx.addIssue({
             path: ['location'],
             code: z.ZodIssueCode.custom,

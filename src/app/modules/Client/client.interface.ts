@@ -14,6 +14,7 @@ export interface IClient extends Document {
   _id: Types.ObjectId
   image?: string;
   location: { type: 'Point'; coordinates: [number, number] };
+  stringLocation: string;
   radius: number;
   lookingFor: ServiceType[];
   country: string;
