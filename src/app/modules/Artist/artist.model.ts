@@ -92,6 +92,10 @@ const artistSchema = new Schema<IArtist>(
       },
       coordinates: { type: [Number], required: true },
     },
+    stringLocation: {
+      type: String,
+      required: true,
+    },
 
     currentLocation: {
       type: {
@@ -160,7 +164,7 @@ const artistSchema = new Schema<IArtist>(
   { timestamps: true, versionKey: false }
 );
 
-artistSchema.index({ location: '2dsphere' });
+artistSchema.index({ currentLocation: '2dsphere' });
 
 const Artist = model<IArtist>('Artist', artistSchema);
 

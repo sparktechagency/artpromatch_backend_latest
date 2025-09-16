@@ -55,6 +55,10 @@ const businessSchema = new Schema<IBusiness>(
         required: true,
       },
     },
+    stringLocation: {
+      type: String,
+      required: true,
+    },
     // contact: { type: contactSchema, required: true },
 
     // // Operating hours

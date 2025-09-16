@@ -13,6 +13,7 @@ import { Types } from 'mongoose';
 export interface IClient extends Document {
   image?: string;
   location: { type: 'Point'; coordinates: [number, number] };
+  stringLocation: string;
   radius: number;
   lookingFor: ServiceType[];
   country: string;

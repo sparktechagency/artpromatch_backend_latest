@@ -16,6 +16,7 @@ export interface IBusiness extends Document {
 
   // Contact & location
   location: { type: 'Point'; coordinates: [number, number] };
+  stringLocation: string;
   city: string;
   // contact: TContact;
 

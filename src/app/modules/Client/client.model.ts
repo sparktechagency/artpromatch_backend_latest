@@ -31,6 +31,11 @@ const clientSchema = new Schema<IClient>(
         required: true,
       },
     },
+    
+    stringLocation: {
+      type: String,
+      required: true,
+    },
 
     radius: {
       type: Number,

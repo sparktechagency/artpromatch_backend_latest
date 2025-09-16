@@ -2,7 +2,6 @@
 import fs from 'fs';
 import httpStatus from 'http-status';
 import { Types } from 'mongoose';
-import QueryBuilder from '../../builders/QueryBuilder';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
@@ -34,30 +33,85 @@ import Booking from '../Booking/booking.model';
 import { parseDurationToMinutes } from '../Service/service.zod';
 
 // getAllArtistsFromDB
-const getAllArtistsFromDB = async (query: Record<string, unknown>) => {
-  const artistsQuery = new QueryBuilder(
-    Artist.find().populate([
-      {
-        path: 'auth',
-        select: 'fullName image phoneNumber',
-      },
-      {
-        path: 'portfolio.folder',
-        select: 'name images createdAt',
-      },
-    ]),
-    query
-  )
-    .search([])
-    .fields()
-    .filter()
-    .paginate()
-    .sort();
+const getAllArtistsFromDB = async (
+  query: Record<string, any>,
+  userData: IAuth
+) => {
+  const loggedInArtist = await Artist.findOne({ auth: userData._id });
 
-  const data = await artistsQuery.modelQuery;
-  const meta = await artistsQuery.countTotal();
+  if (!loggedInArtist || !loggedInArtist.currentLocation) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Logged in artist location not found!'
+    );
+  }
 
-  return { data, meta };
+  const [lon, lat] = loggedInArtist.currentLocation.coordinates;
+
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  // Filter artists with valid coordinates first, excluding logged-in artist
+  // const artistsWithLocation = await Artist.find({
+  //   'currentLocation.coordinates.0': { $exists: true },
+  //   'currentLocation.coordinates.1': { $exists: true },
+  //   auth: { $ne: userData._id }, // exclude logged-in artist
+  // }).countDocuments();
+
+  // Geo query with pagination, excluding logged-in artist
+  const artists = await Artist.aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [lon, lat] },
+        distanceField: 'distance', // distance in meters
+        spherical: true,
+        query: {
+          'currentLocation.coordinates.0': { $exists: true },
+          'currentLocation.coordinates.1': { $exists: true },
+          auth: { $ne: userData._id }, // exclude logged-in artist
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'auth',
+        foreignField: '_id',
+        as: 'auth',
+      },
+    },
+    { $unwind: '$auth' },
+    {
+      $project: {
+        expertise: 1,
+        currentLocation: 1,
+        distance: 1,
+        avgRating: 1,
+        hourlyRate: 1,
+        totalCompletedService: 1,
+        // Only these fields from auth
+        'auth.fullName': 1,
+        'auth.phoneNumber': 1,
+        'auth.email': 1,
+        'auth.image': 1,
+      },
+    },
+    { $skip: skip },
+    { $limit: limit },
+  ]);
+
+  return {
+    data: artists,
+    meta: {
+      total: artists.length,
+      // total: artistsWithLocation,
+      totalPage: Math.ceil(artists.length / limit),
+      // totalPage: Math.ceil(artistsWithLocation / limit),
+      limit,
+      page,
+    },
+  };
 };
 
 // update artist person info into db
