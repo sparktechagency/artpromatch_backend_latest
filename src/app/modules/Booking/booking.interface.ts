@@ -37,7 +37,7 @@ export interface IBooking extends Document{
 
   // If booking cancelled (by artist usually)
   cancelledAt?: Date | null;
-
+  cancelBy?: 'artist' | 'client'
   // Review and rating
   review?: string;
   rating?: number;

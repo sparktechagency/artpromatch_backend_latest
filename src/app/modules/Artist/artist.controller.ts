@@ -116,7 +116,7 @@ const updateArtistPortfolio = asyncHandler(async (req, res) => {
 // addArtistService
 const addArtistService = asyncHandler(async (req, res) => {
   const files = req.files as TServiceImages;
-  const result = await ArtistService.addArtistServiceIntoDB(
+  const result = await ArtistService.createService(
     req.user,
     req.body,
     files
