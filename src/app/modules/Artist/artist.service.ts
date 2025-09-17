@@ -59,6 +59,30 @@ const getAllArtistsFromDB = async (
   //   auth: { $ne: userData._id }, // exclude logged-in artist
   // }).countDocuments();
 
+  // searchFilter
+  const searchFilter: Record<string, any> = {
+    'currentLocation.coordinates.0': { $exists: true },
+    'currentLocation.coordinates.1': { $exists: true },
+    auth: { $ne: userData._id }, // exclude logged-in artist
+  };
+
+  // Add searchTerm filter (on stringLocation OR expertise)
+  if (query.searchTerm) {
+    searchFilter.$or = [
+      {
+        stringLocation: {
+          $regex: query.searchTerm,
+          $options: 'i',
+        },
+      },
+      {
+        expertise: {
+          $elemMatch: { $regex: query.searchTerm, $options: 'i' },
+        },
+      },
+    ];
+  }
+
   // Geo query with pagination, excluding logged-in artist
   const artists = await Artist.aggregate([
     {
@@ -66,11 +90,7 @@ const getAllArtistsFromDB = async (
         near: { type: 'Point', coordinates: [lon, lat] },
         distanceField: 'distance', // distance in meters
         spherical: true,
-        query: {
-          'currentLocation.coordinates.0': { $exists: true },
-          'currentLocation.coordinates.1': { $exists: true },
-          auth: { $ne: userData._id }, // exclude logged-in artist
-        },
+        query: searchFilter, // nice to use
       },
     },
     {
@@ -86,11 +106,13 @@ const getAllArtistsFromDB = async (
       $project: {
         expertise: 1,
         currentLocation: 1,
+        stringLocation: 1,
         distance: 1,
         avgRating: 1,
         hourlyRate: 1,
         totalCompletedService: 1,
         // Only these fields from auth
+        'auth._id': 1,
         'auth.fullName': 1,
         'auth.phoneNumber': 1,
         'auth.email': 1,
@@ -106,7 +128,7 @@ const getAllArtistsFromDB = async (
     meta: {
       total: artists.length,
       // total: artistsWithLocation,
-      totalPage: Math.ceil(artists.length / limit),
+      totalPage: Math.ceil(artists?.length / limit),
       // totalPage: Math.ceil(artistsWithLocation / limit),
       limit,
       page,
