@@ -2,7 +2,12 @@ import httpStatus from 'http-status';
 import { asyncHandler } from '../../utils';
 import { ClientService } from './client.service';
 import sendResponse from '../../utils/sendResponse';
+import { Auth } from '../Auth/auth.model';
+import { verifyToken } from '../../lib';
+import config from '../../config';
+import { JwtPayload } from 'jsonwebtoken';
 
+// updateProfile
 const updateProfile = asyncHandler(async (req, res) => {
   const result = await ClientService.updateProfile(req.user, req.body);
 
@@ -13,6 +18,7 @@ const updateProfile = asyncHandler(async (req, res) => {
   });
 });
 
+// updatePreferences
 const updatePreferences = asyncHandler(async (req, res) => {
   const result = await ClientService.updatePreferences(req.user, req.body);
 
@@ -23,6 +29,7 @@ const updatePreferences = asyncHandler(async (req, res) => {
   });
 });
 
+// updateNotificationPreferences
 const updateNotificationPreferences = asyncHandler(async (req, res) => {
   const result = await ClientService.updateNotificationPreferences(
     req.user,
@@ -36,6 +43,7 @@ const updateNotificationPreferences = asyncHandler(async (req, res) => {
   });
 });
 
+// updatePrivacySecuritySettings
 const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
   const result = await ClientService.updatePrivacySecuritySettings(
     req.user,
@@ -49,11 +57,34 @@ const updatePrivacySecuritySettings = asyncHandler(async (req, res) => {
   });
 });
 
-const fetchDiscoverArtists = asyncHandler(async (req, res) => {
-  const result = await ClientService.fetchDiscoverArtistFromDB(
+// getDiscoverArtists
+const getDiscoverArtists = asyncHandler(async (req, res) => {
+  const result = await ClientService.getDiscoverArtistsFromDB(
     req.user,
     req.query
   );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Discover artists retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+// getAllServices
+const getAllServices = asyncHandler(async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '') || '';
+
+  let decoded: Record<string, unknown> = {};
+  if (token) {
+    decoded = verifyToken(token, config.jwt.access_secret!) as JwtPayload;
+  }
+
+  const { id } = decoded;
+  const user = await Auth.findById(id);
+
+  const result = await ClientService.getAllServicesFromDB(user, req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -68,5 +99,6 @@ export const ClientController = {
   updatePreferences,
   updateNotificationPreferences,
   updatePrivacySecuritySettings,
-  fetchDiscoverArtists,
+  getDiscoverArtists,
+  getAllServices,
 };

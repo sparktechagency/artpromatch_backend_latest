@@ -3,15 +3,17 @@ import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import config from '../config';
 import { AppError } from '../utils';
 
-type TAuthUser = {
+type TTokenData = {
   id: string;
   fullName: string;
+  phoneNumber: string;
+  stringLocation: string;
   image: string;
   email: string;
   role: string;
 };
 
-export const createAccessToken = (payload: TAuthUser): string => {
+export const createAccessToken = (payload: TTokenData): string => {
   const token = jwt.sign(payload, config.jwt.access_secret!, {
     algorithm: 'HS256',
     expiresIn: config.jwt.access_expires_in!,
@@ -20,7 +22,25 @@ export const createAccessToken = (payload: TAuthUser): string => {
   return token;
 };
 
-export const createRefreshToken = (payload: TAuthUser): string => {
+// type TArtistTokenData = {
+//   id: string;
+//   fullName: string;
+//   phoneNumber: string;
+//   image: string;
+//   email: string;
+//   role: string;
+// };
+
+// export const createArtistAccessToken = (payload: TArtistTokenData): string => {
+//   const token = jwt.sign(payload, config.jwt.access_secret!, {
+//     algorithm: 'HS256',
+//     expiresIn: config.jwt.access_expires_in!,
+//   } as SignOptions);
+
+//   return token;
+// };
+
+export const createRefreshToken = (payload: TTokenData): string => {
   const token = jwt.sign(payload, config.jwt.refresh_secret!, {
     algorithm: 'HS256',
     expiresIn: config.jwt.refresh_expires_in!,

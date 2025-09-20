@@ -1,5 +1,6 @@
 import httpStatus from 'http-status';
 import {
+  AppError,
   asyncHandler,
   // options
 } from '../../utils';
@@ -47,7 +48,7 @@ const verifySignupOtp = asyncHandler(async (req, res) => {
 // 4. signin
 const signin = asyncHandler(async (req, res) => {
   const result = await AuthService.signinIntoDB(req.body);
-  
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Signin successful!',
@@ -139,10 +140,7 @@ const updateProfilePhoto = asyncHandler(async (req, res) => {
 
 // 8. changePassword
 const changePassword = asyncHandler(async (req, res) => {
-  const accessToken =
-    req.header('Authorization')?.replace('Bearer ', '') ||
-    req.cookies.accessToken;
-  const result = await AuthService.changePasswordIntoDB(accessToken, req.body);
+  const result = await AuthService.changePasswordIntoDB(req.body, req.user);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -239,14 +237,30 @@ const deleteSpecificUserAccount = asyncHandler(async (req, res) => {
   });
 });
 
-// 16. getAccessToken
-const getAccessToken = asyncHandler(async (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  const result = await AuthService.getAccessTokenFromServer(token!);
+// 16. getNewAccessToken
+const getNewAccessToken = asyncHandler(async (req, res) => {
+  const refreshToken = req.headers.authorization?.replace('Bearer ', '');
+
+  if (!refreshToken) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Refresh token is required!');
+  }
+
+  const result = await AuthService.getNewAccessTokenFromServer(refreshToken);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Access Token given successfully!',
+    message: 'Access token given successfully!',
+    data: result,
+  });
+});
+
+// 17. updateAuthData
+const updateAuthData = asyncHandler(async (req, res) => {
+  const result = await AuthService.updateAuthDataIntoDB(req.body, req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Data updated successfully!',
     data: result,
   });
 });
@@ -270,5 +284,6 @@ export const AuthController = {
   fetchClientConnectedAccount,
   deactivateUserAccount,
   deleteSpecificUserAccount,
-  getAccessToken,
+  getNewAccessToken,
+  updateAuthData,
 };

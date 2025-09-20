@@ -11,7 +11,10 @@ import {
   TUpdateProfilePayload,
   TUpdateSecuritySettingsPayload,
 } from './client.validation';
+import Service from '../Service/service.model';
+import QueryBuilder from 'mongoose-query-builders';
 
+// updateProfile
 const updateProfile = async (user: IAuth, payload: TUpdateProfilePayload) => {
   const result = await Auth.findByIdAndUpdate(user._id, payload, {
     new: true,
@@ -20,6 +23,7 @@ const updateProfile = async (user: IAuth, payload: TUpdateProfilePayload) => {
   return result;
 };
 
+// updatePreferences
 const updatePreferences = async (
   user: IAuth,
   payload: TUpdatePreferencePayload
@@ -45,6 +49,7 @@ const updatePreferences = async (
   return result;
 };
 
+// updateNotificationPreferences
 const updateNotificationPreferences = async (
   user: IAuth,
   payload: TUpdateNotificationPayload
@@ -96,6 +101,7 @@ const updateNotificationPreferences = async (
   return updateData;
 };
 
+// updatePrivacySecuritySettings
 const updatePrivacySecuritySettings = async (
   user: IAuth,
   payload: TUpdateSecuritySettingsPayload
@@ -126,7 +132,8 @@ const updatePrivacySecuritySettings = async (
   return updatedPreferences;
 };
 
-const fetchDiscoverArtistFromDB = async (
+// getDiscoverArtistsFromDB
+const getDiscoverArtistsFromDB = async (
   user: IAuth,
   query: Record<string, unknown>
 ) => {
@@ -255,10 +262,175 @@ const fetchDiscoverArtistFromDB = async (
   };
 };
 
+// getAllServicesFromDB
+const getAllServicesFromDB = async (
+  user: IAuth | null,
+  query: Record<string, unknown>
+) => {
+  if (user) {
+    const client = await Client.findOne({ auth: user._id });
+
+    if (!client) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Your Client ID not found!');
+    }
+
+    const longitude = client.location.coordinates[0]; // Client longitude
+    const latitude = client.location.coordinates[1]; // Client latitude
+    const radius = client.radius; // Client's search radius (in kilometers)
+
+    // Check if 'query.type' is provided. If not, fetch all types.
+    let artistTypeFilter = {};
+    if (typeof query?.type === 'string') {
+      // Case-insensitive match using regex if type is provided
+      artistTypeFilter = {
+        type: {
+          $regex: new RegExp(query?.type, 'i'), // 'i' for case-insensitive search
+        },
+      };
+    }
+
+    // Pagination parameters
+    const page = parseInt(query?.page as string) || 1;
+    const limit = parseInt(query?.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    // Aggregation query to find artists within the specified radius
+    const artists = await Artist.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [longitude, latitude],
+          },
+          distanceField: 'distance',
+          maxDistance: radius * 999999000, // Convert radius to meters (radius is in kilometers, so multiply by 1000)
+          spherical: true,
+        },
+      },
+      {
+        $match: {
+          ...artistTypeFilter,
+        },
+      },
+      {
+        $lookup: {
+          from: 'auths',
+          localField: 'auth',
+          foreignField: '_id',
+          as: 'auth',
+        },
+      },
+      {
+        $unwind: {
+          path: '$auth',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          type: 1,
+          expertise: 1,
+          city: 1,
+          profileViews: 1,
+          location: 1,
+          distance: 1,
+          'auth._id': 1,
+          'auth.fullName': 1,
+          'auth.email': 1,
+          'auth.phoneNumber': 1,
+          'auth.image': 1,
+        },
+      },
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ]);
+
+    const artistsIDs = artists?.map((artist) => artist._id);
+
+    const services = await Service.find({
+      artist: { $in: artistsIDs },
+    })
+      .populate({
+        path: 'artist',
+        populate: {
+          path: 'auth',
+          model: 'Auth',
+          select: 'email fullName image role',
+        },
+      })
+      .exec();
+
+    const total = services.length || 0;
+    const totalPage = Math.ceil(total / limit);
+
+    return {
+      data: services,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPage,
+      },
+    };
+  } else {
+    const serviceQuery = new QueryBuilder(
+      Service.find().populate([
+        {
+          path: 'artist',
+          select: 'type expertise city stringLocation hourlyRate description',
+        },
+      ]),
+      query
+    )
+      .search([
+        'title',
+        'description',
+        'price',
+        'bodyLocation',
+        'totalCompletedOrder',
+        'totalReviewCount',
+        'avgRating',
+      ])
+      .filter()
+      .sort()
+      .sort()
+      .paginate();
+
+    const data = await serviceQuery.modelQuery;
+    const meta = await serviceQuery.countTotal();
+
+    return { data, meta };
+
+    // const page = parseInt(query?.page as string) || 1;
+    // const limit = parseInt(query?.limit as string) || 10;
+
+    // const services = await Service.find({ isDeleted: false });
+
+    // const total = services.length || 0;
+    // const totalPage = Math.ceil(total / limit);
+
+    // return {
+    //   data: services,
+    //   meta: {
+    //     page,
+    //     limit,
+    //     total,
+    //     totalPage,
+    //   },
+    // };
+  }
+};
+
 export const ClientService = {
   updateProfile,
   updatePreferences,
   updateNotificationPreferences,
   updatePrivacySecuritySettings,
-  fetchDiscoverArtistFromDB,
+  getDiscoverArtistsFromDB,
+  getAllServicesFromDB,
 };

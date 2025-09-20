@@ -52,7 +52,6 @@ router
   .route('/remove-image/:folderId')
   .delete(
     auth(ROLE.ARTIST),
-    upload.array('files'),
     validateRequest(FolderValidation.removeImageFromFolderSchema),
     FolderController.removeImageFromFolder
   );

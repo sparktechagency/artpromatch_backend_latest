@@ -97,13 +97,11 @@ router
   .put(auth(), upload.single('file'), AuthController.updateProfilePhoto);
 
 // 8. changePassword
-router
-  .route('/change-password')
-  .patch(
-    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS, ROLE.ADMIN, ROLE.SUPER_ADMIN),
-    validateRequest(AuthValidation.changePasswordSchema),
-    AuthController.changePassword
-  );
+router.route('/change-password').patch(
+  auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS, ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  // validateRequest(AuthValidation.changePasswordSchema),
+  AuthController.changePassword
+);
 
 // 9. forgetPassword
 router
@@ -158,12 +156,16 @@ router
     AuthController.deleteSpecificUserAccount
   );
 
-// 15. getAccessToken
+// 16. getNewAccessToken
+router.route('/access-token').get(AuthController.getNewAccessToken);
+
+// 17. updateAuthData
 router
-  .route('/access-token')
+  .route('/update-auth-data')
   .patch(
-    validateRequest(AuthValidation.getAccessTokenSchema),
-    AuthController.getAccessToken
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
+    validateRequest(AuthValidation.updateAuthDataSchema),
+    AuthController.updateAuthData
   );
 
 export const AuthRoutes = router;

@@ -57,6 +57,11 @@ const createAuthSchema = z.object({
         message: 'Phone number must be a valid international format',
       }
     ),
+
+    fcmToken: z.string({
+      required_error: 'Fcm Token is required',
+      invalid_type_error: 'Fcm Token must be string',
+    }),
   }),
 });
 
@@ -112,6 +117,11 @@ const signinSchema = z.object({
       .regex(/[@$!%*?&#]/, {
         message: 'Password must contain at least one special character',
       }),
+
+    fcmToken: z.string({
+      required_error: 'Fcm Token is required',
+      invalid_type_error: 'Fcm Token must be string',
+    }),
   }),
 });
 
@@ -326,6 +336,7 @@ const changePasswordSchema = z.object({
       .regex(/[@$!%*?&#]/, {
         message: 'Old password must contain at least one special character',
       }),
+
     newPassword: z
       .string({
         required_error: 'New password is required',
@@ -406,11 +417,21 @@ const deactivateUserAccountSchema = z.object({
     .strict(),
 });
 
-// getAccessTokenSchema
-const getAccessTokenSchema = z.object({
-  cookies: z.object({
-    refreshToken: z.string({
-      required_error: 'Refresh token is required!',
+// 16. getAccessTokenSchema
+// const getAccessTokenSchema = z.object({
+//   cookies: z.object({
+//     refreshToken: z.string({
+//       required_error: 'Refresh token is required!',
+//     }),
+//   }),
+// });
+
+// 17. updateAuthDataSchema
+const updateAuthDataSchema = z.object({
+  body: z.object({
+    fullName: z.string({
+      required_error: 'Full Name is required!',
+      invalid_type_error: 'Full Name must be string!',
     }),
   }),
 });
@@ -461,7 +482,8 @@ export const AuthValidation = {
   verifyOtpForForgetPasswordSchema,
   resetPasswordSchema,
   deactivateUserAccountSchema,
-  getAccessTokenSchema,
+  // getAccessTokenSchema,
+  updateAuthDataSchema,
   // resendOtpSchema,
   // accessTokenSchema,
   // otpSchema,

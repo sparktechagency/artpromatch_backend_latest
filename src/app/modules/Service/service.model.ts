@@ -39,9 +39,8 @@ const serviceSchema = new Schema<IService>(
       enum: ['short', 'long'],
       required: true,
     },
-  
 
-    price: { type: Number},
+    price: { type: Number },
 
     bodyLocation: {
       type: String,

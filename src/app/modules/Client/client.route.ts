@@ -6,6 +6,7 @@ import { ClientValidation } from './client.validation';
 
 const router = Router();
 
+// updateProfile
 router
   .route('/personal-info')
   .patch(
@@ -14,6 +15,7 @@ router
     ClientController.updateProfile
   );
 
+// updatePreferences
 router
   .route('/preferences')
   .patch(
@@ -22,6 +24,7 @@ router
     ClientController.updatePreferences
   );
 
+// updateNotificationPreferences
 router
   .route('/notification-preferences')
   .patch(
@@ -30,8 +33,7 @@ router
     ClientController.updateNotificationPreferences
   );
 
-
-
+// updatePrivacySecuritySettings
 router
   .route('/privacy-security')
   .patch(
@@ -40,6 +42,9 @@ router
     ClientController.updatePrivacySecuritySettings
   );
 
-router.route('/discover').get(auth(), ClientController.fetchDiscoverArtists);
+// getDiscoverArtists
+router.route('/discover').get(auth(), ClientController.getDiscoverArtists);
+
+router.route('/').get(ClientController.getAllServices);
 
 export const ClientRoutes = router;

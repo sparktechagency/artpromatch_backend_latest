@@ -8,9 +8,7 @@ import config from '../config';
 
 const auth = (...requiredRoles: TRole[]) => {
   return asyncHandler(async (req, res, next) => {
-    const token =
-      req.headers.authorization?.replace('Bearer ', '') ||
-      req.cookies?.accessToken;
+    const token = req.headers.authorization?.replace('Bearer ', '') || '';
 
     // checking if the token is missing
     if (!token) {
@@ -45,10 +43,7 @@ const auth = (...requiredRoles: TRole[]) => {
     }
 
     // checking if any hacker using a token even-after the user changed the password
-    if (
-      user.passwordChangedAt &&
-      user.isJWTIssuedBeforePasswordChanged(iat as number)
-    ) {
+    if (user.passwordChangedAt && user.isJWTIssuedBeforePasswordChanged(iat)) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
