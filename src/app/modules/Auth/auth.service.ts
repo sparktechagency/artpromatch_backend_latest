@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
-import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { startSession } from 'mongoose';
 import { z } from 'zod';
 import config from '../../config';
@@ -50,6 +50,7 @@ const createAuthIntoDB = async (payload: IAuth) => {
       existingUser.otpExpiry = new Date(
         now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000
       );
+      existingUser.fcmToken = payload.fcmToken;
       await existingUser.save();
 
       throw new AppError(
@@ -184,6 +185,8 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
   const userData = {
     id: user._id.toString(),
     email: user.email,
+    phoneNumber: user.phoneNumber,
+    stringLocation: '123 Main St, Springfield, IL',
     role: user.role,
     image: user?.image || defaultUserImage,
     fullName: user?.fullName,
@@ -202,7 +205,11 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
 };
 
 // 4. signinIntoDB
-const signinIntoDB = async (payload: { email: string; password: string }) => {
+const signinIntoDB = async (payload: {
+  email: string;
+  password: string;
+  fcmToken: string;
+}) => {
   // const user = await Auth.findOne({ email: payload.email }).select('+password');
   const user = await Auth.isUserExistsByEmail(payload.email);
 
@@ -227,7 +234,7 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
   if (user.isSocialLogin) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'This account is registered via social login. Please sign in using your social account.'
+      'This account is registered via social login. Please sign in using your social account!'
     );
   }
   // Validate password
@@ -237,10 +244,32 @@ const signinIntoDB = async (payload: { email: string; password: string }) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid credentials!');
   }
 
+  user.fcmToken = payload.fcmToken;
+  await user.save();
+
+  let stringLocation: string = 'Not Set Yet';
+
+  if (user.role === 'CLIENT') {
+    const client = await Client.findOne({ auth: user._id });
+    stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'ARTIST') {
+    const artist = await Artist.findOne({ auth: user._id });
+    stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'BUSINESS') {
+    const business = await Business.findOne({ auth: user._id });
+    stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
   // Prepare user data for tokens
   const userData = {
     id: user._id.toString(),
     fullName: user?.fullName,
+    phoneNumber: user.phoneNumber,
+    stringLocation: stringLocation,
     email: user.email,
     role: user.role,
     image: user?.image || defaultUserImage,
@@ -854,12 +883,11 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       );
     }
 
-    // const accessToken = authRes.generateAccessToken();
-    // const refreshToken = authRes.generateRefreshToken();
-
     const userData = {
       id: authRes._id.toString(),
       email: authRes.email,
+      phoneNumber: authRes.phoneNumber,
+      stringLocation: '123 Main St, Springfield, IL',
       role: authRes.role,
       image: authRes?.image || defaultUserImage,
       fullName: authRes?.fullName,
@@ -868,7 +896,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
     const accessToken = createAccessToken(userData);
     const refreshToken = createRefreshToken(userData);
 
-    await Auth.findByIdAndUpdate(authRes._id, { refreshToken });
+    // await Auth.findByIdAndUpdate(authRes._id, { refreshToken });
 
     return {
       response: {
@@ -883,12 +911,30 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       refreshToken,
     };
   } else {
-    // const accessToken = auth.generateAccessToken();
-    // const refreshToken = auth.generateRefreshToken();
+    let stringLocation: string = 'Not Set Yet';
 
+    if (user.role === 'CLIENT') {
+      const client = await Client.findOne({ auth: user._id });
+      stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
+    }
+
+    if (user.role === 'ARTIST') {
+      const artist = await Artist.findOne({ auth: user._id });
+      stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
+    }
+
+    if (user.role === 'BUSINESS') {
+      const business = await Business.findOne({ auth: user._id });
+      stringLocation =
+        business?.stringLocation || '123 Main St, Springfield, IL';
+    }
+
+    // Prepare user data for tokens
     const userData = {
       id: user._id.toString(),
       email: user.email,
+      phoneNumber: user.phoneNumber,
+      stringLocation: stringLocation,
       role: user.role,
       image: user?.image || defaultUserImage,
       fullName: user?.fullName,
@@ -897,7 +943,8 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
     const accessToken = createAccessToken(userData);
     const refreshToken = createRefreshToken(userData);
 
-    user.refreshToken = refreshToken;
+    // user.refreshToken = refreshToken;
+    user.fcmToken = fcmToken;
     await user.save({ validateBeforeSave: false });
 
     return {
@@ -933,38 +980,67 @@ const updateProfilePhotoIntoDB = async (
     }
   }
 
-  const res = await Auth.findByIdAndUpdate(
+  const userNewData = await Auth.findByIdAndUpdate(
     user._id,
     { image: file.path.replace(/\\/g, '/') },
     { new: true }
   ).select('fullName email image role isProfile phoneNumber');
 
-  return res;
+  if (!userNewData) {
+    await fs.promises.unlink(file?.path);
+
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Something went wrong!'
+    );
+  }
+
+  let stringLocation: string = 'Not Set Yet';
+
+  if (user.role === 'CLIENT') {
+    const client = await Client.findOne({ auth: user._id });
+    stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'ARTIST') {
+    const artist = await Artist.findOne({ auth: user._id });
+    stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'BUSINESS') {
+    const business = await Business.findOne({ auth: user._id });
+    stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  // Prepare user data for tokens
+  const jwtPayload = {
+    id: userNewData._id.toString(),
+    fullName: userNewData.fullName,
+    phoneNumber: userNewData.phoneNumber,
+    stringLocation: stringLocation,
+    email: userNewData.email,
+    image: userNewData.image || defaultUserImage,
+    role: userNewData.role,
+  };
+
+  const accessToken = createAccessToken(jwtPayload);
+
+  return {
+    accessToken,
+  };
 };
 
 // 8. changePasswordIntoDB
 const changePasswordIntoDB = async (
-  accessToken: string,
-  payload: z.infer<typeof AuthValidation.changePasswordSchema.shape.body>
+  payload: z.infer<typeof AuthValidation.changePasswordSchema.shape.body>,
+  userData: IAuth
 ) => {
-  const { id, iat } = verifyToken(
-    accessToken,
-    config.jwt.access_secret!
-  ) as JwtPayload;
-
-  const user = await Auth.findOne({ _id: id, isActive: true }).select(
+  const user = await Auth.findOne({ _id: userData._id, isActive: true }).select(
     '+password'
   );
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
-  }
-
-  if (
-    user.passwordChangedAt &&
-    user.isJWTIssuedBeforePasswordChanged(iat as number)
-  ) {
-    throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
   }
 
   const isCredentialsCorrect = await user.isPasswordMatched(
@@ -979,11 +1055,45 @@ const changePasswordIntoDB = async (
   }
 
   user.password = payload.newPassword;
-  user.passwordChangedAt = new Date();
+  user.passwordChangedAt = new Date(Date.now() - 5000); // set 5 second before to avoid isJWTIssuedBeforePasswordChanged issue
 
   await user.save();
 
-  return null;
+  let stringLocation: string = 'Not Set Yet';
+
+  if (user.role === 'CLIENT') {
+    const client = await Client.findOne({ auth: user._id });
+    stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'ARTIST') {
+    const artist = await Artist.findOne({ auth: user._id });
+    stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'BUSINESS') {
+    const business = await Business.findOne({ auth: user._id });
+    stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  // Prepare user data for tokens
+  const jwtPayload = {
+    id: user._id.toString(),
+    fullName: user.fullName,
+    phoneNumber: user.phoneNumber,
+    stringLocation: stringLocation,
+    email: user.email,
+    image: user.image || defaultUserImage,
+    role: user.role,
+  };
+
+  const accessToken = createAccessToken(jwtPayload);
+  const refreshToken = createRefreshToken(jwtPayload);
+
+  return {
+    accessToken,
+    refreshToken,
+  };
 };
 
 // 9. forgotPassword
@@ -1314,8 +1424,8 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
   }
 };
 
-// 16. getAccessTokenFromServer
-const getAccessTokenFromServer = async (refreshToken: string) => {
+// 16. getNewAccessTokenFromServer
+const getNewAccessTokenFromServer = async (refreshToken: string) => {
   // checking if the given token is valid
   const decoded = verifyToken(refreshToken, config.jwt.refresh_secret!) as any;
 
@@ -1341,9 +1451,81 @@ const getAccessTokenFromServer = async (refreshToken: string) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
   }
 
+  let stringLocation: string = 'Not Set Yet';
+
+  if (user.role === 'CLIENT') {
+    const client = await Client.findOne({ auth: user._id });
+    stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'ARTIST') {
+    const artist = await Artist.findOne({ auth: user._id });
+    stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'BUSINESS') {
+    const business = await Business.findOne({ auth: user._id });
+    stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  // Prepare user data for tokens
   const jwtPayload = {
     id: user._id.toString(),
     fullName: user.fullName,
+    phoneNumber: user.phoneNumber,
+    stringLocation: stringLocation,
+    email: user.email,
+    image: user.image || defaultUserImage,
+    role: user.role,
+  };
+
+  const accessToken = createAccessToken(jwtPayload);
+
+  return {
+    accessToken,
+  };
+};
+
+// 17. updateAuthDataIntoDB
+const updateAuthDataIntoDB = async (
+  payload: { fullName: string },
+  userData: IAuth
+) => {
+  const user = await Auth.findByIdAndUpdate(
+    userData._id,
+    {
+      fullName: payload.fullName,
+    },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  let stringLocation: string = 'Not Set Yet';
+
+  if (user.role === 'CLIENT') {
+    const client = await Client.findOne({ auth: user._id });
+    stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'ARTIST') {
+    const artist = await Artist.findOne({ auth: user._id });
+    stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  if (user.role === 'BUSINESS') {
+    const business = await Business.findOne({ auth: user._id });
+    stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
+  }
+
+  // Prepare user data for tokens
+  const jwtPayload = {
+    id: user._id.toString(),
+    fullName: user.fullName,
+    phoneNumber: user.phoneNumber,
+    stringLocation: stringLocation,
     email: user.email,
     image: user.image || defaultUserImage,
     role: user.role,
@@ -1375,5 +1557,6 @@ export const AuthService = {
   fetchAllConnectedAcount,
   deactivateUserAccountFromDB,
   deleteSpecificUserAccount,
-  getAccessTokenFromServer,
+  getNewAccessTokenFromServer,
+  updateAuthDataIntoDB,
 };

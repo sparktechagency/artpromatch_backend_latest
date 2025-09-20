@@ -17,7 +17,7 @@ import seedingAdmin from './app/utils/seeding';
 import { Logger } from './app/utils';
 
 let server: Server;
-console.log(config.stripe.stripe_secret_key)
+
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
   Logger.error('Uncaught Exception:', error);
@@ -41,7 +41,7 @@ async function bootstrap() {
   try {
     await connect(config.db_url as string);
     console.log('🛢 Database connected successfully');
-    
+
     await seedingAdmin();
 
     server = app.get('httpServer');

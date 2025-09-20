@@ -62,7 +62,7 @@ const getAllArtistsFromDB = async (
   const searchFilter: Record<string, any> = {
     'currentLocation.coordinates.0': { $exists: true },
     'currentLocation.coordinates.1': { $exists: true },
-    auth: { $ne: userData._id }, // exclude logged-in artist
+    // auth: { $ne: userData._id }, // exclude logged-in artist
   };
 
   // Add searchTerm filter (on stringLocation OR expertise)
