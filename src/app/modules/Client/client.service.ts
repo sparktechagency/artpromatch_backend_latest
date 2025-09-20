@@ -303,7 +303,7 @@ const getAllServicesFromDB = async (
             coordinates: [longitude, latitude],
           },
           distanceField: 'distance',
-          maxDistance: radius * 999999000, // Convert radius to meters (radius is in kilometers, so multiply by 1000)
+          maxDistance: radius * 1000, // Convert radius to meters (radius is in kilometers, so multiply by 1000)
           spherical: true,
         },
       },
