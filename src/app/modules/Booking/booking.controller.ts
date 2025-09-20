@@ -38,7 +38,30 @@ const getUserBookings = asyncHandler(async (req, res) => {
 // create session
 const createSession = asyncHandler(async (req, res) => {
   const {bookingId }= req.params
-  const result = await BookingService.createSessionIntoDB(bookingId, req.body);
+  const result = await BookingService.createOrUpdateSessionIntoDB(bookingId, req.body);
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Session Created Successfully!',
+    data: result,
+  });
+});
+
+const completeSession = asyncHandler(async (req, res) => {
+  const {bookingId}= req.params
+  const {sessionId} = req.body;
+
+  const result = await BookingService.completeSession(bookingId, sessionId);
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Session Created Successfully!',
+    data: result,
+  });
+});
+
+const deleteSession = asyncHandler(async (req, res) => {
+  const {bookingId}= req.params;
+  console.log(req.body)
+  const result = await BookingService.deleteSessionFromBooking(bookingId, req.body);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Session Created Successfully!',
@@ -99,6 +122,8 @@ export const BookingController = {
   // createBooking,
   ReviewAfterAServiceIsCompleted,
   // getAvailability,
+  completeSession,
+  deleteSession,
   cancelBooking,
   getUserBookings,
   repayBooking,

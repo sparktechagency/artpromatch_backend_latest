@@ -4,6 +4,7 @@ import { TBookingStatus, TPaymentStatus, TSessionStatus,  } from './booking.cons
 import { IArtist } from '../Artist/artist.interface';
 
 export interface IBookingSession {
+  _id?:string;
   sessionNumber: number;
   startTime: string; 
   endTime: string; 
