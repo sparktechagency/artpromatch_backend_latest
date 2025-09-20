@@ -33,7 +33,6 @@ export const stripeWebhookHandler = asyncHandler(
         sig,
         webhookSecret as string
       );
-      console.log('Stripe webhook event:', event.type);
     } catch (err: unknown) {
       if (err instanceof Error) {
         throw new AppError(httpStatus.BAD_REQUEST, err.message);
@@ -47,8 +46,6 @@ export const stripeWebhookHandler = asyncHandler(
         const bookingId = session.metadata?.bookingId;
         const userId = session.metadata?.userId ?? '';
         const paymentIntentId = session.payment_intent as string;
-
-        console.log('checkout session completed');
 
         const booking = await Booking.findById(bookingId).select(
           'artistInfo clientInfo client artist serviceName'
@@ -113,11 +110,10 @@ export const stripeWebhookHandler = asyncHandler(
 
         break;
       }
-      
+
       // payment intent succeed
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
-        console.log('pi', pi);
         const charge = await stripe.charges.retrieve(
           pi.latest_charge as string
         );
@@ -192,7 +188,6 @@ export const stripeWebhookHandler = asyncHandler(
       // payment failed
       case 'payment_intent.payment_failed': {
         const intent = event.data.object as Stripe.PaymentIntent;
-        console.log('Payment failed:', intent.id);
 
         const bookingId = intent.metadata.bookingId;
         await Booking.findByIdAndUpdate(bookingId, {
@@ -202,11 +197,10 @@ export const stripeWebhookHandler = asyncHandler(
 
         break;
       }
-      
+
       // charge refund
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
-        console.log('Refund completed:', charge.id);
 
         // Update booking to refunded
         await Booking.updateOne(
@@ -217,8 +211,7 @@ export const stripeWebhookHandler = asyncHandler(
         break;
       }
 
-      default:
-        console.log(`Unhandled event type ${event.type}`);
+      default: console.log(`Unhandled event type ${event.type}`);
     }
 
     res.status(200).json({ received: true });

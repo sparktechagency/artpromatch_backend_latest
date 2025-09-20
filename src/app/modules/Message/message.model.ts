@@ -1,5 +1,5 @@
 import mongoose, { model, Schema } from 'mongoose';
-import { IMessage } from './message.interface';
+import { IMessage } from '../Message/message.interface';
 
 const messageSchema = new Schema<IMessage>(
   {
@@ -12,9 +12,9 @@ const messageSchema = new Schema<IMessage>(
       default: [],
     },
     audioUrl: {
-     type: String,
-     required: false,
-     default: "",
+      type: String,
+      required: false,
+      default: '',
     },
     seen: {
       type: Boolean,
@@ -33,8 +33,8 @@ const messageSchema = new Schema<IMessage>(
   },
   {
     timestamps: true,
-    versionKey:false
-  },
+    versionKey: false,
+  }
 );
 
 const Message = model<IMessage>('Message', messageSchema);

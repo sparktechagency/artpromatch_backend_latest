@@ -1,14 +1,11 @@
-
 import { RequestHandler } from 'express';
-import MessageService from './message.services';
 import httpStatus from 'http-status';
 import sendResponse from '../../utils/sendResponse';
 import { asyncHandler } from '../../utils';
-
+import MessageService from '../Message/message.services';
 
 const new_message: RequestHandler = asyncHandler(async (req, res) => {
-
-  const result = await MessageService.new_message_IntoDb(req.user,req.body);
+  const result = await MessageService.new_message_IntoDb(req.user, req.body);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Successfully Send By The Message',
@@ -18,9 +15,8 @@ const new_message: RequestHandler = asyncHandler(async (req, res) => {
 
 const updateMessageById: RequestHandler = asyncHandler(async (req, res) => {
   const result = await MessageService.updateMessageById_IntoDb(
- 
     req.params.messageId,
-    req.body,
+    req.body
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -31,7 +27,7 @@ const updateMessageById: RequestHandler = asyncHandler(async (req, res) => {
 
 const deleteMessageById: RequestHandler = asyncHandler(async (req, res) => {
   const result = await MessageService.deleteMessageById_IntoDb(
-    req.params.messageId,
+    req.params.messageId
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
