@@ -92,6 +92,14 @@ const createSessionSchema = z.object({
   })
 })
 
+
+const completeSessionSchema = z.object({
+  body: z.object({
+      sessionId: z.string({ required_error: 'Service is required' }),
+  })
+})
+
+
 // getAvailabilitySchema
 const getAvailabilitySchema = z.object({
   body: z.object({
@@ -105,7 +113,8 @@ export const BookingValidation = {
   bookingSchema,
   getAvailabilitySchema,
   createBookingSchema,
-  createSessionSchema
+  createSessionSchema,
+  completeSessionSchema
 };
 
 export type TBookingData = z.infer<typeof createBookingSchema.shape.body>;
