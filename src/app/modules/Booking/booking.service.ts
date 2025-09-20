@@ -28,7 +28,7 @@ type TReviewData = {
 };
 
 type TSessionData = {
-  sessionId?: string; 
+  sessionId?: string;
   date: Date;
   startTime: string;
   endTime: string;
@@ -191,8 +191,8 @@ const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
       mode: 'payment',
 
       payment_intent_data: {
-          capture_method: 'manual',
-        },
+        capture_method: 'manual',
+      },
       line_items: [
         {
           price_data: {
@@ -377,8 +377,6 @@ const createSessionIntoDB = async (
 ) => {
   const { date, startTime, endTime } = payload;
 
-  console.log(date, startTime, endTime);
-
   const booking = await Booking.findById(bookingId);
   if (!booking) throw new AppError(404, 'Booking not found');
 
@@ -553,11 +551,6 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
-  // console.log({
-  //   payload,
-  //   user: clientData,
-  // });
-
   // Start a MongoDB session for transaction
   const session = await startSession();
 
@@ -658,11 +651,10 @@ const confirmBookingByArtist = async (bookingId: string) => {
     // TODO: notify client about confirmed booking
 
     return {
-      status:booking.status,
+      status: booking.status,
       paymentStatus: booking.paymentStatus,
-      sessions: booking.sessions
+      sessions: booking.sessions,
     };
-
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
@@ -741,7 +733,9 @@ const cancelBookingIntoDb = async (
   session.startTransaction();
 
   try {
-    const booking = await Booking.findById(bookingId).session(session).populate('service artist');
+    const booking = await Booking.findById(bookingId)
+      .session(session)
+      .populate('service artist');
     if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
     if (booking.status === 'cancelled') {
@@ -749,16 +743,21 @@ const cancelBookingIntoDb = async (
     }
 
     if (!booking.paymentIntentId) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'No payment intent found for this booking');
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'No payment intent found for this booking'
+      );
     }
 
     // --- Stripe Refund ---
     if (booking.paymentStatus === 'authorized') {
       await stripe.paymentIntents.cancel(booking.paymentIntentId);
-    } 
-    else if (booking.paymentStatus === 'captured') {
+    } else if (booking.paymentStatus === 'captured') {
       if (cancelBy === 'CLIENT') {
-        throw new AppError(httpStatus.BAD_REQUEST, 'Client cannot cancel this booking! if you need cancel this book pleas contact artist');
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Client cannot cancel this booking! if you need cancel this book pleas contact artist'
+        );
       }
 
       const refundAmount = (booking.price - booking.stripeFee) * 100;
@@ -768,9 +767,11 @@ const cancelBookingIntoDb = async (
           amount: refundAmount,
         });
       }
-    } 
-    else {
-      throw new AppError(httpStatus.BAD_REQUEST, `Cannot cancel booking in status: ${booking.paymentStatus}`);
+    } else {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Cannot cancel booking in status: ${booking.paymentStatus}`
+      );
     }
 
     // --- DB Updates ---
@@ -794,7 +795,6 @@ const cancelBookingIntoDb = async (
     throw error; // Let upper layer handle rollback notification/logging
   }
 };
-
 
 // const completeBookingIntoDb = async (
 //   bookingId: string,

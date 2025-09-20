@@ -623,7 +623,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
         'Artist not found or restricted.'
       );
     }
-     console.log(userData)
     // Step 2: If Stripe account exists but not ready yet
     if (artist.stripeAccountId && !artist.isStripeReady) {
       const account = await stripe.accounts.retrieve(artist.stripeAccountId);
@@ -653,7 +652,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 
     // Step 3: If no Stripe account, create a new one
     if (!artist.stripeAccountId) {
-      console.log("äccess")
       const account = await stripe.accounts.create({
         type: 'express',
         email: (artist?.auth as any)?.email,
@@ -667,7 +665,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
           payouts: { schedule: { interval: 'manual' } },
         },
       });
-      console.log(account)
+
       const onboardingData = await stripe.accountLinks.create({
         account: account.id,
         refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${account.id}`,
@@ -701,7 +699,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
       'Stripe onboarding service unavailable'
     );
   }
-}
+};
 // create service
 const createService = async (
   user: IAuth,
@@ -716,7 +714,7 @@ const createService = async (
   const images = files?.images?.map(
     (image) => image.path.replace(/\\/g, '/') || ''
   );
-   
+
   const serviceData = {
     ...payload,
     artist: artist._id,
@@ -738,11 +736,9 @@ const createService = async (
 //     splitIntoHourlySlots(slot.start, slot.end)
 //   );
 
-//   console.log('hourlyslots', hourlySlots);
 //   // Step 2: Deduplicate within request
 //   const uniqueSlots = removeDuplicateSlots(hourlySlots);
 
-//   console.log('uniqueslots', uniqueSlots);
 //   // Step 3: Fetch existing slots for that day
 //   const existing = await Slot.findOne({ auth: user._id, day });
 
@@ -795,4 +791,4 @@ export const ArtistService = {
   setArtistTimeOffIntoDB,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createService,
-}
+};

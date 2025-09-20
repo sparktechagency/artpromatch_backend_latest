@@ -157,13 +157,11 @@ const updateBusinessSecuritySettings = async (
 
 //   // Update guest spots logic
 //   const guestSpots = data.guestSpots;
-//   console.log({ guestSpots });
 
 //   await business.save();
 
 //   return business;
 // };
-
 
 // updateTimeOff
 const updateTimeOff = async (user: IAuth, data: any) => {
@@ -181,7 +179,6 @@ const updateTimeOff = async (user: IAuth, data: any) => {
 
   return business;
 };
-
 
 // removeArtistFromDB
 const removeArtistFromDB = async (user: IAuth, artistId: string) => {

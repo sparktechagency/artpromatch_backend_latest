@@ -1,22 +1,18 @@
 import Conversation from '../conversation/conversation.model';
-import Message from './message.model';
-
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import mongoose from 'mongoose';
-
 import { getSocketIO, onlineUsers } from '../../socket copy/socketConnection';
 import { AppError } from '../../utils';
 import { Auth } from '../Auth/auth.model';
-import { NewMessagePayload } from './message.interface';
+import { NewMessagePayload } from '../Message/message.interface';
+import Message from './message.model';
 
 // send message
 const new_message_IntoDb = async (
   user: JwtPayload,
   data: NewMessagePayload
 ) => {
-  console.log('new-message user', user);
-
   const isReceiverExist = await Auth.findById(data.receiverId);
   if (!isReceiverExist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Receiver ID not found');
@@ -95,7 +91,6 @@ const new_message_IntoDb = async (
   }
 
   const updatedMsg = await Message.findById(saveMessage._id);
-  console.log(updatedMsg);
   io.to(conversation._id.toString()).emit('new-message', updatedMsg);
 
   if (isNewConversation) {
