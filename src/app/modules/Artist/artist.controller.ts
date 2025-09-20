@@ -3,6 +3,11 @@ import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 import { TServiceImages } from '../Service/service.interface';
 import { ArtistService } from './artist.service';
+import Stripe from 'stripe';
+import config from '../../config';
+
+
+const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
 
 // getAllArtists
 const getAllArtists = asyncHandler(async (req, res) => {
@@ -116,11 +121,7 @@ const updateArtistPortfolio = asyncHandler(async (req, res) => {
 // addArtistService
 const addArtistService = asyncHandler(async (req, res) => {
   const files = req.files as TServiceImages;
-  const result = await ArtistService.createService(
-    req.user,
-    req.body,
-    files
-  );
+  const result = await ArtistService.createService(req.user, req.body, files);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -219,6 +220,16 @@ const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
   }
 );
 
+const deleteAccount = asyncHandler(async (req, res) => {
+  await stripe.accounts.del(req.body.accountId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'account deleted successfully!',
+    data: null
+  });
+});
+
 // get availibility
 // const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
 //   const artistId = req.params.id;
@@ -265,6 +276,7 @@ export const ArtistController = {
   saveArtistAvailability,
   setArtistTimeOff,
   createConnectedAccountAndOnboardingLinkForArtist,
+  deleteAccount
   // updateAvailability,
   // getAvailabilityExcludingTimeOff,
 };

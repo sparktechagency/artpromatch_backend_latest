@@ -13,8 +13,9 @@ import { Server } from 'http';
 import { connect } from 'mongoose';
 import app from './app';
 import config from './app/config';
-import seedingAdmin from './app/utils/seeding';
+import { connectSocket } from './app/socket copy/socketConnection';
 import { Logger } from './app/utils';
+import seedingAdmin from './app/utils/seeding';
 
 let server: Server;
 
@@ -45,9 +46,10 @@ async function bootstrap() {
     await seedingAdmin();
 
     server = app.get('httpServer');
-    server.listen(config.port, () => {
+    server = server.listen(config.port, () => {
       console.log(`🚀 Application is running on port ${config.port}`);
     });
+    connectSocket(server);
   } catch (err: any) {
     Logger.error('Failed to connect to database:', err);
     process.exit(1);

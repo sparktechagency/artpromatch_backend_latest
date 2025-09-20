@@ -30,6 +30,37 @@ router
     BookingController.createBooking
   );
 
+router
+  .route('/list')
+  .get(
+    auth(ROLE.CLIENT, ROLE.ARTIST),
+    BookingController.getUserBookings
+  );
+
+router
+  .route('/confirm/:bookingId')
+  .post(auth(ROLE.ARTIST), BookingController.confirmBooking);
+
+router
+  .route('/cancel/:bookingId')
+  .post(auth(ROLE.ARTIST,ROLE.CLIENT), BookingController.cancelBooking);
+
+router
+  .route('/add-session/:bookingId')
+  .post(
+    auth(ROLE.ARTIST),
+    validateRequest(BookingValidation.createSessionSchema),
+    BookingController.createSession
+  );
+
+router
+  .route('/create')
+  .post(
+    auth(ROLE.CLIENT),
+    validateRequest(BookingValidation.createBookingSchema),
+    BookingController.createBooking
+  );
+
 // router
 //   .route('/get-availability')
 //   .post(

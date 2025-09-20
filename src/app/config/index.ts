@@ -45,6 +45,12 @@ export default {
     onboarding_return_url: process.env.STRIPE_ONBOARDING_RETURN_URL,
   },
 
+  firebase_account_key: {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  },
+
   twilio: {
     accountSid: process.env.TWILIO_SID,
     authToken: process.env.TWILIO_AUTH_TOKEN,

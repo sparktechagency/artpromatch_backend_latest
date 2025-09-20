@@ -1,29 +1,22 @@
-/* eslint-disable no-unused-vars */
+import { Types } from 'mongoose';
 
-import { Model, Types } from 'mongoose';
-
-export enum MessageType {
-  text = 'text',
-  image = 'image',
-  video = 'video',
-  audio = 'audio',
-  link = 'link',
+export interface IMessage {
+  text: string;
+  imageUrl: string[];
+  audioUrl: string;
+  seen: boolean;
+  msgByUserId: Types.ObjectId;
+  conversationId: Types.ObjectId;
 }
 
-export const MessageTypeValues = Object.values(MessageType);
+export interface NewMessagePayload {
+  receiverId: string;
+  text: string;
+  imageUrl?: string[];
+  audioUrl?: string;
+}
 
-export type IMessage = {
-  senderId: Types.ObjectId;
-  receiverId: Types.ObjectId;
-  message: string;
-  messageType: MessageType;
-  replyTo?: Types.ObjectId;
-  is_read?: boolean;
-  priorityLevel?: 'low' | 'normal' | 'high';
-  isPinned?: boolean;
-  roomId?: string;
-  readAt?: Date;
-  isDeleted?: boolean;
-};
-
-export type Message = Model<IMessage, Record<string, unknown>>;
+export interface MulterRequest extends Request {
+  files?: Express.Multer.File[]; // or a dictionary if using `.fields()`
+  file?: Express.Multer.File;    // for single file via `.single()`
+}

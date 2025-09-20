@@ -39,7 +39,6 @@ const bookingSchema = z.object({
 const createBookingSchema = z.object({
   body: z.object({
     serviceId: z.string({ required_error: 'Service is required' }),
-
     preferredStartDate: z
       .string()
       .regex(
@@ -51,7 +50,6 @@ const createBookingSchema = z.object({
         if (isNaN(date.getTime())) throw new Error('Invalid date string');
         return date;
       }),
-
     preferredEndDate: z
       .string()
       .regex(
@@ -67,6 +65,33 @@ const createBookingSchema = z.object({
   }),
 });
 
+const timeString = z
+  .string()
+  .regex(
+    /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(am|pm)$/i,
+    'Time must be in hh:mm am/pm format'
+  );
+const createSessionSchema = z.object({
+  body: z.object({
+      sessionId: z.string().optional(),
+      date: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
+        'Invalid date format'
+      )
+      .transform((str) => {
+        const date = new Date(str);
+        if (isNaN(date.getTime())) throw new Error('Invalid date string');
+        return date;
+      }),
+
+    startTime: timeString,
+    endTime: timeString,
+     
+  })
+})
+
 // getAvailabilitySchema
 const getAvailabilitySchema = z.object({
   body: z.object({
@@ -79,7 +104,8 @@ const getAvailabilitySchema = z.object({
 export const BookingValidation = {
   bookingSchema,
   getAvailabilitySchema,
-  createBookingSchema
+  createBookingSchema,
+  createSessionSchema
 };
 
 export type TBookingData = z.infer<typeof createBookingSchema.shape.body>;

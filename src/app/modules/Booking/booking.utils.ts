@@ -14,6 +14,26 @@ export const roundUpMinutes = (min: number, step = 15) => {
   return Math.ceil(min / step) * step;
 };
 
+export function parseTimeToMinutes(timeStr: string): number {
+  const [time, modifier] = timeStr.toLowerCase().split(" "); // e.g. "09:30 am"
+  const [hoursRaw, minutesRaw] = time.split(":").map(Number);
+
+  let hours = hoursRaw;
+  const minutes = minutesRaw; // ✅ now const
+
+  if (modifier === "pm" && hours !== 12) {
+    hours += 12;
+  }
+  if (modifier === "am" && hours === 12) {
+    hours = 0;
+  }
+
+  return hours * 60 + minutes;
+}
+
+
+
+
 export const resolveScheduleForDate = async (artistId: string, date: Date) => {
   const dayName = date
     .toLocaleString('en-US', { weekday: 'long', timeZone: 'UTC' })
