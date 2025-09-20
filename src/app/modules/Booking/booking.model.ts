@@ -1,15 +1,26 @@
 import { Schema, model } from 'mongoose';
-import { BOOKING_STATUS, PAYMENT_STATUS } from './booking.constant';
+import {
+  BOOKING_STATUS,
+  PAYMENT_STATUS,
+  SESSION_STATUS,
+} from './booking.constant';
 import { IBooking } from './booking.interface';
 
 export const sessionSchema = new Schema({
   sessionNumber: { type: Number, default: 0 },
-  startMin: { type: Number, default: 0 },
-  endMin: { type: Number, default: 0 },
+
+  // Store time in minutes for calculations
+  startTimeInMin: { type: Number, default: 0 },
+  endTimeInMin: { type: Number, default: 0 },
+
+  // Store human-readable time (e.g., "9:00 am")
+  startTime: { type: String, default: '' },
+  endTime: { type: String, default: '' },
   date: { type: Date, default: null },
+
   status: {
     type: String,
-    enum: ['pending', 'scheduled', 'completed', 'cancelled'],
+    enum: Object.values(SESSION_STATUS),
     default: 'pending',
   },
 });
@@ -45,8 +56,24 @@ const bookingSchema = new Schema<IBooking>(
       type: String,
       default: '',
     },
-    // Sessions array (subdocument schema)
-    sessions: [sessionSchema],
+
+    clientInfo: {
+      fullName: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String, required: true },
+    },
+    artistInfo: {
+      fullName: { type: String, required: true },
+      email: { type: String, required: true },
+      phone: { type: String, required: true },
+    },
+
+    scheduledDurationInMin: { type: Number, default: 0 },
+
+    sessions: {
+      type: [sessionSchema],
+      default: [],
+    },
 
     // Booking-level status
     status: {
@@ -61,18 +88,33 @@ const bookingSchema = new Schema<IBooking>(
 
     // --- Payment (global) ---
     paymentIntentId: { type: String },
-
+    chargeId: { type: String },
+    transferId: { type: String },
+    transactionId: { type: String },
+    payoutId: {type: String},
     paymentStatus: {
       type: String,
       enum: Object.values(PAYMENT_STATUS),
       default: 'pending',
     },
-
+    stripeFee: {
+      type: Number,
+      default: 0,
+    },
+    platFromFee: {
+      type: Number,
+      default: 0,
+    },
+    artistEarning: {
+      type: Number,
+      default: 0,
+    },
     // If cancelled
     cancelledAt: { type: Date, default: null },
-    cancelBy: { type: String, enum: ['artist', 'client'] },
+    cancelBy: { type: String, enum: ['ARTIST', 'CLIENT'] },
+
     // Feedback
-       review: { type: String },
+    review: { type: String },
     rating: { type: Number, min: 1, max: 5 },
 
     isInGuestSpot: { type: Boolean, default: false },
@@ -80,6 +122,15 @@ const bookingSchema = new Schema<IBooking>(
   { timestamps: true, versionKey: false }
 );
 
+bookingSchema.index({ createdAt: -1 });
+bookingSchema.index({ status: 1 });
+bookingSchema.index({ paymentStatus: 1 });
+bookingSchema.index({ 'clientInfo.fullName': 1 });
+bookingSchema.index({ 'clientInfo.email': 1 });
+bookingSchema.index({ 'clientInfo.phone': 1 });
+bookingSchema.index({ 'artistInfo.fullName': 1 });
+bookingSchema.index({ 'artistInfo.email': 1 });
+bookingSchema.index({ 'artistInfo.phone': 1 });
+
 const Booking = model<IBooking>('Booking', bookingSchema);
 export default Booking;
-

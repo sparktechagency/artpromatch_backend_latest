@@ -1,61 +1,42 @@
-import { Schema } from 'mongoose';
-import { IMessage, MessageType, MessageTypeValues } from './message.interface';
-import { model } from 'mongoose';
+import mongoose, { model, Schema } from 'mongoose';
+import { IMessage } from './message.interface';
 
-export const MessageSchema: Schema<IMessage> = new Schema<IMessage>(
+const messageSchema = new Schema<IMessage>(
   {
-    senderId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Auth',
-      required: true,
-    },
-    receiverId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Auth',
-      required: true,
-    },
-    message: {
+    text: {
       type: String,
-      required: true,
+      default: '',
     },
-    messageType: {
-      type: String,
-      enum: MessageTypeValues,
-      default: MessageType.text,
-      required: true,
+    imageUrl: {
+      type: [String],
+      default: [],
     },
-    roomId: {
-      type: String,
-      required: true,
+    audioUrl: {
+     type: String,
+     required: false,
+     default: "",
     },
-    replyTo: {
-      type: Schema.Types.ObjectId,
-      ref: 'Message',
-      default: null,
-    },
-    is_read: {
+    seen: {
       type: Boolean,
       default: false,
     },
-    priorityLevel: {
-      type: String,
-      enum: ['low', 'normal', 'high'],
-      default: 'normal',
+    msgByUserId: {
+      type: mongoose.Schema.ObjectId,
+      required: true,
+      ref: 'User',
     },
-    isPinned: {
-      type: Boolean,
-      default: false,
-    },
-    readAt: {
-      type: Date,
-      default: null,
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
+    conversationId: {
+      type: mongoose.Schema.ObjectId,
+      required: true,
+      ref: 'Conversation',
     },
   },
-  { timestamps: true, versionKey: false, toJSON: { virtuals: true } }
+  {
+    timestamps: true,
+    versionKey:false
+  },
 );
 
-export const MessageModel = model<IMessage>('Message', MessageSchema);
+const Message = model<IMessage>('Message', messageSchema);
+
+export default Message;

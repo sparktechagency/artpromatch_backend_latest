@@ -140,4 +140,11 @@ router
     ArtistController.createConnectedAccountAndOnboardingLinkForArtist
   );
 
+router
+  .route('/delete-account')
+  .post(
+    ArtistController.deleteAccount
+  );
+
+
 export const ArtistRoutes = router;
