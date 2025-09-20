@@ -294,7 +294,7 @@ const getAllServicesFromDB = async (
     const limit = parseInt(query?.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Aggregation query to find artists within the specified radius
+    // Step 1: Artist list with distance
     const artists = await Artist.aggregate([
       {
         $geoNear: {
@@ -350,8 +350,13 @@ const getAllServicesFromDB = async (
       },
     ]);
 
-    const artistsIDs = artists?.map((artist) => artist._id);
+    const artistDistanceMap = new Map(
+      artists.map((artist) => [artist._id.toString(), artist.distance])
+    );
 
+    const artistsIDs = artists.map((artist) => artist._id);
+
+    // Step 2: Get services of these artists
     const services = await Service.find({
       artist: { $in: artistsIDs },
     })
@@ -363,13 +368,27 @@ const getAllServicesFromDB = async (
           select: 'email fullName image role',
         },
       })
+      .lean() // return plain JS objects for easier modification
       .exec();
+
+    // Step 3: Inject distance into artist object
+    const servicesWithDistance = services.map((service) => {
+      const artistId = service.artist?._id?.toString();
+      const distance = artistId ? artistDistanceMap.get(artistId) : null;
+      return {
+        ...service,
+        artist: {
+          ...service.artist,
+          distance,
+        },
+      };
+    });
 
     const total = services.length || 0;
     const totalPage = Math.ceil(total / limit);
 
     return {
-      data: services,
+      data: servicesWithDistance,
       meta: {
         page,
         limit,
@@ -397,7 +416,6 @@ const getAllServicesFromDB = async (
         'avgRating',
       ])
       .filter()
-      .sort()
       .sort()
       .paginate();
 
