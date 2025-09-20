@@ -28,7 +28,7 @@ type TReviewData = {
 };
 
 type TSessionData = {
-  sessionId?: string; 
+  sessionId?: string;
   date: Date;
   startTime: string;
   endTime: string;
@@ -191,8 +191,8 @@ const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
       mode: 'payment',
 
       payment_intent_data: {
-          capture_method: 'manual',
-        },
+        capture_method: 'manual',
+      },
       line_items: [
         {
           price_data: {
@@ -371,13 +371,12 @@ export const getUserBookingDetails = async (user: IAuth, bookingId: string) => {
   };
 };
 
-const createSessionIntoDB = async (
+// create Or update Session
+const createOrUpdateSessionIntoDB = async (
   bookingId: string,
   payload: TSessionData
 ) => {
-  const { date, startTime, endTime } = payload;
-
-  console.log(date, startTime, endTime);
+  const { sessionId, date, startTime, endTime } = payload;
 
   const booking = await Booking.findById(bookingId);
   if (!booking) throw new AppError(404, 'Booking not found');
@@ -385,79 +384,172 @@ const createSessionIntoDB = async (
   if (booking.status === 'cancelled') {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'Cannot add session to cancelled booking'
+      'Cannot modify session in a cancelled booking'
     );
   }
-  // Convert human times → minutes
 
   const startTimeInMin = parseTimeToMinutes(startTime);
   const endTimeInMin = parseTimeToMinutes(endTime);
   const duration = endTimeInMin - startTimeInMin;
-
   if (duration <= 0) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration');
   }
 
-  // Check overlap inside this booking (array of sessions)
-  const selfOverlap = booking.sessions.find(
-    (s) =>
-      s.startTimeInMin != null &&
-      s.endTimeInMin != null &&
-      new Date(s.date).toDateString() === new Date(date).toDateString() &&
-      s.startTimeInMin < endTimeInMin &&
-      s.endTimeInMin > startTimeInMin
-  );
-
-  if (selfOverlap) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'This booking already has a session during this time'
+  // EDIT mode
+  if (sessionId) {
+    const session = booking.sessions.find(
+      (s) => s._id?.toString() === sessionId
     );
-  }
+    if (!session) throw new AppError(404, 'Session not found');
 
-  // Check overlap with other confirmed bookings of this artist
-  const overlappingBooking = await Booking.findOne({
-    _id: { $ne: booking._id },
-    artist: booking.artist,
-    status: 'confirmed',
-    sessions: {
-      $elemMatch: {
-        date: date,
-        startTimeInMin: { $lt: endTimeInMin },
-        endTimeInMin: { $gt: startTimeInMin },
+    if (session.status === 'completed') {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Cannot edit a completed session'
+      );
+    }
+
+    // update fields
+    session.date = date;
+    session.startTime = startTime;
+    session.endTime = endTime;
+    session.startTimeInMin = startTimeInMin;
+    session.endTimeInMin = endTimeInMin;
+    session.status = 'rescheduled'; // reset to scheduled after edit
+  } 
+  // CREATE mode
+  else {
+    // Check overlap inside this booking
+    const selfOverlap = booking.sessions.find(
+      (s) =>
+        s.startTimeInMin != null &&
+        s.endTimeInMin != null &&
+        new Date(s.date).toDateString() === new Date(date).toDateString() &&
+        s.startTimeInMin < endTimeInMin &&
+        s.endTimeInMin > startTimeInMin
+    );
+    if (selfOverlap) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'This booking already has a session during this time'
+      );
+    }
+
+    // Check overlap with other confirmed or in-progress bookings
+    const overlappingBooking = await Booking.findOne({
+      _id: { $ne: booking._id },
+      artist: booking.artist,
+      status: { $in: ['confirmed', 'in_progress'] },
+      sessions: {
+        $elemMatch: {
+          date,
+          startTimeInMin: { $lt: endTimeInMin },
+          endTimeInMin: { $gt: startTimeInMin },
+        },
       },
-    },
-  });
+    });
 
-  if (overlappingBooking) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'You already has another booking session during this time'
-    );
+    if (overlappingBooking) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Artist already has another booking session during this time'
+      );
+    }
+
+    booking.sessions.push({
+      sessionNumber: booking.sessions.length + 1,
+      startTimeInMin,
+      endTimeInMin,
+      startTime,
+      endTime,
+      date,
+      status: 'scheduled',
+    });
   }
 
-  // Add session
-  booking.sessions.push({
-    sessionNumber: booking.sessions.length + 1,
-    startTimeInMin,
-    endTimeInMin,
-    startTime,
-    endTime,
-    date,
-    status: 'scheduled',
-  });
-
+  // Recalculate total scheduled minutes
   booking.scheduledDurationInMin =
-    (booking.scheduledDurationInMin || 0) + duration;
-  if (booking.status === 'ready_for_completion') {
+    booking.sessions.reduce(
+      (sum, s) =>
+        sum +
+        ((s.startTimeInMin && s.endTimeInMin)
+          ? s.endTimeInMin - s.startTimeInMin
+          : 0),
+      0
+    );
+
+  // Recalculate booking status
+  const allCompleted =
+    booking.sessions.length > 0 &&
+    booking.sessions.every((s) => s.status === 'completed');
+
+  const anyCompleted = booking.sessions.some((s) => s.status === 'completed');
+
+  if (allCompleted) {
+    booking.status = 'ready_for_completion';
+  } else if (anyCompleted) {
     booking.status = 'in_progress';
+  } else {
+    booking.status = 'confirmed';
   }
 
   await booking.save();
-
   return booking.sessions;
 };
 
+// delete session
+const deleteSessionFromBooking = async (
+  bookingId: string,
+  sessionId: string
+) => {
+  const booking = await Booking.findById(bookingId);
+  if (!booking) throw new AppError(404, 'Booking not found');
+
+  if (booking.status === 'cancelled') {
+    throw new AppError(400, 'Cannot delete session from a cancelled booking');
+  }
+
+  // Find session
+  const sessionIndex = booking.sessions.findIndex(
+    (s) => s._id?.toString() === sessionId
+  );
+  if (sessionIndex === -1) throw new AppError(404, 'Session not found');
+
+  const session = booking.sessions[sessionIndex];
+  if (session.status === 'completed') {
+    throw new AppError(400, 'Cannot delete a completed session');
+  }
+
+  // Remove session
+  booking.sessions.splice(sessionIndex, 1);
+
+  // Recalculate scheduledDurationInMin
+  booking.scheduledDurationInMin = booking.sessions.reduce(
+    (sum, s) =>
+      sum + ((s.startTimeInMin && s.endTimeInMin) ? s.endTimeInMin - s.startTimeInMin : 0),
+    0
+  );
+
+  // Recalculate booking status
+  const allCompleted =
+    booking.sessions.length > 0 &&
+    booking.sessions.every((s) => s.status === 'completed');
+
+  const anyCompleted = booking.sessions.some((s) => s.status === 'completed');
+
+  if (allCompleted) {
+    booking.status = 'ready_for_completion';
+  } else if (anyCompleted) {
+    booking.status = 'in_progress';
+  } else {
+    booking.status = 'confirmed';
+  }
+
+  await booking.save();
+  return booking.sessions;
+};
+
+// get Artist schdule
 const getArtistSessions = async (bookingId: string, payload: TSessionData) => {
   const { date, startTime, endTime } = payload;
 
@@ -658,11 +750,10 @@ const confirmBookingByArtist = async (bookingId: string) => {
     // TODO: notify client about confirmed booking
 
     return {
-      status:booking.status,
+      status: booking.status,
       paymentStatus: booking.paymentStatus,
-      sessions: booking.sessions
+      sessions: booking.sessions,
     };
-
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
@@ -675,33 +766,54 @@ const completeSession = async (bookingId: string, sessionId: string) => {
   const booking = await Booking.findById(bookingId);
 
   if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
-
   if (booking.status === 'pending') {
-    throw new AppError(httpStatus.NOT_FOUND, 'booking is now pending state');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Booking is still pending');
   }
 
   const session = booking.sessions.find(
-    (s: any) => s._id.toString() === sessionId
+    (s) => s._id?.toString() === sessionId
   );
   if (!session) throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
 
-  if (session.status !== 'scheduled') {
+  if (!["scheduled","rescheduled"].includes(session.status)) {
     throw new AppError(
-      httpStatus.NOT_FOUND,
+      httpStatus.BAD_REQUEST,
       'Session already completed or not schedulable'
     );
   }
 
-  session.status = 'completed';
-  booking.status = 'in_progress';
-  await booking.save();
+  // 🔹 Check previous sessions
+  const previousSessions = booking.sessions.filter(
+    (s) => s.sessionNumber < session.sessionNumber
+  );
 
-  const allDone = booking.sessions.every((s: any) => s.status === 'completed');
-  if (allDone) {
-    booking.status = 'ready_for_completion';
-    await booking.save();
+  const incompletePrev = previousSessions.some(
+    (s) => s.status !== 'completed'
+  );
+
+  if (incompletePrev) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Previous sessions must be completed first'
+    );
   }
 
+  // Mark session completed
+  session.status = 'completed';
+
+  // Recalculate booking status
+  const allDone = booking.sessions.every((s) => s.status === 'completed');
+  const anyCompleted = booking.sessions.some((s) => s.status === 'completed');
+
+  if (allDone) {
+    booking.status = 'ready_for_completion';
+  } else if (anyCompleted) {
+    booking.status = 'in_progress';
+  } else {
+    booking.status = 'confirmed';
+  }
+
+  await booking.save();
   return booking;
 };
 
@@ -741,7 +853,9 @@ const cancelBookingIntoDb = async (
   session.startTransaction();
 
   try {
-    const booking = await Booking.findById(bookingId).session(session).populate('service artist');
+    const booking = await Booking.findById(bookingId)
+      .session(session)
+      .populate('service artist');
     if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
     if (booking.status === 'cancelled') {
@@ -749,16 +863,21 @@ const cancelBookingIntoDb = async (
     }
 
     if (!booking.paymentIntentId) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'No payment intent found for this booking');
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'No payment intent found for this booking'
+      );
     }
 
     // --- Stripe Refund ---
     if (booking.paymentStatus === 'authorized') {
       await stripe.paymentIntents.cancel(booking.paymentIntentId);
-    } 
-    else if (booking.paymentStatus === 'captured') {
+    } else if (booking.paymentStatus === 'captured') {
       if (cancelBy === 'CLIENT') {
-        throw new AppError(httpStatus.BAD_REQUEST, 'Client cannot cancel this booking! if you need cancel this book pleas contact artist');
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Client cannot cancel this booking! if you need cancel this book pleas contact artist'
+        );
       }
 
       const refundAmount = (booking.price - booking.stripeFee) * 100;
@@ -768,9 +887,11 @@ const cancelBookingIntoDb = async (
           amount: refundAmount,
         });
       }
-    } 
-    else {
-      throw new AppError(httpStatus.BAD_REQUEST, `Cannot cancel booking in status: ${booking.paymentStatus}`);
+    } else {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Cannot cancel booking in status: ${booking.paymentStatus}`
+      );
     }
 
     // --- DB Updates ---
@@ -794,7 +915,6 @@ const cancelBookingIntoDb = async (
     throw error; // Let upper layer handle rollback notification/logging
   }
 };
-
 
 // const completeBookingIntoDb = async (
 //   bookingId: string,
@@ -860,10 +980,11 @@ export const BookingService = {
   getArtistSessions,
   // completeBookingIntoDb,
   completeSession,
+  deleteSessionFromBooking,
   // artistMarksCompletedIntoDb,
   getUserBookings,
   ReviewAfterAServiceIsCompletedIntoDB,
-  createSessionIntoDB,
+  createOrUpdateSessionIntoDB,
   confirmBookingByArtist,
 };
 
