@@ -34,7 +34,6 @@ export const stripeWebhookHandler = asyncHandler(
         sig,
         webhookSecret as string
       );
-      console.log('Stripe webhook event:', event.type);
     } catch (err: unknown) {
       if (err instanceof Error) {
         throw new AppError(httpStatus.BAD_REQUEST, err.message);
@@ -66,6 +65,7 @@ export const stripeWebhookHandler = asyncHandler(
       //     },
       //     { runValidators: true }
       //   );
+
 
       //   const artist = await ArtistPreferences.findOne(
       //     { artistId: booking.artist },
@@ -251,10 +251,12 @@ export const stripeWebhookHandler = asyncHandler(
       // payment intent succeed
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
+
         // console.log('pi', pi);
         if (pi.status !== 'succeeded') {
           logger.error('payment capture failed');
         }
+
 
         const booking = await Booking.findOne({
           'payment.client.paymentIntentId': pi.id,
@@ -325,7 +327,6 @@ export const stripeWebhookHandler = asyncHandler(
       // payment failed
       case 'payment_intent.payment_failed': {
         const intent = event.data.object as Stripe.PaymentIntent;
-        console.log('Payment failed:', intent.id);
 
         const bookingId = intent.metadata.bookingId;
         await Booking.findByIdAndUpdate(bookingId, {
@@ -339,7 +340,6 @@ export const stripeWebhookHandler = asyncHandler(
       // charge refund
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
-        console.log('Refund completed:', charge.id);
 
         // Update booking to refunded
         await Booking.updateOne(
@@ -350,8 +350,7 @@ export const stripeWebhookHandler = asyncHandler(
         break;
       }
 
-      default:
-        console.log(`Unhandled event type ${event.type}`);
+      default: console.log(`Unhandled event type ${event.type}`);
     }
 
     res.status(200).json({ received: true });

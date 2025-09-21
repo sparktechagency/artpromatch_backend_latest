@@ -690,11 +690,6 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
-  // console.log({
-  //   payload,
-  //   user: clientData,
-  // });
-
   // Start a MongoDB session for transaction
   const session = await startSession();
 
