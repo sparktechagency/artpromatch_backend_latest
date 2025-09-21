@@ -118,6 +118,13 @@ router
     ArtistController.saveArtistAvailability
   );
 
+  router
+  .route('/schedule')
+  .get(
+    auth(ROLE.ARTIST),
+    ArtistController.getArtistSchedule
+  );
+
 // getAvailabilityExcludingTimeOff
 // router
 //   .route('/availability/:id')

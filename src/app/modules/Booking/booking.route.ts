@@ -37,9 +37,13 @@ router
     BookingController.getUserBookings
   );
 
+  router
+  .route('/confirm-payment')
+  .post(auth(ROLE.CLIENT), BookingController.confirmPaymentByClient);
+
 router
   .route('/confirm/:bookingId')
-  .post(auth(ROLE.ARTIST), BookingController.confirmBooking);
+  .post(auth(ROLE.ARTIST), BookingController.confirmBookingByArtist);
 
 router
   .route('/cancel/:bookingId')

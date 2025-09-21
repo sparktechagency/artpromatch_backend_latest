@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
+import { IAuth } from '../Auth/auth.interface';
+import { Auth } from '../Auth/auth.model';
+import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import {
   IService,
   TServiceImages,
   TServicePayload,
 } from '../Service/service.interface';
-import { IAuth } from '../Auth/auth.interface';
-import { Auth } from '../Auth/auth.model';
-import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
@@ -25,12 +25,12 @@ import {
 } from './artist.validation';
 
 import { JwtPayload } from 'jsonwebtoken';
-import config from '../../config';
-import Service from '../Service/service.model';
-import ArtistSchedule from '../Schedule/schedule.model';
-import { IWeeklySchedule } from '../Schedule/schedule.interface';
-import Booking from '../Booking/booking.model';
 import Stripe from 'stripe';
+import config from '../../config';
+import Booking from '../Booking/booking.model';
+import { IWeeklySchedule } from '../Schedule/schedule.interface';
+import ArtistSchedule from '../Schedule/schedule.model';
+import Service from '../Service/service.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -606,6 +606,95 @@ const setArtistTimeOffIntoDB = async (user: IAuth, payload: TSetOffDays) => {
   return schedule.offDays;
 };
 
+const getArtistMonthlySchedule = async (
+  user: IAuth,
+  year: number,
+  month: number
+) => {
+  // Month boundaries
+
+  const artist = await Artist.findOne({ auth: user.id }, '_id');
+  if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
+  const startOfMonth = new Date(year, month - 1, 1); // 2025-05-01
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // 2025-05-31
+
+  const result = await Booking.aggregate([
+    // 1. Filter artist bookings with valid status and sessions in month
+    {
+      $match: {
+        artist: new mongoose.Types.ObjectId(artist._id),
+        status: { $in: ['confirmed', 'in_progress', 'ready_for_completion'] },
+        'sessions.date': { $gte: startOfMonth, $lte: endOfMonth },
+      },
+    },
+
+    // 2. Only keep necessary fields
+    {
+      $project: {
+        _id: 1,
+        clientInfo: { fullName: 1, phone: 1, email: 1 },
+        service: 1,
+        sessions: 1,
+      },
+    },
+
+    // 3. Unwind sessions
+    { $unwind: '$sessions' },
+
+    // 4. Match only sessions within month
+    {
+      $match: {
+        'sessions.date': { $gte: startOfMonth, $lte: endOfMonth },
+      },
+    },
+
+    // 5. Lookup service info
+    {
+      $lookup: {
+        from: 'services',
+        localField: 'service',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 1, title: 1 } }],
+        as: 'service',
+      },
+    },
+    { $unwind: '$service' },
+
+    // 6. Project only needed fields per session
+    {
+      $project: {
+        bookingId: '$_id',
+        sessionId: '$sessions._id',
+        date: '$sessions.date',
+        startTime: '$sessions.startTime',
+        endTime: '$sessions.endTime',
+        status: '$sessions.status',
+        service: { _id: '$service._id', name: '$service.title' },
+        client: '$clientInfo',
+      },
+    },
+
+    // 7. Group by day
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+        sessions: { $push: '$$ROOT' },
+      },
+    },
+
+    // 8. Sort by date
+    { $sort: { _id: 1 } },
+  ]);
+
+  // Convert _id to date key
+  const grouped: Record<string, any[]> = {};
+  result.forEach((day) => {
+    grouped[day._id] = day.sessions;
+  });
+
+  return grouped;
+};
+
 // createConnectedAccountAndOnboardingLinkForArtistIntoDb
 const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
   userData: JwtPayload
@@ -623,7 +712,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
         'Artist not found or restricted.'
       );
     }
-     console.log(userData)
+    console.log(userData);
     // Step 2: If Stripe account exists but not ready yet
     if (artist.stripeAccountId && !artist.isStripeReady) {
       const account = await stripe.accounts.retrieve(artist.stripeAccountId);
@@ -653,7 +742,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 
     // Step 3: If no Stripe account, create a new one
     if (!artist.stripeAccountId) {
-      console.log("äccess")
+      console.log('äccess');
       const account = await stripe.accounts.create({
         type: 'express',
         email: (artist?.auth as any)?.email,
@@ -667,7 +756,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
           payouts: { schedule: { interval: 'manual' } },
         },
       });
-      console.log(account)
+      console.log(account);
       const onboardingData = await stripe.accountLinks.create({
         account: account.id,
         refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${account.id}`,
@@ -701,7 +790,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
       'Stripe onboarding service unavailable'
     );
   }
-}
+};
 // create service
 const createService = async (
   user: IAuth,
@@ -716,7 +805,7 @@ const createService = async (
   const images = files?.images?.map(
     (image) => image.path.replace(/\\/g, '/') || ''
   );
-   
+
   const serviceData = {
     ...payload,
     artist: artist._id,
@@ -786,6 +875,8 @@ export const ArtistService = {
   updateArtistPrivacySecuritySettingsIntoDB,
   updateArtistFlashesIntoDB,
   updateArtistPortfolioIntoDB,
+  getArtistMonthlySchedule,
+
   // addArtistServiceIntoDB,
   getServicesByArtistFromDB,
   updateArtistServiceByIdIntoDB,
@@ -795,4 +886,4 @@ export const ArtistService = {
   setArtistTimeOffIntoDB,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createService,
-}
+};

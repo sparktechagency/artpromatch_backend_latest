@@ -1,11 +1,10 @@
 import httpStatus from 'http-status';
+import Stripe from 'stripe';
+import config from '../../config';
 import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 import { TServiceImages } from '../Service/service.interface';
 import { ArtistService } from './artist.service';
-import Stripe from 'stripe';
-import config from '../../config';
-
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
 
@@ -140,6 +139,22 @@ const getServicesByArtist = asyncHandler(async (req, res) => {
   });
 });
 
+const getArtistSchedule = asyncHandler(async (req, res) => {
+  const year = Number(req.query.year);
+  const month = Number(req.query.month);
+  const result = await ArtistService.getArtistMonthlySchedule(
+    req.user,
+    year,
+    month
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Services retrieved successfully!',
+    data: result,
+  });
+});
+
 // updateArtistServiceById
 const updateArtistServiceById = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -226,7 +241,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'account deleted successfully!',
-    data: null
+    data: null,
   });
 });
 
@@ -270,13 +285,14 @@ export const ArtistController = {
   updateArtistPortfolio,
   addArtistService,
   getServicesByArtist,
+  getArtistSchedule,
   updateArtistServiceById,
   deleteArtistService,
   removeImage,
   saveArtistAvailability,
   setArtistTimeOff,
   createConnectedAccountAndOnboardingLinkForArtist,
-  deleteAccount
+  deleteAccount,
   // updateAvailability,
   // getAvailabilityExcludingTimeOff,
 };

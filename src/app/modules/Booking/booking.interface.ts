@@ -14,6 +14,23 @@ export interface IBookingSession {
   status: TSessionStatus;
 }
 
+export interface IPaymentClient {
+  chargeId?: string;
+  paymentIntentId?: string;
+  refundId?: string;
+}
+
+export interface IPaymentArtist {
+  transferId?: string;
+  transactionId?: string;
+  payoutId?: string;
+}
+
+export interface IPayment {
+  client: IPaymentClient;
+  artist: IPaymentArtist;
+}
+
 export interface IBooking extends Document{
   _id: Types.ObjectId
   artist: Types.ObjectId | IArtist;
@@ -45,17 +62,15 @@ export interface IBooking extends Document{
   price: number;
   bodyPart: string;
   
-  artistEarning: number;
   // Payment (global, not per session)
-  paymentIntentId?: string;
-  chargeId?: string;
-  transferId?: string;
-  transactionId?: string;
-  payoutId?: string;
+  payment: IPayment;
+  checkoutSessionId?: string;
+
+  artistEarning: number;
   paymentStatus: TPaymentStatus;
   
   stripeFee: number;
-  platFromFee: number;
+  platFormFee: number;
   // If booking cancelled (by artist usually)
   cancelledAt?: Date | null;
   cancelBy?: 'ARTIST' | 'CLIENT'
