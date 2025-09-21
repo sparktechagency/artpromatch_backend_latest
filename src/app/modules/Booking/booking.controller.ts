@@ -1,8 +1,7 @@
 import httpStatus from 'http-status';
 import { AppError, asyncHandler } from '../../utils';
-import { BookingService } from './booking.service';
 import sendResponse from '../../utils/sendResponse';
-
+import { BookingService } from './booking.service';
 
 // create booking
 const createBooking = asyncHandler(async (req, res) => {
@@ -10,6 +9,17 @@ const createBooking = asyncHandler(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Booking Created Successfully!',
+    data: result,
+  });
+});
+
+const confirmPaymentByClient = asyncHandler(async (req, res) => {
+  const query = req.query as { sessionId: string };
+  console.log(query);
+  const result = await BookingService.confirmPaymentByClient(query);
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'payment Successfully!',
     data: result,
   });
 });
@@ -24,7 +34,6 @@ const repayBooking = asyncHandler(async (req, res) => {
   });
 });
 
-
 // get user bookings
 const getUserBookings = asyncHandler(async (req, res) => {
   const result = await BookingService.getUserBookings(req.user, req.query);
@@ -37,8 +46,11 @@ const getUserBookings = asyncHandler(async (req, res) => {
 
 // create session
 const createSession = asyncHandler(async (req, res) => {
-  const {bookingId }= req.params
-  const result = await BookingService.createOrUpdateSessionIntoDB(bookingId, req.body);
+  const { bookingId } = req.params;
+  const result = await BookingService.createOrUpdateSessionIntoDB(
+    bookingId,
+    req.body
+  );
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Session Created Successfully!',
@@ -46,11 +58,29 @@ const createSession = asyncHandler(async (req, res) => {
   });
 });
 
+// get artist schedule
+const getArtistSchedule = asyncHandler(async (req, res) => {
+  const result = await BookingService.getArtistDailySchedule(
+    req.user,
+    req.body
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Schedule retrieved Successfully!',
+    data: result,
+  });
+});
+
+// complete session
 const completeSession = asyncHandler(async (req, res) => {
-  const {bookingId}= req.params
-  const {sessionId} = req.body;
+  const { bookingId } = req.params;
+  const { sessionId } = req.body;
 
-  const result = await BookingService.completeSession(bookingId, sessionId);
+  const result = await BookingService.completeSessionByArtist(
+    bookingId,
+    sessionId
+  );
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Session Created Successfully!',
@@ -58,10 +88,14 @@ const completeSession = asyncHandler(async (req, res) => {
   });
 });
 
+// delete session
 const deleteSession = asyncHandler(async (req, res) => {
-  const {bookingId}= req.params;
-  console.log(req.body)
-  const result = await BookingService.deleteSessionFromBooking(bookingId, req.body);
+  const { bookingId } = req.params;
+  console.log(req.body);
+  const result = await BookingService.deleteSessionFromBooking(
+    bookingId,
+    req.body
+  );
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Session Created Successfully!',
@@ -70,8 +104,8 @@ const deleteSession = asyncHandler(async (req, res) => {
 });
 
 // confirm booking
-const confirmBooking = asyncHandler(async (req, res) => {
-  const {bookingId }= req.params
+const confirmBookingByArtist = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
   const result = await BookingService.confirmBookingByArtist(bookingId);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -80,11 +114,16 @@ const confirmBooking = asyncHandler(async (req, res) => {
   });
 });
 
+// cancel booking
 const cancelBooking = asyncHandler(async (req, res) => {
-  const {bookingId }= req.params
+  const { bookingId } = req.params;
   const role = req.user.role;
-  if(!['ARTIST', 'CLIENT'].includes(role)) throw new AppError(httpStatus.NOT_FOUND, "this is not valid role")
-  const result = await BookingService.cancelBookingIntoDb(bookingId, role as 'ARTIST' | 'CLIENT');
+  if (!['ARTIST', 'CLIENT'].includes(role))
+    throw new AppError(httpStatus.NOT_FOUND, 'this is not valid role');
+  const result = await BookingService.cancelBookingIntoDb(
+    bookingId,
+    role as 'ARTIST' | 'CLIENT'
+  );
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'booking cancel Successfully!',
@@ -92,7 +131,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
   });
 });
 
-
+// review
 const ReviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
   const result = await BookingService.ReviewAfterAServiceIsCompletedIntoDB(
     req.body,
@@ -122,6 +161,8 @@ export const BookingController = {
   // createBooking,
   ReviewAfterAServiceIsCompleted,
   // getAvailability,
+  confirmPaymentByClient,
+  getArtistSchedule,
   completeSession,
   deleteSession,
   cancelBooking,
@@ -129,5 +170,5 @@ export const BookingController = {
   repayBooking,
   createBooking,
   createSession,
-  confirmBooking
+  confirmBookingByArtist,
 };

@@ -66,7 +66,7 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
     if (existingArtistBooking)
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'Artist is already booked for this service'
+        'Artist has already booked for this service'
       );
 
     const existingClientPending = await Booking.findOne({
@@ -113,10 +113,6 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
         mode: 'payment',
         payment_intent_data: {
           capture_method: 'manual',
-          metadata: {
-            bookingId: booking[0]._id.toString(),
-            fcmToken: artist?.auth.fcmToken ?? '',
-          },
         },
         line_items: [
           {
@@ -131,9 +127,10 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
             quantity: 1,
           },
         ],
+        expand: ['payment_intent'],
         metadata: {
           bookingId: booking[0]._id.toString(),
-          userId: artist?.auth.toString(),
+          userId: artist?.auth?._id?.toString(),
         },
         success_url: `${process.env.CLIENT_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.CLIENT_URL}/booking/cancel`,
@@ -142,7 +139,7 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
     );
 
     // Update booking with PaymentIntent
-    booking[0].paymentIntentId = checkoutSession.payment_intent as string;
+    booking[0].checkoutSessionId = checkoutSession.id;
     await booking[0].save({ session });
 
     await session.commitTransaction();
@@ -162,11 +159,42 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
   }
 };
 
+// confirm payment
+const confirmPaymentByClient = async (query: { sessionId: string }) => {
+  const sessionId = query.sessionId as string;
+  const chSession = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ['payment_intent'],
+  });
+
+  const booking = await Booking.findOne(
+    { checkoutSessionId: chSession.id },
+    'payment'
+  );
+  if (!booking)
+    throw new AppError(httpStatus.NOT_FOUND, 'session id not found');
+
+  if (chSession.payment_intent) {
+    booking.payment.client.paymentIntentId =
+      typeof chSession.payment_intent === 'string'
+        ? chSession.payment_intent
+        : chSession.payment_intent.id;
+    booking.paymentStatus = 'authorized';
+  }
+
+  await booking.save();
+  return {
+    status: booking.status,
+    paymentStatus: booking.paymentStatus,
+    payment: booking.payment,
+  };
+  // Update booking with PaymentIntent
+};
+
 // repay booking
 const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
   const booking = await Booking.findById(bookingId)
-    .populate<{ artist: IArtist }>('artist')
-    .populate<{ service: IService }>('service');
+    .populate<{ artist: IArtist }>('artist', 'auth')
+    .populate<{ service: IService }>('service', 'title description price');
 
   if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
@@ -175,7 +203,8 @@ const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
 
   if (
     !['pending', 'failed'].includes(booking.paymentStatus) ||
-    (booking.paymentStatus === 'pending' && booking.paymentIntentId)
+    (booking.paymentStatus === 'pending' &&
+      booking.payment.client.paymentIntentId)
   ) {
     throw new AppError(httpStatus.BAD_REQUEST, 'This booking cannot be repaid');
   }
@@ -216,8 +245,7 @@ const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
     { idempotencyKey: `repay_${booking._id}` }
   );
 
-  booking.paymentIntentId = checkoutSession.payment_intent as string;
-  booking.paymentStatus = 'pending';
+  booking.checkoutSessionId = checkoutSession as string;
   await booking.save();
 
   return {
@@ -379,7 +407,7 @@ const createOrUpdateSessionIntoDB = async (
   const { sessionId, date, startTime, endTime } = payload;
 
   const booking = await Booking.findById(bookingId);
-  if (!booking) throw new AppError(404, 'Booking not found');
+  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
   if (booking.status === 'cancelled') {
     throw new AppError(
@@ -400,7 +428,7 @@ const createOrUpdateSessionIntoDB = async (
     const session = booking.sessions.find(
       (s) => s._id?.toString() === sessionId
     );
-    if (!session) throw new AppError(404, 'Session not found');
+    if (!session) throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
 
     if (session.status === 'completed') {
       throw new AppError(
@@ -416,7 +444,7 @@ const createOrUpdateSessionIntoDB = async (
     session.startTimeInMin = startTimeInMin;
     session.endTimeInMin = endTimeInMin;
     session.status = 'rescheduled'; // reset to scheduled after edit
-  } 
+  }
   // CREATE mode
   else {
     // Check overlap inside this booking
@@ -456,6 +484,25 @@ const createOrUpdateSessionIntoDB = async (
       );
     }
 
+    if (booking.sessions.length > 0) {
+      const lastSession = booking.sessions[booking.sessions.length - 1];
+
+      const lastDate = new Date(lastSession.date);
+      const newDate = new Date(date);
+
+      // If same date, compare time
+      if (
+        newDate < lastDate ||
+        (newDate.toDateString() === lastDate.toDateString() &&
+          startTimeInMin <= (lastSession.endTimeInMin ?? 0))
+      ) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'New session must be scheduled after the previous session'
+        );
+      }
+    }
+
     booking.sessions.push({
       sessionNumber: booking.sessions.length + 1,
       startTimeInMin,
@@ -468,65 +515,12 @@ const createOrUpdateSessionIntoDB = async (
   }
 
   // Recalculate total scheduled minutes
-  booking.scheduledDurationInMin =
-    booking.sessions.reduce(
-      (sum, s) =>
-        sum +
-        ((s.startTimeInMin && s.endTimeInMin)
-          ? s.endTimeInMin - s.startTimeInMin
-          : 0),
-      0
-    );
-
-  // Recalculate booking status
-  const allCompleted =
-    booking.sessions.length > 0 &&
-    booking.sessions.every((s) => s.status === 'completed');
-
-  const anyCompleted = booking.sessions.some((s) => s.status === 'completed');
-
-  if (allCompleted) {
-    booking.status = 'ready_for_completion';
-  } else if (anyCompleted) {
-    booking.status = 'in_progress';
-  } else {
-    booking.status = 'confirmed';
-  }
-
-  await booking.save();
-  return booking.sessions;
-};
-
-// delete session
-const deleteSessionFromBooking = async (
-  bookingId: string,
-  sessionId: string
-) => {
-  const booking = await Booking.findById(bookingId);
-  if (!booking) throw new AppError(404, 'Booking not found');
-
-  if (booking.status === 'cancelled') {
-    throw new AppError(400, 'Cannot delete session from a cancelled booking');
-  }
-
-  // Find session
-  const sessionIndex = booking.sessions.findIndex(
-    (s) => s._id?.toString() === sessionId
-  );
-  if (sessionIndex === -1) throw new AppError(404, 'Session not found');
-
-  const session = booking.sessions[sessionIndex];
-  if (session.status === 'completed') {
-    throw new AppError(400, 'Cannot delete a completed session');
-  }
-
-  // Remove session
-  booking.sessions.splice(sessionIndex, 1);
-
-  // Recalculate scheduledDurationInMin
   booking.scheduledDurationInMin = booking.sessions.reduce(
     (sum, s) =>
-      sum + ((s.startTimeInMin && s.endTimeInMin) ? s.endTimeInMin - s.startTimeInMin : 0),
+      sum +
+      (s.startTimeInMin && s.endTimeInMin
+        ? s.endTimeInMin - s.startTimeInMin
+        : 0),
     0
   );
 
@@ -541,8 +535,66 @@ const deleteSessionFromBooking = async (
     booking.status = 'ready_for_completion';
   } else if (anyCompleted) {
     booking.status = 'in_progress';
-  } else {
-    booking.status = 'confirmed';
+  }
+
+  await booking.save();
+  return booking.sessions;
+};
+
+// delete session
+const deleteSessionFromBooking = async (
+  bookingId: string,
+  sessionId: string
+) => {
+  const booking = await Booking.findById(bookingId);
+  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+  if (booking.status === 'cancelled') {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Cannot delete session from a cancelled booking'
+    );
+  }
+
+  // Find session
+  const sessionIndex = booking.sessions.findIndex(
+    (s) => s._id?.toString() === sessionId
+  );
+  if (sessionIndex === -1)
+    throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
+
+  const session = booking.sessions[sessionIndex];
+  if (session.status === 'completed') {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Cannot delete a completed session'
+    );
+  }
+
+  // Remove session
+  booking.sessions.splice(sessionIndex, 1);
+
+  // Recalculate scheduledDurationInMin
+  booking.scheduledDurationInMin = booking.sessions.reduce(
+    (sum, s) =>
+      sum +
+      (s.startTimeInMin && s.endTimeInMin
+        ? s.endTimeInMin - s.startTimeInMin
+        : 0),
+    0
+  );
+
+  // Recalculate booking status
+  const allCompleted =
+    booking.sessions.length > 0 &&
+    booking.sessions.every((s) => s.status === 'completed');
+
+  const anyCompleted = booking.sessions.some((s) => s.status === 'completed');
+
+  if (allCompleted) {
+    booking.status = 'ready_for_completion';
+  } else if (anyCompleted) {
+    booking.status = 'in_progress';
   }
 
   await booking.save();
@@ -550,83 +602,76 @@ const deleteSessionFromBooking = async (
 };
 
 // get Artist schdule
-const getArtistSessions = async (bookingId: string, payload: TSessionData) => {
-  const { date, startTime, endTime } = payload;
+const getArtistDailySchedule = async (user: IAuth, date: Date) => {
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
 
-  const booking = await Booking.findById(bookingId);
-  if (!booking) throw new AppError(404, 'Booking not found');
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
 
-  if (booking.status === 'confirmed' || booking.status === 'cancelled') {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Sessions can only be added to confirmed bookings'
-    );
-  }
-
-  // Convert human times → minutes
-  const [sh, sm] = startTime.split(':').map(Number);
-  const [eh, em] = endTime.split(':').map(Number);
-  const startTimeInMin = sh * 60 + sm;
-  const endTimeInMin = eh * 60 + em;
-  const duration = endTimeInMin - startTimeInMin;
-
-  if (duration <= 0) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration');
-  }
-
-  // Check overlap inside this booking (array of sessions)
-  const selfOverlap = booking.sessions.find(
-    (s) =>
-      s.startTimeInMin != null &&
-      s.endTimeInMin != null &&
-      new Date(s.date).toDateString() === new Date(date).toDateString() &&
-      s.startTimeInMin < endTimeInMin &&
-      s.endTimeInMin > startTimeInMin
-  );
-
-  if (selfOverlap) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'This booking already has a session during this time'
-    );
-  }
-
-  // Check overlap with other confirmed bookings of this artist
-  const overlappingBooking = await Booking.findOne({
-    _id: { $ne: booking._id },
-    artist: booking.artist,
-    status: 'confirmed',
-    sessions: {
-      $elemMatch: {
-        date: date,
-        startTimeInMin: { $lt: endTimeInMin },
-        endTimeInMin: { $gt: startTimeInMin },
+  const artist = await Artist.findOne({ auth: user.id }, '_id');
+  if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
+  const result = await Booking.aggregate([
+    // 1. Filter only artist’s bookings in valid status within the day
+    {
+      $match: {
+        artist: new mongoose.Types.ObjectId(artist._id),
+        status: { $in: ['confirmed', 'in_progress', 'ready_for_completion'] },
+        'sessions.date': { $gte: startOfDay, $lte: endOfDay },
       },
     },
-  });
 
-  if (overlappingBooking) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Artist already has another booking session during this time'
-    );
-  }
+    // 2. Only keep fields we need
+    {
+      $project: {
+        _id: 1,
+        clientInfo: { fullName: 1, phone: 1, email: 1 },
+        service: 1,
+        sessions: 1,
+      },
+    },
 
-  // Add session
-  booking.sessions.push({
-    sessionNumber: booking.sessions.length + 1,
-    startTimeInMin,
-    endTimeInMin,
-    startTime,
-    endTime,
-    date,
-    status: 'scheduled',
-  });
+    // 3. Unwind sessions
+    { $unwind: '$sessions' },
 
-  booking.scheduledDurationInMin += duration;
-  await booking.save();
+    // 4. Match sessions for the given day
+    {
+      $match: {
+        'sessions.date': { $gte: startOfDay, $lte: endOfDay },
+      },
+    },
 
-  return booking;
+    // 5. Lookup service details
+    {
+      $lookup: {
+        from: 'services',
+        localField: 'service',
+        foreignField: '_id',
+        pipeline: [{ $project: { _id: 1, title: 1 } }],
+        as: 'service',
+      },
+    },
+    { $unwind: '$service' },
+
+    // 6. Final projection
+    {
+      $project: {
+        bookingId: '$_id',
+        sessionId: '$sessions._id',
+        date: '$sessions.date',
+        startTime: '$sessions.startTime',
+        endTime: '$sessions.endTime',
+        status: '$sessions.status',
+        service: { _id: '$service._id', name: '$service.title' },
+        client: '$clientInfo',
+      },
+    },
+
+    // 7. Sort by startTime
+    { $sort: { startTime: 1 } },
+  ]);
+
+  return result;
 };
 
 // ReviewAfterAServiceIsCompletedIntoDB
@@ -712,8 +757,8 @@ const confirmBookingByArtist = async (bookingId: string) => {
   try {
     const booking = await Booking.findById(bookingId).session(session);
     if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
-
-    if (!booking.paymentIntentId) {
+    console.log(booking);
+    if (!booking.payment.client.paymentIntentId) {
       throw new AppError(
         httpStatus.NOT_FOUND,
         'No payment found for this booking'
@@ -732,18 +777,35 @@ const confirmBookingByArtist = async (bookingId: string) => {
     }
 
     // Capture Stripe payment
-    await stripe.paymentIntents.capture(booking.paymentIntentId);
+    const paymentIntent = await stripe.paymentIntents.capture(
+      booking.payment.client.paymentIntentId
+    );
 
+    if (paymentIntent.status !== 'succeeded') {
+      throw new AppError(httpStatus.BAD_REQUEST, 'booking confirmed failed');
+    }
+
+    const charge = await stripe.charges.retrieve(
+      paymentIntent.latest_charge as string
+    );
+    const balanceTx = await stripe.balanceTransactions.retrieve(
+      charge.balance_transaction as string
+    );
+    const stripeFeeCents = balanceTx.fee;
+    const stripeFee = stripeFeeCents / 100;
+
+    console.log('paymentintent', paymentIntent.status);
     // Update booking in DB (tentatively)
+
+    booking.payment.client.chargeId = paymentIntent.latest_charge as string;
     booking.status = 'confirmed';
     booking.paymentStatus = 'captured';
-
+    booking.stripeFee = stripeFee;
     await booking.save({ session });
     await session.commitTransaction();
     session.endSession();
 
     // TODO: notify client about confirmed booking
-
     return {
       status: booking.status,
       paymentStatus: booking.paymentStatus,
@@ -757,20 +819,25 @@ const confirmBookingByArtist = async (bookingId: string) => {
 };
 
 // complete session
-const completeSession = async (bookingId: string, sessionId: string) => {
+const completeSessionByArtist = async (
+  bookingId: string,
+  sessionId: string
+) => {
   const booking = await Booking.findById(bookingId);
 
   if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
-  if (booking.status === 'pending') {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Booking is still pending');
+
+  if (['pending', 'cancelled'].includes(booking.status)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Booking is still pending or cancelled'
+    );
   }
 
-  const session = booking.sessions.find(
-    (s) => s._id?.toString() === sessionId
-  );
+  const session = booking.sessions.find((s) => s._id?.toString() === sessionId);
   if (!session) throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
 
-  if (!["scheduled","rescheduled"].includes(session.status)) {
+  if (!['scheduled', 'rescheduled'].includes(session.status)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Session already completed or not schedulable'
@@ -782,9 +849,7 @@ const completeSession = async (bookingId: string, sessionId: string) => {
     (s) => s.sessionNumber < session.sessionNumber
   );
 
-  const incompletePrev = previousSessions.some(
-    (s) => s.status !== 'completed'
-  );
+  const incompletePrev = previousSessions.some((s) => s.status !== 'completed');
 
   if (incompletePrev) {
     throw new AppError(
@@ -804,8 +869,6 @@ const completeSession = async (bookingId: string, sessionId: string) => {
     booking.status = 'ready_for_completion';
   } else if (anyCompleted) {
     booking.status = 'in_progress';
-  } else {
-    booking.status = 'confirmed';
   }
 
   await booking.save();
@@ -850,14 +913,14 @@ const cancelBookingIntoDb = async (
   try {
     const booking = await Booking.findById(bookingId)
       .session(session)
-      .populate('service artist');
+      .populate('service artist payment');
     if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
     if (booking.status === 'cancelled') {
       throw new AppError(httpStatus.BAD_REQUEST, 'Booking already cancelled');
     }
 
-    if (!booking.paymentIntentId) {
+    if (!booking.payment.client.paymentIntentId) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         'No payment intent found for this booking'
@@ -866,7 +929,11 @@ const cancelBookingIntoDb = async (
 
     // --- Stripe Refund ---
     if (booking.paymentStatus === 'authorized') {
-      await stripe.paymentIntents.cancel(booking.paymentIntentId);
+      const cancelPayment = await stripe.paymentIntents.cancel(
+        booking.payment.client.paymentIntentId
+      );
+      if (cancelPayment.status !== 'canceled')
+        throw new AppError(httpStatus.BAD_REQUEST, 'payment not canceled');
     } else if (booking.paymentStatus === 'captured') {
       if (cancelBy === 'CLIENT') {
         throw new AppError(
@@ -877,10 +944,16 @@ const cancelBookingIntoDb = async (
 
       const refundAmount = (booking.price - booking.stripeFee) * 100;
       if (refundAmount > 0) {
-        await stripe.refunds.create({
-          payment_intent: booking.paymentIntentId,
+        const refund = await stripe.refunds.create({
+          payment_intent: booking.payment.client.paymentIntentId,
           amount: refundAmount,
         });
+        if (refund.status !== 'succeeded')
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'booking can not be cancelled'
+          );
+        booking.payment.client.refundId = refund.id;
       }
     } else {
       throw new AppError(
@@ -894,7 +967,6 @@ const cancelBookingIntoDb = async (
     booking.cancelledAt = new Date();
     booking.cancelBy = cancelBy;
     booking.status = 'cancelled';
-    booking.artistEarning = 0;
     await booking.save({ session });
 
     await session.commitTransaction();
@@ -972,11 +1044,12 @@ export const BookingService = {
   createBookingIntoDB,
   repayBookingIntoDb,
   cancelBookingIntoDb,
-  getArtistSessions,
+  getArtistDailySchedule,
   // completeBookingIntoDb,
-  completeSession,
+  completeSessionByArtist,
   deleteSessionFromBooking,
   // artistMarksCompletedIntoDb,
+  confirmPaymentByClient,
   getUserBookings,
   ReviewAfterAServiceIsCompletedIntoDB,
   createOrUpdateSessionIntoDB,

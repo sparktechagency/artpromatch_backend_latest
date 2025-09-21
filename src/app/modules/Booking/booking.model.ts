@@ -4,7 +4,12 @@ import {
   PAYMENT_STATUS,
   SESSION_STATUS,
 } from './booking.constant';
-import { IBooking } from './booking.interface';
+import {
+  IBooking,
+  IPayment,
+  IPaymentArtist,
+  IPaymentClient,
+} from './booking.interface';
 
 export const sessionSchema = new Schema({
   sessionNumber: { type: Number, default: 0 },
@@ -25,6 +30,33 @@ export const sessionSchema = new Schema({
   },
 });
 
+const PaymentClientSchema = new Schema<IPaymentClient>(
+  {
+    chargeId: { type: String },
+    paymentIntentId: { type: String },
+    refundId: { type: String },
+  },
+  { _id: false }
+);
+
+const PaymentArtistSchema = new Schema<IPaymentArtist>(
+  {
+    transferId: { type: String },
+    transactionId: { type: String },
+    payoutId: { type: String },
+  },
+  { _id: false }
+);
+
+const PaymentSchema = new Schema<IPayment>(
+  {
+    client: { type: PaymentClientSchema, default: {} },
+    artist: { type: PaymentArtistSchema, default: {} },
+  },
+  { _id: false }
+);
+
+// booking schema
 const bookingSchema = new Schema<IBooking>(
   {
     artist: {
@@ -87,11 +119,9 @@ const bookingSchema = new Schema<IBooking>(
     bodyPart: { type: String, required: true },
 
     // --- Payment (global) ---
-    paymentIntentId: { type: String },
-    chargeId: { type: String },
-    transferId: { type: String },
-    transactionId: { type: String },
-    payoutId: {type: String},
+
+    payment: { type: PaymentSchema, default: {} },
+    checkoutSessionId: {type: String},
     paymentStatus: {
       type: String,
       enum: Object.values(PAYMENT_STATUS),
@@ -101,7 +131,7 @@ const bookingSchema = new Schema<IBooking>(
       type: Number,
       default: 0,
     },
-    platFromFee: {
+    platFormFee: {
       type: Number,
       default: 0,
     },

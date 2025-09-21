@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import config from '../config';
+import logger from '../config/logger';
 import ArtistPreferences from '../modules/ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../modules/Auth/auth.interface';
 import { Auth } from '../modules/Auth/auth.model';
@@ -41,71 +42,207 @@ export const stripeWebhookHandler = asyncHandler(
     }
 
     switch (event.type) {
+      // case 'checkout.session.completed': {
+      //   const session = event.data.object as Stripe.Checkout.Session;
+      //   const bookingId = session.metadata?.bookingId;
+      //   const userId = session.metadata?.userId ?? '';
+      //   const paymentIntentId = session.payment_intent as string;
+
+      //   console.log('checkout session completed',bookingId,userId);
+
+      //   const booking = await Booking.findById(bookingId).select(
+      //     'artistInfo clientInfo client artist serviceName'
+      //   );
+      //   if (!booking)
+      //     logger.warn('booking not found', { userId, bookingId });
+      //   await Booking.updateOne(
+      //     { _id: bookingId },
+      //     {
+      //       $set: {
+      //         'payment.client.paymentIntentId': paymentIntentId,
+      //         paymentStatus: PAYMENT_STATUS.AUTHORIZED,
+      //       },
+      //     },
+      //     { runValidators: true }
+      //   );
+
+
+      //   const artist = await ArtistPreferences.findOne(
+      //     { artistId: booking.artist },
+      //     'notificationChannels'
+      //   );
+
+      //   const user = await Auth.findOne({ _id: userId }, 'fcmToken');
+      //    logger.warn('User not found', { userId, bookingId });
+
+      //   if (artist?.notificationChannels.includes('app')) {
+      //     sendNotificationBySocket({
+      //       title: 'New Booking Request',
+      //       message: `you have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
+      //       receiver: booking.artist.toString() ?? '',
+      //       type: NOTIFICATION_TYPE.BOOKING_REQUEST,
+      //     });
+      //   }
+
+      //   if (artist?.notificationChannels.includes('email')) {
+      //     sendNotificationByEmail(
+      //       booking.artistInfo.email,
+      //       NOTIFICATION_TYPE.BOOKING_REQUEST,
+      //       {
+      //         fullName: booking.clientInfo.fullName,
+      //         serviceName: booking.serviceName,
+      //       }
+      //     );
+      //   }
+      //   const date = new Date();
+
+      //   const formatted = date.toLocaleDateString('en-GB', {
+      //     day: '2-digit',
+      //     month: 'short',
+      //     year: 'numeric',
+      //   });
+
+      //   if (artist?.notificationChannels.includes('sms')) {
+      //     if (user.fcmToken) {
+      //       sendPushNotification(user.fcmToken, {
+      //         title: 'New Booking Request',
+      //         content: `you have a new booking request from ${booking.clientInfo.fullName} for${booking.serviceName}. Please review and confirm.`,
+      //         time: formatted,
+      //       });
+      //     }
+      //   }
+
+      //   break;
+      // }
+
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        const bookingId = session.metadata?.bookingId;
-        const userId = session.metadata?.userId ?? '';
-        const paymentIntentId = session.payment_intent as string;
 
-        const booking = await Booking.findById(bookingId).select(
-          'artistInfo clientInfo client artist serviceName'
-        );
-        if (!booking)
-          throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
-        await Booking.updateOne(
-          { _id: bookingId },
-          {
-            $set: {
-              paymentIntentId: paymentIntentId,
-              paymentStatus: PAYMENT_STATUS.AUTHORIZED,
-            },
-          },
-          { runValidators: true }
-        );
+        try {
+          const bookingId = session.metadata?.bookingId;
+          const userId = session.metadata?.userId ?? '';
+          const paymentIntentId =
+            typeof session.payment_intent === 'string'
+              ? session.payment_intent
+              : session.payment_intent?.id;
 
-        const artist = await ArtistPreferences.findOne(
-          { artistId: booking.artist },
-          'notificationChannels'
-        );
+          if (!bookingId) {
+            logger.warn('Checkout session missing bookingId in metadata', {
+              sessionId: session.id,
+              event: event.type,
+            });
+            break;
+          }
 
-        const user = await Auth.findOne({ _id: userId }, 'fcmToken');
-        if (!user) throw new AppError(httpStatus.NOT_FOUND, 'user not found');
-
-        if (artist?.notificationChannels.includes('app')) {
-          sendNotificationBySocket({
-            title: 'New Booking Request',
-            message: `you have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
-            receiver: booking.artist.toString() ?? '',
-            type: NOTIFICATION_TYPE.BOOKING_REQUEST,
+          logger.info('Checkout session completed', {
+            bookingId,
+            userId,
+            sessionId: session.id,
+            event: event.type,
           });
-        }
 
-        if (artist?.notificationChannels.includes('email')) {
-          sendNotificationByEmail(
-            booking.artistInfo.email,
-            NOTIFICATION_TYPE.BOOKING_REQUEST,
+          const booking = await Booking.findById(bookingId).select(
+            'artistInfo clientInfo client artist serviceName'
+          );
+          if (!booking) {
+            logger.error('Booking not found', { bookingId });
+            break;
+          }
+
+          await Booking.updateOne(
+            { _id: bookingId },
             {
-              fullName: booking.clientInfo.fullName,
-              serviceName: booking.serviceName,
+              $set: {
+                'payment.client.paymentIntentId': paymentIntentId,
+                paymentStatus: PAYMENT_STATUS.AUTHORIZED,
+              },
+            },
+            { runValidators: true }
+          );
+
+          const artist = await ArtistPreferences.findOne(
+            { artistId: booking.artist },
+            'notificationChannels'
+          );
+          const user = await Auth.findById(userId, 'fcmToken');
+
+          if (!user) {
+            logger.warn('User not found for booking', { bookingId, userId });
+          }
+
+          // Notifications
+          if (artist?.notificationChannels.includes('app')) {
+            try {
+              await sendNotificationBySocket({
+                title: 'New Booking Request',
+                message: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
+                receiver: booking.artist.toString() ?? '',
+                type: NOTIFICATION_TYPE.BOOKING_REQUEST,
+              });
+              logger.info('App notification sent', {
+                bookingId,
+                artistId: booking.artist,
+              });
+            } catch (err) {
+              logger.error('Failed to send app notification', {
+                error: err,
+                bookingId,
+              });
+            }
+          }
+
+          if (artist?.notificationChannels.includes('email')) {
+            try {
+              await sendNotificationByEmail(
+                booking.artistInfo.email,
+                NOTIFICATION_TYPE.BOOKING_REQUEST,
+                {
+                  fullName: booking.clientInfo.fullName,
+                  serviceName: booking.serviceName,
+                }
+              );
+              logger.info('Email notification sent', {
+                bookingId,
+                artistId: booking.artist,
+              });
+            } catch (err) {
+              logger.error('Failed to send email notification', {
+                error: err,
+                bookingId,
+              });
+            }
+          }
+
+          if (artist?.notificationChannels.includes('sms') && user?.fcmToken) {
+            try {
+              const formattedDate = new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              });
+              await sendPushNotification(user.fcmToken, {
+                title: 'New Booking Request',
+                content: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
+                time: formattedDate,
+              });
+              logger.info('Push notification sent', { bookingId, userId });
+            } catch (err) {
+              logger.error('Failed to send push notification', {
+                error: err,
+                bookingId,
+                userId,
+              });
+            }
+          }
+        } catch (err) {
+          logger.error(
+            'Webhook handler failed for checkout.session.completed',
+            {
+              error: err,
+              sessionId: session.id,
+              bookingId: session.metadata?.bookingId,
             }
           );
-        }
-        const date = new Date();
-
-        const formatted = date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        });
-
-        if (artist?.notificationChannels.includes('sms')) {
-          if (user.fcmToken) {
-            sendPushNotification(user.fcmToken, {
-              title: 'New Booking Request',
-              content: `you have a new booking request from ${booking.clientInfo.fullName} for${booking.serviceName}. Please review and confirm.`,
-              time: formatted,
-            });
-          }
         }
 
         break;
@@ -114,22 +251,24 @@ export const stripeWebhookHandler = asyncHandler(
       // payment intent succeed
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
-        const charge = await stripe.charges.retrieve(
-          pi.latest_charge as string
-        );
-        const balanceTx = await stripe.balanceTransactions.retrieve(
-          charge.balance_transaction as string
-        );
-        const stripeFeeCents = balanceTx.fee;
-        const stripeFee = stripeFeeCents / 100;
-        const booking = await Booking.findOne({ paymentIntentId: pi.id });
-        if (!booking)
-          throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
+        // console.log('pi', pi);
+        if (pi.status !== 'succeeded') {
+          logger.error('payment capture failed');
+        }
+
+
+        const booking = await Booking.findOne({
+          'payment.client.paymentIntentId': pi.id,
+        });
+        if (!booking) {
+          logger.error('booking not found');
+          break;
+        }
         booking.status = 'confirmed';
         booking.paymentStatus = 'captured';
-        booking.chargeId = (pi.latest_charge as string) || '';
-        booking.stripeFee = stripeFee;
+        booking.payment.client.chargeId = (pi.latest_charge as string) || '';
+
         await booking.save();
 
         const client = await ClientPreferences.findOne(
