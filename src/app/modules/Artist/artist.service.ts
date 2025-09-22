@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
@@ -622,7 +622,7 @@ const getArtistMonthlySchedule = async (
     // 1. Filter artist bookings with valid status and sessions in month
     {
       $match: {
-        artist: new mongoose.Types.ObjectId(artist._id),
+        artist: new Types.ObjectId(artist._id),
         status: { $in: ['confirmed', 'in_progress', 'ready_for_completion'] },
         'sessions.date': { $gte: startOfMonth, $lte: endOfMonth },
       },

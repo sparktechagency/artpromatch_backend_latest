@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
-import { startSession } from 'mongoose';
+import { startSession, Types } from 'mongoose';
 import { AppError } from '../../utils';
 import { IArtist } from '../Artist/artist.interface';
 import { IAuth } from '../Auth/auth.interface';
@@ -612,7 +612,7 @@ const getArtistDailySchedule = async (user: IAuth, date: Date) => {
     // 1. Filter only artist’s bookings in valid status within the day
     {
       $match: {
-        artist: new mongoose.Types.ObjectId(artist._id),
+        artist: new Types.ObjectId(artist._id),
         status: { $in: ['confirmed', 'in_progress', 'ready_for_completion'] },
         'sessions.date': { $gte: startOfDay, $lte: endOfDay },
       },
@@ -753,8 +753,11 @@ const confirmBookingByArtist = async (bookingId: string) => {
 
   try {
     const booking = await Booking.findById(bookingId).session(session);
-    if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
-    console.log(booking);
+
+    if (!booking) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+    }
+
     if (!booking.payment.client.paymentIntentId) {
       throw new AppError(
         httpStatus.NOT_FOUND,
@@ -791,9 +794,7 @@ const confirmBookingByArtist = async (bookingId: string) => {
     const stripeFeeCents = balanceTx.fee;
     const stripeFee = stripeFeeCents / 100;
 
-    console.log('paymentintent', paymentIntent.status);
     // Update booking in DB (tentatively)
-
     booking.payment.client.chargeId = paymentIntent.latest_charge as string;
     booking.status = 'confirmed';
     booking.paymentStatus = 'captured';
