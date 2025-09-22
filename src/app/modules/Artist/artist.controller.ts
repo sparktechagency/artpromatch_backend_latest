@@ -102,17 +102,15 @@ const updateArtistFlashes = asyncHandler(async (req, res) => {
   });
 });
 
-
 // boost profile
 const boostProfile = asyncHandler(async (req, res) => {
   const result = await ArtistService.boostProfileIntoDb(req.user);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'profile boost successfully!',
-    data: result
+    data: result,
   });
 });
-
 
 // update artist
 const updateArtistPortfolio = asyncHandler(async (req, res) => {

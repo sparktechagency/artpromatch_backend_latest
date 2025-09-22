@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
-import { Types } from 'mongoose';
+import { startSession, Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
@@ -908,13 +908,13 @@ const createService = async (
 };
 
 const boostProfileIntoDb = async (user: IAuth) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
     const artist = await Artist.findOne({ auth: user.id }).session(session);
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
-   
+
     const boost = await ArtistBoost.create(
       [
         {
@@ -926,7 +926,6 @@ const boostProfileIntoDb = async (user: IAuth) => {
       ],
       { session }
     );
-
 
     // create checkout session
     const checkoutSession: any = await stripe.checkout.sessions.create(
@@ -947,7 +946,10 @@ const boostProfileIntoDb = async (user: IAuth) => {
           },
         ],
         expand: ['payment_intent'],
-        metadata: { boostId: boost[0]?._id?.toString(),  artistId: artist._id.toString() },
+        metadata: {
+          boostId: boost[0]?._id?.toString(),
+          artistId: artist._id.toString(),
+        },
         success_url: `${process.env.CLIENT_URL}/boost/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.CLIENT_URL}/boost/cancel`,
       },
@@ -955,8 +957,6 @@ const boostProfileIntoDb = async (user: IAuth) => {
     );
 
     // save boost record in DB (pending)
-  
- 
 
     await session.commitTransaction();
     session.endSession();
@@ -990,7 +990,7 @@ export const expireBoosts = async () => {
       'boost.endTime': boost.endTime,
     });
   }
-}
+};
 
 // getServicesByArtistFromDB
 // saveArtistAvailabilityIntoDB

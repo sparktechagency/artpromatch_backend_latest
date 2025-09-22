@@ -38,7 +38,7 @@ const repayBooking = asyncHandler(async (req, res) => {
 // get user bookings
 const getUserBookings = asyncHandler(async (req, res) => {
   const result = await BookingService.getUserBookings(req.user, req.query);
-  
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Booking retrieve Successfully!',
@@ -92,7 +92,10 @@ const completeSession = asyncHandler(async (req, res) => {
 
 const artistMarksCompleted = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
-  const result = await BookingService.artistMarksCompletedIntoDb(req.user, bookingId);
+  const result = await BookingService.artistMarksCompletedIntoDb(
+    req.user,
+    bookingId
+  );
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message:
@@ -105,7 +108,8 @@ const completeBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const otp = req.body.otp;
   if (!otp) throw new AppError(httpStatus.BAD_REQUEST, 'otp is required');
-  if (!bookingId) throw new AppError(httpStatus.BAD_REQUEST, 'booking id is required');
+  if (!bookingId)
+    throw new AppError(httpStatus.BAD_REQUEST, 'booking id is required');
   const result = await BookingService.completeBookingIntoDb(
     req.user,
     bookingId,
@@ -113,7 +117,8 @@ const completeBooking = asyncHandler(async (req, res) => {
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Congratulations! Booking Completed Successfully! money is transferred your account. stripe will pay it after 7 days',
+    message:
+      'Congratulations! Booking Completed Successfully! money is transferred your account. stripe will pay it after 7 days',
     data: result,
   });
 });

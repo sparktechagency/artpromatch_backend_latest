@@ -920,7 +920,6 @@ const confirmBookingByArtist = async (bookingId: string) => {
       _id: client.clientId,
     }).populate<{ auth: IAuth }>('auth', 'fcmToken');
 
-
     if (!clientDoc) {
       throw new AppError(httpStatus.NOT_FOUND, 'user not found');
     }
@@ -1130,7 +1129,7 @@ const completeBookingIntoDb = async (
   bookingId: string,
   otp: string
 ) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
@@ -1171,8 +1170,9 @@ const completeBookingIntoDb = async (
       paymentIntent.amount_received * (adminPercent / 100)
     );
     const artistAmount = paymentIntent.amount_received - adminFee - stripeFee;
-    
-    if(!artist.stripeAccountId) throw new AppError(httpStatus.NOT_FOUND,'stripe account not found')
+
+    if (!artist.stripeAccountId)
+      throw new AppError(httpStatus.NOT_FOUND, 'stripe account not found');
 
     // create transfer (external call)
     const transfer = await stripe.transfers.create({
@@ -1185,7 +1185,7 @@ const completeBookingIntoDb = async (
     booking.status = 'completed';
     booking.paymentStatus = 'succeeded';
     booking.completedAt = new Date();
-    booking.artistEarning = artistAmount/100;
+    booking.artistEarning = artistAmount / 100;
     booking.payment.artist.transferId = transfer.id;
 
     await booking.save({ session });

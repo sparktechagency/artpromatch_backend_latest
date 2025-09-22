@@ -142,9 +142,9 @@ const bookingSchema = new Schema<IBooking>(
       default: 0,
     },
 
-    otp: {type:String},
-    otpExpiresAt: {type: Date},
-    completedAt: {type: Date},
+    otp: { type: String },
+    otpExpiresAt: { type: Date },
+    completedAt: { type: Date },
     // If cancelled
     cancelledAt: { type: Date, default: null },
     cancelBy: { type: String, enum: ['ARTIST', 'CLIENT'] },
@@ -172,7 +172,7 @@ bookingSchema.pre('save', async function (next) {
   if (!this.isModified('otp')) return next();
 
   this.otp = await bcrypt.hash(
-   this.otp!.toString(),
+    this.otp!.toString(),
     Number(config.bcrypt_salt_rounds)
   );
   next();
