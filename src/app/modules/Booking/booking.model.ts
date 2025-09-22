@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { Schema, model } from 'mongoose';
 import {
   BOOKING_STATUS,
@@ -10,6 +11,7 @@ import {
   IPaymentArtist,
   IPaymentClient,
 } from './booking.interface';
+import config from '../../config';
 
 export const sessionSchema = new Schema({
   sessionNumber: { type: Number, default: 0 },
@@ -139,6 +141,10 @@ const bookingSchema = new Schema<IBooking>(
       type: Number,
       default: 0,
     },
+
+    otp: {type:String},
+    otpExpiresAt: {type: Date},
+    completedAt: {type: Date},
     // If cancelled
     cancelledAt: { type: Date, default: null },
     cancelBy: { type: String, enum: ['ARTIST', 'CLIENT'] },
@@ -161,6 +167,20 @@ bookingSchema.index({ 'clientInfo.phone': 1 });
 bookingSchema.index({ 'artistInfo.fullName': 1 });
 bookingSchema.index({ 'artistInfo.email': 1 });
 bookingSchema.index({ 'artistInfo.phone': 1 });
+
+bookingSchema.pre('save', async function (next) {
+  if (!this.isModified('otp')) return next();
+
+  this.otp = await bcrypt.hash(
+   this.otp!.toString(),
+    Number(config.bcrypt_salt_rounds)
+  );
+  next();
+});
+
+bookingSchema.methods.isOtpMatched = async function (otp: string) {
+  return await bcrypt.compare(otp, this.otp);
+};
 
 const Booking = model<IBooking>('Booking', bookingSchema);
 export default Booking;

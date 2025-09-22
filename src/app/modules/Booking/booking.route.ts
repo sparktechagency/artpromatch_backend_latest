@@ -63,7 +63,21 @@ router
     BookingController.completeSession
   );
 
-router
+   router
+  .route('/mark-as-completed/:bookingId')
+  .post(
+    auth(ROLE.ARTIST),
+    BookingController.artistMarksCompleted
+  );
+
+   router
+  .route('/complete/:bookingId')
+  .post(
+    auth(ROLE.ARTIST),
+    BookingController.completeBooking
+  );
+
+    router
   .route('/delete-session/:bookingId')
   .delete(auth(ROLE.ARTIST), BookingController.deleteSession);
 
