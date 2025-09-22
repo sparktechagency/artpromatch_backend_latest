@@ -88,10 +88,37 @@ const completeSession = asyncHandler(async (req, res) => {
   });
 });
 
+const artistMarksCompleted = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+  const result = await BookingService.artistMarksCompletedIntoDb(req.user, bookingId);
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message:
+      'otp is sent your customer phone or email.please take that otp from him to complete the booking!',
+    data: result,
+  });
+});
+
+const completeBooking = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+  const otp = req.body.otp;
+  if (!otp) throw new AppError(httpStatus.BAD_REQUEST, 'otp is required');
+  if (!bookingId) throw new AppError(httpStatus.BAD_REQUEST, 'booking id is required');
+  const result = await BookingService.completeBookingIntoDb(
+    req.user,
+    bookingId,
+    otp
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Congratulations! Booking Completed Successfully! money is transferred your account. stripe will pay it after 7 days',
+    data: result,
+  });
+});
+
 // delete session
 const deleteSession = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
-  console.log(req.body);
   const result = await BookingService.deleteSessionFromBooking(
     bookingId,
     req.body
@@ -158,12 +185,11 @@ const ReviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
 // });
 
 export const BookingController = {
-  // createBooking,
   ReviewAfterAServiceIsCompleted,
-  // getAvailability,
   confirmPaymentByClient,
   getArtistSchedule,
   completeSession,
+  artistMarksCompleted,
   deleteSession,
   cancelBooking,
   getUserBookings,
@@ -171,4 +197,5 @@ export const BookingController = {
   createBooking,
   createSession,
   confirmBookingByArtist,
+  completeBooking,
 };

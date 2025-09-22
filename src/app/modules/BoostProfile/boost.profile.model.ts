@@ -19,21 +19,14 @@ const ArtistBoostSchema = new Schema<IArtistBoost>(
       default: Date.now() + 12 * 60 * 60 * 1000,
     },
 
-    price: {
-      type: Number,
-      required: true,
-    },
     paymentIntentId: {
-      type: String,
-    },
-    chargeId: {
       type: String,
     },
 
     paymentStatus: {
       type: String,
-      enum: ['Pending', 'Succeeded', 'Failed', 'Refunded'],
-      default: 'Pending',
+      enum: ['pending', 'succeeded', 'failed'],
+      default: 'pending',
     },
     isActive: {
       type: Boolean,
