@@ -54,7 +54,7 @@ const getConversation = async (
 
       const unseenCount = await Message.countDocuments({
         conversationId: conv._id,
-        msgByUserId: { $ne: profileObjectId },
+        msgByUser: { $ne: profileObjectId },
         seen: false,
       });
 

@@ -5,7 +5,7 @@ export interface IMessage {
   imageUrl: string[];
   audioUrl: string;
   seen: boolean;
-  msgByUserId: Types.ObjectId;
+  msgByUser: Types.ObjectId;
   conversationId: Types.ObjectId;
 }
 

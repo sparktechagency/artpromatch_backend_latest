@@ -21,7 +21,7 @@ export const handleSeenMessage = async (
 
   const unseenMessages = await Message.find({
     conversationId,
-    msgByUserId: otherUserId,
+    msgByUser: otherUserId,
     seen: false,
   }).select('_id');
 

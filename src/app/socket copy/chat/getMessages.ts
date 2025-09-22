@@ -63,8 +63,7 @@ export const handleMessagePage = async (
   const meta = await messageQuery.countTotal();
 
   const unseenMessages = messages.filter(
-    (msg) =>
-      msg.msgByUserId.toString() === otherUser._id.toString() && !msg.seen
+    (msg) => msg.msgByUser.toString() === otherUser._id.toString() && !msg.seen
   );
 
   console.log('unseenmessage', unseenMessages);
