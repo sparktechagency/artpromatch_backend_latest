@@ -18,120 +18,64 @@ export function parseDurationToMinutes(value: string): number {
   return hours * 60 + minutes;
 }
 
-// export const createServiceSchema = z.object({
-//   body: z.object({
-//     title: z
-//       .string({
-//         required_error: 'Title is required',
-//       })
-//       .min(8, 'Title must be at least 8 characters'),
-
-//     description: z
-//       .string({
-//         required_error: 'Description is required',
-//       })
-//       .min(500, 'Description must be at least 500 characters')
-//       .max(1500, 'Description cannot exceed 1500 characters'),
-
-//     price: z
-//       .number({
-//         required_error: 'Price is required',
-//       })
-//       .min(10, 'Price must be at least 500 characters'),
-
-//     durationInMinutes: z
-//       .string({
-//         required_error: 'Duration is required',
-//       })
-//       .transform((val, ctx) => {
-//         try {
-//           return parseDuration(val); // e.g. "2h 30m" → 150
-//         } catch {
-//           ctx.addIssue({
-//             code: z.ZodIssueCode.custom,
-//             message: "Invalid duration format. Use like '2h 30m' or '45m'",
-//           });
-//           return z.NEVER;
-//         }
-//       })
-//       .refine((val) => val >= 15 && val <= 10 * 60, {
-//         message: 'Duration must be between 15 minutes and 10 hours',
-//       }),
-
-//     bufferTimeInMinutes: z
-//       .string()
-//       .default('0m')
-//       .transform((val, ctx) => {
-//         try {
-//           return parseDuration(val); // e.g. "30m" → 30
-//         } catch {
-//           ctx.addIssue({
-//             code: z.ZodIssueCode.custom,
-//             message: "Invalid buffer format. Use like '15m' or '1h'",
-//           });
-//           return z.NEVER;
-//         }
-//       })
-//       .refine((val) => val >= 0 && val <= 120, {
-//         message: 'Buffer time must be between 0 and 120 minutes',
-//       }),
-//   }),
-// });
-
-// update service schema
-
+// createServiceSchema
 const createServiceSchema = z.object({
   body: z.object({
-    title: z.string({ required_error: 'title is required' }).min(8),
-    description: z.string({ required_error: 'description is required' }).min(100).max(1500),
-    bodyLocation: z.nativeEnum(TattooBodyParts),
-    sessionType: z.enum(["short", "long"]),
-    price: z.number({ required_error: 'Price is required' }),
-  })
+    title: z
+      .string({ required_error: 'Title is required' })
+      .min(8, { message: 'Title must be at least 8 characters' }),
+
+    description: z
+      .string({ required_error: 'Description is required' })
+      .min(500, { message: 'Description must be at least 500 characters' })
+      .max(1500, { message: 'Description must be at most 1500 characters' }),
+
+    bodyLocation: z.nativeEnum(TattooBodyParts, {
+      required_error: 'Body Location is required',
+    }),
+
+    sessionType: z.enum(['short', 'long'], {
+      required_error: 'Session Type is required',
+    }),
+
+    price: z
+      .number({ required_error: 'Price is required' })
+      .min(1, { message: 'Price must be at least 1' }),
+  }),
 });
 
-// export const updateServiceSchema = z.object({
-//   body: z.object({
-//     title: z.string().min(8, 'Title must be at least 8 characters').optional(),
+// updateServiceSchema
+const updateServiceSchema = z.object({
+  body: z.object({
+    title: z
+      .string({ required_error: 'Title is required' })
+      .min(8, { message: 'Title must be at least 8 characters' }),
 
-//     description: z
-//       .string()
-//       .min(500, 'Description must be at least 500 characters')
-//       .max(1500, 'Description cannot exceed 1500 characters')
-//       .optional(),
+    description: z
+      .string({ required_error: 'Description is required' })
+      .min(500, { message: 'Description must be at least 500 characters' })
+      .max(1500, { message: 'Description must be at most 1500 characters' }),
 
-//     price: z
-//       .number({
-//         required_error: 'Price is required',
-//       })
-//       .min(10, 'Price must be at least 500 characters')
-//       .optional(),
+    bodyLocation: z.nativeEnum(TattooBodyParts, {
+      required_error: 'Body Location is required',
+    }),
 
-//     durationInMinutes: z
-//       .string()
-//       .optional()
-//       .transform((val) => {
-//         if (!val) return undefined; // handle undefined
-//         return parseDuration(val); // convert to minutes
-//       })
-//       .refine((val) => val === undefined || (val >= 15 && val <= 10 * 60), {
-//         message: 'Duration must be between 15 minutes and 8 hours',
-//       }),
+    sessionType: z.enum(['short', 'long'], {
+      required_error: 'Session Type is required',
+    }),
 
-//     bufferTimeInMinutes: z
-//       .string()
-//       .optional()
-//       .transform((val) => {
-//         if (!val) return undefined; // handle undefined
-//         return parseDuration(val); // convert to minutes
-//       })
-//       .refine((val) => val === undefined || (val >= 0 && val <= 120), {
-//         message: 'Buffer time must be between 0 and 120 minutes',
-//       }),
-//   }),
-// });
+    price: z
+      .number({ required_error: 'Price is required' })
+      .min(1, { message: 'Price must be at least 1' }),
+
+    images: z
+      .array(z.string({ required_error: 'Image must be a string URL' }))
+      .max(5, { message: 'At most 5 images are allowed!' })
+      .optional(),
+  }),
+});
 
 export const ArtistServiceValidation = {
   createServiceSchema,
-  // updateServiceSchema,
+  updateServiceSchema,
 };

@@ -6,17 +6,18 @@ import { BookingService } from './booking.service';
 // create booking
 const createBooking = asyncHandler(async (req, res) => {
   const result = await BookingService.createBookingIntoDB(req.user, req.body);
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'Booking Created Successfully!',
+    message: 'Booking Created Successfully, pay now!',
     data: result,
   });
 });
 
 const confirmPaymentByClient = asyncHandler(async (req, res) => {
   const query = req.query as { sessionId: string };
-  console.log(query);
   const result = await BookingService.confirmPaymentByClient(query);
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'payment Successfully!',
@@ -37,6 +38,7 @@ const repayBooking = asyncHandler(async (req, res) => {
 // get user bookings
 const getUserBookings = asyncHandler(async (req, res) => {
   const result = await BookingService.getUserBookings(req.user, req.query);
+  
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Booking retrieve Successfully!',
@@ -91,11 +93,12 @@ const completeSession = asyncHandler(async (req, res) => {
 // delete session
 const deleteSession = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
-  console.log(req.body);
+
   const result = await BookingService.deleteSessionFromBooking(
     bookingId,
     req.body
   );
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Session Created Successfully!',

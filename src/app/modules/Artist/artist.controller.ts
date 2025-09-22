@@ -158,9 +158,12 @@ const getArtistSchedule = asyncHandler(async (req, res) => {
 // updateArtistServiceById
 const updateArtistServiceById = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const files = req.files as TServiceImages;
   const result = await ArtistService.updateArtistServiceByIdIntoDB(
     id,
-    req.body
+    req.body,
+    files,
+    req.user
   );
 
   sendResponse(res, {
@@ -173,7 +176,7 @@ const updateArtistServiceById = asyncHandler(async (req, res) => {
 // deleteArtistService
 const deleteArtistService = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const result = await ArtistService.deleteArtistServiceFromDB(id);
+  const result = await ArtistService.deleteArtistServiceFromDB(id, req.user);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
