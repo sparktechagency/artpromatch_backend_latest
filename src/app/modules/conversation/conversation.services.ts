@@ -1,17 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-import mongoose from 'mongoose';
-import Message from '../message/message.model';
+import { Types } from 'mongoose';
 import Conversation from './conversation.model';
 import { Auth } from '../Auth/auth.model';
 import QueryBuilder from '../../builders/QueryBuilder';
-
+import Message from '../Message/message.modal';
 
 const getConversation = async (
   profileId: string,
-  query: Record<string, unknown>,
+  query: Record<string, unknown>
 ) => {
-  const profileObjectId = new mongoose.Types.ObjectId(profileId);
+  const profileObjectId = new Types.ObjectId(profileId);
   const searchTerm = query.searchTerm as string;
 
   let userSearchFilter = {};
@@ -20,7 +18,7 @@ const getConversation = async (
   if (searchTerm) {
     const matchingUsers = await Auth.find(
       { name: { $regex: searchTerm, $options: 'i' } },
-      '_id',
+      '_id'
     );
 
     const matchingUserIds = matchingUsers.map((user) => user._id);
@@ -38,7 +36,7 @@ const getConversation = async (
       .sort({ updatedAt: -1 })
       .populate({ path: 'participants', select: 'name photo _id email' })
       .populate('lastMessage'),
-    query,
+    query
   )
     .fields()
     .filter()
@@ -51,7 +49,7 @@ const getConversation = async (
   const conversationList = await Promise.all(
     currentUserConversation.map(async (conv: any) => {
       const otherUser = conv.participants.find(
-        (user: any) => user._id.toString() !== profileId,
+        (user: any) => user._id.toString() !== profileId
       );
 
       const unseenCount = await Message.countDocuments({
@@ -71,7 +69,7 @@ const getConversation = async (
         unseenMsg: unseenCount,
         lastMsg: conv.lastMessage,
       };
-    }),
+    })
   );
 
   const meta = await currentUserConversationQuery.countTotal();
@@ -81,7 +79,6 @@ const getConversation = async (
     result: conversationList,
   };
 };
-
 
 const ConversationService = {
   getConversation,

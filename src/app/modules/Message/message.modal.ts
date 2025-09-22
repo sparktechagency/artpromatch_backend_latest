@@ -1,5 +1,5 @@
-import mongoose, { model, Schema } from 'mongoose';
-import { IMessage } from '../Message/message.interface';
+import { model, Schema } from 'mongoose';
+import { IMessage } from './message.interface';
 
 const messageSchema = new Schema<IMessage>(
   {
@@ -21,12 +21,12 @@ const messageSchema = new Schema<IMessage>(
       default: false,
     },
     msgByUserId: {
-      type: mongoose.Schema.ObjectId,
+      type: Schema.ObjectId,
       required: true,
       ref: 'User',
     },
     conversationId: {
-      type: mongoose.Schema.ObjectId,
+      type: Schema.ObjectId,
       required: true,
       ref: 'Conversation',
     },
