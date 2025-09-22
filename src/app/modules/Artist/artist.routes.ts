@@ -93,16 +93,20 @@ router
   .get(auth(ROLE.ARTIST), ArtistController.getServicesByArtist);
 
 // updateArtistService
-router.route('/service/update/:id').post(
+router.route('/service/update/:id').patch(
+  upload.fields([
+    { name: 'images', maxCount: 5 },
+    { name: 'thumbnail', maxCount: 1 },
+  ]),
   auth(ROLE.ARTIST),
-  // validateRequest(ArtistServiceValidation.updateServiceSchema),
+  validateRequestFromFormData(ArtistServiceValidation.updateServiceSchema),
   ArtistController.updateArtistServiceById
 );
 
 // deleteArtistService
 router
   .route('/service/delete/:id')
-  .post(auth(ROLE.ARTIST), ArtistController.deleteArtistService);
+  .delete(auth(ROLE.ARTIST), ArtistController.deleteArtistService);
 
 // removeImage
 router
@@ -118,20 +122,13 @@ router
     ArtistController.saveArtistAvailability
   );
 
-  router
+router
   .route('/schedule')
-  .get(
-    auth(ROLE.ARTIST),
-    ArtistController.getArtistSchedule
-  );
+  .get(auth(ROLE.ARTIST), ArtistController.getArtistSchedule);
 
-
- router
+router
   .route('/boost-profile')
-  .post(
-    auth(ROLE.ARTIST),
-    ArtistController.boostProfile
-  );
+  .post(auth(ROLE.ARTIST), ArtistController.boostProfile);
 // getAvailabilityExcludingTimeOff
 // router
 //   .route('/availability/:id')
@@ -154,11 +151,6 @@ router
     ArtistController.createConnectedAccountAndOnboardingLinkForArtist
   );
 
-router
-  .route('/delete-account')
-  .post(
-    ArtistController.deleteAccount
-  );
-
+router.route('/delete-account').post(ArtistController.deleteAccount);
 
 export const ArtistRoutes = router;

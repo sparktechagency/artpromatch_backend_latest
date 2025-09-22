@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
-import { Types } from 'mongoose';
+import { startSession, Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
@@ -32,6 +32,11 @@ import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
+import {
+  deleteSingleImage,
+  deleteSomeImages,
+  deleteSomeMulterFiles,
+} from '../Folder/folder.utils';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -374,23 +379,22 @@ const getServicesByArtistFromDB = async (user: IAuth) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
 
-  const artistObjectId = new Types.ObjectId(artist._id);
-
   const result = await Service.aggregate([
-    { $match: { artist: artistObjectId } },
+    { $match: { artist: artist._id } },
 
     {
       $project: {
-        _id: 1,
-        title: 1,
-        price: 1,
-        durationInMinutes: 1,
-        bufferTimeInMinutes: 1,
-        thumbnail: 1,
-        images: 1,
-        totalCompletedOrder: 1,
-        totalReviewCount: 1,
         avgRating: 1,
+        bodyLocation: 1,
+        description: 1,
+        images: 1,
+        price: 1,
+        sessionType: 1,
+        thumbnail: 1,
+        title: 1,
+        // totalCompletedOrder: 1,
+        // totalReviewCount: 1,
+        _id: 1,
       },
     },
   ]);
@@ -401,26 +405,104 @@ const getServicesByArtistFromDB = async (user: IAuth) => {
 // updateArtistServiceByIdIntoDB
 const updateArtistServiceByIdIntoDB = async (
   id: string,
-  data: Partial<IService>
+  payload: Partial<IService>,
+  files: TServiceImages,
+  UserData: IAuth
 ) => {
-  const serviceExists = await Service.findById(id);
-  if (!serviceExists)
-    throw new AppError(httpStatus.NOT_FOUND, 'service not found');
-  const service = await Service.findByIdAndUpdate(id, data, { new: true });
-  if (!service)
-    throw new AppError(httpStatus.BAD_REQUEST, 'failed to update service');
-  return service;
+  const artist = await Artist.findOne({ auth: UserData._id });
+  if (!artist) {
+    deleteSomeMulterFiles([
+      ...(files?.thumbnail || []),
+      ...(files?.images || []),
+    ]);
+
+    throw new AppError(httpStatus.NOT_FOUND, 'Your artist account not found!');
+  }
+
+  const service = await Service.findOne({ _id: id, artist: artist._id });
+  if (!service) {
+    deleteSomeMulterFiles([
+      ...(files?.thumbnail || []),
+      ...(files?.images || []),
+    ]);
+
+    throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+  }
+
+  // Handle thumbnail
+  let thumbnail = service.thumbnail;
+  if (files?.thumbnail && files.thumbnail.length > 0) {
+    thumbnail = files.thumbnail[0].path.replace(/\\/g, '/');
+    deleteSingleImage(service.thumbnail);
+  }
+
+  // Handle images (merge old + new)
+  let images: string[] = payload.images || service.images || [];
+  if (files?.images && files.images.length > 0) {
+    const newImages = files.images.map((img) => img.path.replace(/\\/g, '/'));
+    images = [...images, ...newImages];
+  }
+
+  // Find removed images (present in old service.images but not in payload.images)
+  const removedImages: string[] = service.images.filter(
+    (img) => !(payload.images || []).includes(img)
+  );
+
+  // Delete removed images from storage
+  if (removedImages.length > 0) {
+    deleteSomeImages(removedImages);
+  }
+
+  // Validate images length (2-5)
+  if (images.length < 2 || images.length > 5) {
+    deleteSomeMulterFiles([
+      ...(files?.thumbnail || []),
+      ...(files?.images || []),
+    ]);
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You must upload between 2 and 5 Service Images!'
+    );
+  }
+
+  const serviceData = {
+    ...payload,
+    thumbnail,
+    images,
+  };
+
+  const result = await Service.findByIdAndUpdate(id, serviceData, {
+    new: true,
+  });
+
+  if (!result) {
+    deleteSomeMulterFiles([
+      ...(files?.thumbnail || []),
+      ...(files?.images || []),
+    ]);
+
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to update service!');
+  }
+
+  return result;
 };
 
 // deleteArtistServiceFromDB
-const deleteArtistServiceFromDB = async (id: string) => {
-  const serviceExists = await Service.findById(id);
+const deleteArtistServiceFromDB = async (id: string, UserData: IAuth) => {
+  const artist = await Artist.findOne({ auth: UserData._id });
 
-  if (!serviceExists) {
-    throw new AppError(httpStatus.NOT_FOUND, 'service not found');
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Your artist account not found!');
   }
 
-  await Service.findByIdAndUpdate(id, { isDeleted: false }, { new: true });
+  const serviceExists = await Service.find({ _id: id, artist: artist._id });
+
+  if (!serviceExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+  }
+
+  await Service.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
 
   return null;
 };
@@ -801,16 +883,24 @@ const createService = async (
   if (!artist) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
   }
+
   const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
-  const images = files?.images?.map(
-    (image) => image.path.replace(/\\/g, '/') || ''
-  );
+  const images =
+    files?.images?.map((image) => image.path.replace(/\\/g, '/') || '') || [];
+
+  // Validate images length (2-5)
+  if (images.length < 2 || images.length > 5) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You must upload between 2 and 5 Service Images!'
+    );
+  }
 
   const serviceData = {
     ...payload,
     artist: artist._id,
-    thumbnail: thumbnail,
-    images: images,
+    thumbnail,
+    images,
   };
 
   const service = await Service.create(serviceData);
@@ -818,13 +908,13 @@ const createService = async (
 };
 
 const boostProfileIntoDb = async (user: IAuth) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
     const artist = await Artist.findOne({ auth: user.id }).session(session);
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
-   
+
     const boost = await ArtistBoost.create(
       [
         {
@@ -836,7 +926,6 @@ const boostProfileIntoDb = async (user: IAuth) => {
       ],
       { session }
     );
-
 
     // create checkout session
     const checkoutSession: any = await stripe.checkout.sessions.create(
@@ -857,7 +946,10 @@ const boostProfileIntoDb = async (user: IAuth) => {
           },
         ],
         expand: ['payment_intent'],
-        metadata: { boostId: boost[0]?._id?.toString(),  artistId: artist._id.toString() },
+        metadata: {
+          boostId: boost[0]?._id?.toString(),
+          artistId: artist._id.toString(),
+        },
         success_url: `${process.env.CLIENT_URL}/boost/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.CLIENT_URL}/boost/cancel`,
       },
@@ -865,8 +957,6 @@ const boostProfileIntoDb = async (user: IAuth) => {
     );
 
     // save boost record in DB (pending)
-  
- 
 
     await session.commitTransaction();
     session.endSession();
@@ -900,7 +990,7 @@ export const expireBoosts = async () => {
       'boost.endTime': boost.endTime,
     });
   }
-}
+};
 
 // getServicesByArtistFromDB
 // saveArtistAvailabilityIntoDB

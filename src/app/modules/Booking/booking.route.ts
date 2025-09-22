@@ -30,14 +30,12 @@ router
     BookingController.createBooking
   );
 
+// getUserBookings
 router
   .route('/list')
-  .get(
-    auth(ROLE.CLIENT, ROLE.ARTIST),
-    BookingController.getUserBookings
-  );
+  .get(auth(ROLE.CLIENT, ROLE.ARTIST), BookingController.getUserBookings);
 
-  router
+router
   .route('/confirm-payment')
   .post(auth(ROLE.CLIENT), BookingController.confirmPaymentByClient);
 
@@ -47,7 +45,7 @@ router
 
 router
   .route('/cancel/:bookingId')
-  .post(auth(ROLE.ARTIST,ROLE.CLIENT), BookingController.cancelBooking);
+  .post(auth(ROLE.ARTIST, ROLE.CLIENT), BookingController.cancelBooking);
 
 router
   .route('/add-session/:bookingId')
@@ -57,7 +55,7 @@ router
     BookingController.createSession
   );
 
-  router
+router
   .route('/complete-session/:bookingId')
   .post(
     auth(ROLE.ARTIST),
@@ -65,26 +63,17 @@ router
     BookingController.completeSession
   );
 
-   router
+router
   .route('/mark-as-completed/:bookingId')
-  .post(
-    auth(ROLE.ARTIST),
-    BookingController.artistMarksCompleted
-  );
+  .post(auth(ROLE.ARTIST), BookingController.artistMarksCompleted);
 
-   router
+router
   .route('/complete/:bookingId')
-  .post(
-    auth(ROLE.ARTIST),
-    BookingController.completeBooking
-  );
+  .post(auth(ROLE.ARTIST), BookingController.completeBooking);
 
-    router
+router
   .route('/delete-session/:bookingId')
-  .delete(
-    auth(ROLE.ARTIST),
-    BookingController.deleteSession
-  );
+  .delete(auth(ROLE.ARTIST), BookingController.deleteSession);
 
 router
   .route('/create')

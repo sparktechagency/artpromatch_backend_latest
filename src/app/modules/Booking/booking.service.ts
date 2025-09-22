@@ -53,38 +53,51 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
     const client = await Client.findOne({ auth: user.id }, '_id').session(
       session
     );
-    if (!client) throw new AppError(httpStatus.NOT_FOUND, 'client not found');
+
+    if (!client) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
+    }
 
     const service = await Service.findById(payload.serviceId)
       .select('artist title description bodyLocation price')
       .session(session);
-    if (!service) throw new AppError(httpStatus.NOT_FOUND, 'service not found');
+
+    if (!service) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+    }
 
     const artist = await Artist.findById(service.artist)
       .populate<{ auth: IAuth }>('auth', 'email phoneNumber fullName fcmToken')
       .session(session);
-    if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
+
+    if (!artist) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+    }
 
     const existingArtistBooking = await Booking.findOne({
       artist: artist._id,
       service: service._id,
       status: 'pending',
     }).session(session);
-    if (existingArtistBooking)
+
+    if (existingArtistBooking) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'Artist has already booked for this service'
+        'You have already booked this service!'
       );
+    }
 
     const existingClientPending = await Booking.findOne({
       client: client._id,
       status: 'pending',
     }).session(session);
-    if (existingClientPending)
+
+    if (existingClientPending) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'You already have a pending booking request, you cannot create another until current booking is completed or cancelled'
+        'You already have a pending booking request, you cannot create another until current booking is completed or cancelled!'
       );
+    }
 
     const bookingPayload = {
       artist: artist._id,
@@ -109,9 +122,12 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
       price: service.price,
       paymentStatus: 'pending',
     };
+
     const booking = await Booking.create([bookingPayload], { session });
-    if (!booking || !booking[0])
-      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create booking');
+
+    if (!booking || !booking[0]) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create booking!');
+    }
 
     // Create Stripe Checkout Session using bookingId
     const checkoutSession: any = await stripe.checkout.sessions.create(
@@ -275,14 +291,20 @@ const getUserBookings = async (
 
   if (user.role === 'CLIENT') {
     const client = await Client.findOne({ auth: user._id });
-    if (!client)
+
+    if (!client) {
       throw new AppError(httpStatus.NOT_FOUND, 'Client profile not found');
+    }
+
     match.client = client._id;
     infoField = 'artistInfo';
   } else if (user.role === 'ARTIST') {
     const artist = await Artist.findOne({ auth: user._id });
-    if (!artist)
+
+    if (!artist) {
       throw new AppError(httpStatus.NOT_FOUND, 'Artist profile not found');
+    }
+
     match.artist = artist._id;
     infoField = 'clientInfo';
   }
@@ -303,6 +325,41 @@ const getUserBookings = async (
   // Single aggregation with facet
   const [result] = await Booking.aggregate([
     { $match: match },
+
+    // Populate service
+    {
+      $lookup: {
+        from: 'services',
+        localField: 'service',
+        foreignField: '_id',
+        as: 'serviceDetails',
+      },
+    },
+    { $unwind: { path: '$serviceDetails', preserveNullAndEmptyArrays: true } },
+
+    // Populate client
+    {
+      $lookup: {
+        from: 'clients',
+        localField: 'client',
+        foreignField: '_id',
+        as: 'clientDetails',
+      },
+    },
+    { $unwind: { path: '$clientDetails', preserveNullAndEmptyArrays: true } },
+
+    // Populate auth inside client
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'clientDetails.auth',
+        foreignField: '_id',
+        as: 'clientAuth',
+      },
+    },
+    { $unwind: { path: '$clientAuth', preserveNullAndEmptyArrays: true } },
+
+    // Prepare final projection
     {
       $facet: {
         data: [
@@ -313,6 +370,16 @@ const getUserBookings = async (
               price: 1,
               status: 1,
               paymentStatus: 1,
+              sessions: 1,
+              service: '$serviceDetails',
+              // client: '$clientDetails',
+              client: {
+                // _id: '$clientDetails._id',
+                name: '$clientAuth.fullName',
+                email: '$clientAuth.email',
+                phone: '$clientAuth.phone',
+                image: '$clientAuth.image',
+              },
               name: `$${infoField}.fullName`,
               email: `$${infoField}.email`,
               phone: `$${infoField}.phone`,
@@ -853,7 +920,6 @@ const confirmBookingByArtist = async (bookingId: string) => {
       _id: client.clientId,
     }).populate<{ auth: IAuth }>('auth', 'fcmToken');
 
-
     if (!clientDoc) {
       throw new AppError(httpStatus.NOT_FOUND, 'user not found');
     }
@@ -1063,7 +1129,7 @@ const completeBookingIntoDb = async (
   bookingId: string,
   otp: string
 ) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
@@ -1104,8 +1170,9 @@ const completeBookingIntoDb = async (
       paymentIntent.amount_received * (adminPercent / 100)
     );
     const artistAmount = paymentIntent.amount_received - adminFee - stripeFee;
-    
-    if(!artist.stripeAccountId) throw new AppError(httpStatus.NOT_FOUND,'stripe account not found')
+
+    if (!artist.stripeAccountId)
+      throw new AppError(httpStatus.NOT_FOUND, 'stripe account not found');
 
     // create transfer (external call)
     const transfer = await stripe.transfers.create({
@@ -1118,7 +1185,7 @@ const completeBookingIntoDb = async (
     booking.status = 'completed';
     booking.paymentStatus = 'succeeded';
     booking.completedAt = new Date();
-    booking.artistEarning = artistAmount/100;
+    booking.artistEarning = artistAmount / 100;
     booking.payment.artist.transferId = transfer.id;
 
     await booking.save({ session });
