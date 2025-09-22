@@ -1,12 +1,12 @@
 import Conversation from '../conversation/conversation.model';
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
-import mongoose from 'mongoose';
+import { startSession } from 'mongoose';
 import { getSocketIO, onlineUsers } from '../../socket copy/socketConnection';
 import { AppError } from '../../utils';
 import { Auth } from '../Auth/auth.model';
-import { NewMessagePayload } from '../Message/message.interface';
-import Message from './message.model';
+import { NewMessagePayload } from './message.interface';
+import Message from './message.modal';
 
 // send message
 const new_message_IntoDb = async (
@@ -119,7 +119,7 @@ const updateMessageById_IntoDb = async (
   messageId: string,
   updateData: Partial<{ text: string; imageUrl: string[] }>
 ) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
@@ -167,7 +167,7 @@ const updateMessageById_IntoDb = async (
 };
 
 const deleteMessageById_IntoDb = async (messageId: string) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {

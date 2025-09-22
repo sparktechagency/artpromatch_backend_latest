@@ -1,8 +1,7 @@
-import { Server, Socket } from "socket.io";
-import { Auth } from "../../modules/Auth/auth.model";
-import Conversation from "../../modules/conversation/conversation.model";
-import Message from "../../modules/message/message.model";
-
+import { Server, Socket } from 'socket.io';
+import { Auth } from '../../modules/Auth/auth.model';
+import Conversation from '../../modules/conversation/conversation.model';
+import Message from '../../modules/Message/message.modal';
 
 interface SendMessageData {
   receiverId: string;
@@ -13,7 +12,7 @@ export const handleSendMessage = async (
   io: Server,
   socket: Socket,
   currentUserId: string,
-  data: SendMessageData,
+  data: SendMessageData
 ) => {
   if (currentUserId === data.receiverId) {
     return socket.emit('socket-error', {
@@ -29,9 +28,9 @@ export const handleSendMessage = async (
       message: 'Receiver ID not found',
     });
   }
-  
+
   let isNewConversation = false;
- 
+
   let conversation = await Conversation.findOne({
     participants: { $all: [currentUserId, data.receiverId], $size: 2 },
   });
@@ -41,10 +40,9 @@ export const handleSendMessage = async (
       participants: [currentUserId, data.receiverId],
     });
     isNewConversation = true;
-    
   }
 
-  socket.join(conversation._id.toString())
+  socket.join(conversation._id.toString());
   socket.data.currentConversationId = conversation._id;
 
   const messageData = {
@@ -62,14 +60,17 @@ export const handleSendMessage = async (
 
   // auto-seen logic
   const room = io.sockets.adapter.rooms.get(conversation._id.toString());
-  console.log("room",room)
+  console.log('room', room);
   if (room && room.size > 1) {
     for (const socketId of room) {
       const s = io.sockets.sockets.get(socketId);
 
-      if (s && s.data?.currentConversationId === conversation._id.toString() && s.id !== socket.id) {
-    
-       await Message.updateOne(
+      if (
+        s &&
+        s.data?.currentConversationId === conversation._id.toString() &&
+        s.id !== socket.id
+      ) {
+        await Message.updateOne(
           { _id: saveMessage._id },
           { $set: { seen: true } }
         );
@@ -80,18 +81,21 @@ export const handleSendMessage = async (
           messageIds: [saveMessage._id],
         });
 
-        break; 
+        break;
       }
     }
   }
 
-  const updatedMsg = await Message.findById(saveMessage._id)
+  const updatedMsg = await Message.findById(saveMessage._id);
   io.to(conversation._id.toString()).emit('new-message', updatedMsg);
 
-   if (isNewConversation) {
-    io.to(data.receiverId.toString()).emit("conversation-created", { conversationId: conversation._id, lastMessage: updatedMsg, });
-    io.to(data.receiverId.toString()).emit('new-message', updatedMsg)
-    socket.emit("conversation-created", {
+  if (isNewConversation) {
+    io.to(data.receiverId.toString()).emit('conversation-created', {
+      conversationId: conversation._id,
+      lastMessage: updatedMsg,
+    });
+    io.to(data.receiverId.toString()).emit('new-message', updatedMsg);
+    socket.emit('conversation-created', {
       conversationId: conversation._id,
       message: updatedMsg,
     });

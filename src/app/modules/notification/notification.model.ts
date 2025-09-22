@@ -1,5 +1,4 @@
-import mongoose, { model, Schema} from 'mongoose';
-
+import { model, Schema } from 'mongoose';
 import { INotification } from './notification.interface';
 import { NOTIFICATION_TYPE } from './notification.constant';
 
@@ -18,7 +17,7 @@ const notificationSchema = new Schema<INotification>(
       default: false,
     },
     receiver: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       required: true,
     },
     type: {
@@ -33,8 +32,9 @@ const notificationSchema = new Schema<INotification>(
   },
 
   {
-    timestamps: true, versionKey: false
-  },
+    timestamps: true,
+    versionKey: false,
+  }
 );
 
 const Notification = model<INotification>('Notification', notificationSchema);

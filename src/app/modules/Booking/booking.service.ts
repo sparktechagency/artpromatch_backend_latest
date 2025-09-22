@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
-// import { Types } from 'mongoose';
-// import { AppError } from '../../utils';
-// import Artist from '../Artist/artist.model';
-import mongoose, { startSession } from 'mongoose';
+import { startSession } from 'mongoose';
 import { AppError } from '../../utils';
 import { IArtist } from '../Artist/artist.interface';
 import { IAuth } from '../Auth/auth.interface';
@@ -39,7 +36,7 @@ const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
 // create booking
 
 const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
@@ -751,7 +748,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
 
 // confirm booking
 const confirmBookingByArtist = async (bookingId: string) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
@@ -907,7 +904,7 @@ const cancelBookingIntoDb = async (
   bookingId: string,
   cancelBy: 'ARTIST' | 'CLIENT'
 ) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {

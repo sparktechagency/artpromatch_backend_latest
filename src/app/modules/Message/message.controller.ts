@@ -2,7 +2,7 @@ import { RequestHandler } from 'express';
 import httpStatus from 'http-status';
 import sendResponse from '../../utils/sendResponse';
 import { asyncHandler } from '../../utils';
-import MessageService from '../Message/message.services';
+import MessageService from './message.services';
 
 const new_message: RequestHandler = asyncHandler(async (req, res) => {
   const result = await MessageService.new_message_IntoDb(req.user, req.body);

@@ -5,8 +5,8 @@ import { ROLE } from '../Auth/auth.constant';
 import { upload } from '../../lib';
 import { AppError } from '../../utils';
 import { validateRequestFromFormData } from '../../middlewares/validateRequest';
-import MessageValidationSchema from '../Message/message.validation';
-import MessageController from '../Message/message.controller';
+import MessageValidationSchema from './message.validation';
+import MessageController from './message.controller';
 
 const router = express.Router();
 
