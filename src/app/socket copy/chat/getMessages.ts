@@ -2,7 +2,7 @@ import { Socket } from 'socket.io';
 import { getSocketIO, onlineUsers } from '../socketConnection';
 import Conversation from '../../modules/conversation/conversation.model';
 import QueryBuilder from 'mongoose-query-builders';
-import Message from '../../modules/Message/message.modal';
+import Message from '../../modules/Message/message.model';
 import { IAuth } from '../../modules/Auth/auth.interface';
 
 export const handleMessagePage = async (

@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { Auth } from '../../modules/Auth/auth.model';
 import Conversation from '../../modules/conversation/conversation.model';
-import Message from '../../modules/Message/message.modal';
+import Message from '../../modules/Message/message.model';
 
 interface SendMessageData {
   receiverId: string;
