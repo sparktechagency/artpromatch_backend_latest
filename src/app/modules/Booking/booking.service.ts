@@ -1,10 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
-// import { Types } from 'mongoose';
-// import { AppError } from '../../utils';
-// import Artist from '../Artist/artist.model';
-import mongoose, { startSession } from 'mongoose';
+import { startSession, Types } from 'mongoose';
 import { AppError } from '../../utils';
 import { IArtist } from '../Artist/artist.interface';
 import { IAuth } from '../Auth/auth.interface';
@@ -49,7 +46,7 @@ const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
 // create booking
 
 const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {
@@ -625,7 +622,7 @@ const getArtistDailySchedule = async (user: IAuth, date: Date) => {
     // 1. Filter only artist’s bookings in valid status within the day
     {
       $match: {
-        artist: new mongoose.Types.ObjectId(artist._id),
+        artist: new Types.ObjectId(artist._id),
         status: { $in: ['confirmed', 'in_progress', 'ready_for_completion'] },
         'sessions.date': { $gte: startOfDay, $lte: endOfDay },
       },
@@ -856,6 +853,7 @@ const confirmBookingByArtist = async (bookingId: string) => {
       _id: client.clientId,
     }).populate<{ auth: IAuth }>('auth', 'fcmToken');
 
+
     if (!clientDoc) {
       throw new AppError(httpStatus.NOT_FOUND, 'user not found');
     }
@@ -983,7 +981,7 @@ const cancelBookingIntoDb = async (
   bookingId: string,
   cancelBy: 'ARTIST' | 'CLIENT'
 ) => {
-  const session = await mongoose.startSession();
+  const session = await startSession();
   session.startTransaction();
 
   try {

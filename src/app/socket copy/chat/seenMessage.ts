@@ -1,19 +1,17 @@
 import { Server, Socket } from 'socket.io';
 import Conversation from '../../modules/conversation/conversation.model';
-import Message from '../../modules/message/message.model';
-
+import Message from '../../modules/Message/message.model';
 
 export const handleSeenMessage = async (
   io: Server,
   socket: Socket,
   currentUserId: string,
-  conversationId: string,
+  conversationId: string
 ) => {
-    
   const conversation = await Conversation.findById(conversationId);
   if (!conversation) {
-    return socket.emit("socket-error", {
-      errorMessage: "Conversation not found",
+    return socket.emit('socket-error', {
+      errorMessage: 'Conversation not found',
     });
   }
 
@@ -23,9 +21,9 @@ export const handleSeenMessage = async (
 
   const unseenMessages = await Message.find({
     conversationId,
-    msgByUserId: otherUserId,
+    msgByUser: otherUserId,
     seen: false,
-  }).select("_id");
+  }).select('_id');
 
   if (!unseenMessages.length) return;
 
@@ -34,10 +32,9 @@ export const handleSeenMessage = async (
     { $set: { seen: true } }
   );
 
-  io.to(conversationId.toString()).emit("messages-seen", {
+  io.to(conversationId.toString()).emit('messages-seen', {
     conversationId,
     seenBy: currentUserId,
-    messageIds: unseenMessages.map((m) => m._id), 
+    messageIds: unseenMessages.map((m) => m._id),
   });
 };
-

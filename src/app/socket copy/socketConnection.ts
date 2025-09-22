@@ -13,7 +13,11 @@ const onlineUsers = new Map<string, string>();
 const connectSocket = (server: HTTPServer) => {
   if (!io) {
     io = new chatServer(server, {
-      cors: { origin: '*',  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], allowedHeaders: ['Authorization', 'Content-Type'] },
+      cors: {
+        origin: '*',
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        allowedHeaders: ['Authorization', 'Content-Type'],
+      },
       pingInterval: 30000,
       pingTimeout: 5000,
       connectTimeout: 45000,
@@ -48,7 +52,6 @@ const connectSocket = (server: HTTPServer) => {
     userConversations.forEach((conv) => socket.join(conv._id.toString()));
 
     handleChatEvents(io, socket, currentUserId);
-
 
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
       console.log('Disconnected:', socket.id);

@@ -1,6 +1,4 @@
-//
-
-import mongoose from 'mongoose';
+import { Types } from 'mongoose';
 import { Auth } from '../modules/Auth/auth.model';
 import Conversation from '../modules/conversation/conversation.model';
 import { onlineUsers } from '../socket copy/socketConnection';
@@ -15,7 +13,7 @@ export const getConversationList = async (
   userId: string,
   query: ConversationQuery
 ) => {
-  const userObjectId = new mongoose.Types.ObjectId(userId);
+  const userObjectId = new Types.ObjectId(userId);
   const searchTerm = query.searchTerm as string;
   const page = parseInt(query.page as string, 10) || 1;
   const limit = parseInt(query.limit as string, 10) || 15;
@@ -36,7 +34,7 @@ export const getConversationList = async (
   }
 
   const onlineUserIds = Array.from(onlineUsers.keys()).map(
-    (id) => new mongoose.Types.ObjectId(id)
+    (id) => new Types.ObjectId(id)
   );
 
   const conversations = await Conversation.aggregate([
@@ -81,7 +79,7 @@ export const getConversationList = async (
               let: { convId: '$_id' },
               pipeline: [
                 { $match: { $expr: { $eq: ['$conversationId', '$$convId'] } } },
-                { $match: { msgByUserId: { $ne: userObjectId }, seen: false } },
+                { $match: { msgByUser: { $ne: userObjectId }, seen: false } },
                 { $count: 'unseenCount' },
               ],
               as: 'unseenData',

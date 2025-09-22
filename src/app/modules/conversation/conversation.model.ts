@@ -1,8 +1,5 @@
-
-
 import { model, Schema } from 'mongoose';
 import { IConversation } from './conversation.interface';
-
 
 const conversationSchema = new Schema<IConversation>(
   {
@@ -13,15 +10,14 @@ const conversationSchema = new Schema<IConversation>(
     lastMessage: {
       type: Schema.Types.ObjectId,
       ref: 'Message',
-      default: null
+      default: null,
     },
   },
   {
     timestamps: true,
     versionKey: false,
-  },
+  }
 );
-
 
 const Conversation = model<IConversation>('Conversation', conversationSchema);
 

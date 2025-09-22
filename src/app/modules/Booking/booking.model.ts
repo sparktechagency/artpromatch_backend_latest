@@ -123,7 +123,7 @@ const bookingSchema = new Schema<IBooking>(
     // --- Payment (global) ---
 
     payment: { type: PaymentSchema, default: {} },
-    checkoutSessionId: {type: String},
+    checkoutSessionId: { type: String },
     paymentStatus: {
       type: String,
       enum: Object.values(PAYMENT_STATUS),

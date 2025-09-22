@@ -2,9 +2,8 @@ import { Socket } from 'socket.io';
 import { getSocketIO, onlineUsers } from '../socketConnection';
 import Conversation from '../../modules/conversation/conversation.model';
 import QueryBuilder from 'mongoose-query-builders';
-import Message from '../../modules/message/message.model';
+import Message from '../../modules/Message/message.model';
 import { IAuth } from '../../modules/Auth/auth.interface';
-
 
 export const handleMessagePage = async (
   socket: Socket,
@@ -14,16 +13,15 @@ export const handleMessagePage = async (
     page?: number;
     limit?: number;
     search?: string;
-  },
+  }
 ) => {
   const { conversationId, page = 1, limit = 15, search = '' } = data;
 
-  
   const conversation = await Conversation.findById(conversationId).populate<{
     participants: IAuth[];
   }>('participants', '-password -refreshToken');
-  
-  console.log("conversation", conversation)
+
+  console.log('conversation', conversation);
 
   if (!conversation) {
     return socket.emit('socket-error', {
@@ -33,16 +31,15 @@ export const handleMessagePage = async (
   }
 
   const otherUser = conversation.participants.find(
-    (u) => u._id.toString() !== currentUserId,
+    (u) => u._id.toString() !== currentUserId
   );
-  
-    if (!otherUser) {
+
+  if (!otherUser) {
     return socket.emit('socket-error', {
       event: 'message-page',
       message: 'Other user not found in conversation',
     });
   }
-
 
   const payload = {
     receiverId: otherUser._id,
@@ -66,17 +63,16 @@ export const handleMessagePage = async (
   const meta = await messageQuery.countTotal();
 
   const unseenMessages = messages.filter(
-    (msg) =>
-      msg.msgByUserId.toString() === otherUser._id.toString() && !msg.seen,
+    (msg) => msg.msgByUser.toString() === otherUser._id.toString() && !msg.seen
   );
 
-  console.log("unseenmessage",unseenMessages)
+  console.log('unseenmessage', unseenMessages);
   if (unseenMessages.length > 0) {
     const messageIds = unseenMessages.map((msg) => msg._id);
 
     await Message.updateMany(
       { _id: { $in: messageIds } },
-      { $set: { seen: true } },
+      { $set: { seen: true } }
     );
 
     const io = getSocketIO();

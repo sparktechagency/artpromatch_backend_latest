@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError, Logger } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
@@ -623,7 +623,7 @@ const getArtistMonthlySchedule = async (
     // 1. Filter artist bookings with valid status and sessions in month
     {
       $match: {
-        artist: new mongoose.Types.ObjectId(artist._id),
+        artist: new Types.ObjectId(artist._id),
         status: { $in: ['confirmed', 'in_progress', 'ready_for_completion'] },
         'sessions.date': { $gte: startOfMonth, $lte: endOfMonth },
       },
@@ -713,7 +713,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
         'Artist not found or restricted.'
       );
     }
-    console.log(userData);
 
     // Step 2: If Stripe account exists but not ready yet
     if (artist.stripeAccountId && !artist.isStripeReady) {
@@ -744,8 +743,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 
     // Step 3: If no Stripe account, create a new one
     if (!artist.stripeAccountId) {
-      console.log('äccess');
-
       const account = await stripe.accounts.create({
         type: 'express',
         email: (artist?.auth as any)?.email,
@@ -759,8 +756,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
           payouts: { schedule: { interval: 'manual' } },
         },
       });
-
-      console.log(account);
 
       const onboardingData = await stripe.accountLinks.create({
         account: account.id,
