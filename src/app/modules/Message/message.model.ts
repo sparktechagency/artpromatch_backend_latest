@@ -20,7 +20,7 @@ const messageSchema = new Schema<IMessage>(
       type: Boolean,
       default: false,
     },
-    msgByUserId: {
+    msgByUser: {
       type: Schema.ObjectId,
       required: true,
       ref: 'User',

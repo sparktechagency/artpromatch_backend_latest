@@ -47,7 +47,7 @@ export const handleSendMessage = async (
 
   const messageData = {
     text: data.text,
-    msgByUserId: currentUserId,
+    msgByUser: currentUserId,
     conversationId: conversation._id,
   };
 

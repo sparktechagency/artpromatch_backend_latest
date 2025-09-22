@@ -56,7 +56,7 @@ const new_message_IntoDb = async (
     text: data.text,
     imageUrl: data.imageUrl || [],
     audioUrl: data.audioUrl || '',
-    msgByUserId: user.id,
+    msgByUser: user.id,
     conversationId: conversation._id,
   };
 

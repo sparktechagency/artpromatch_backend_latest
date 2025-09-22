@@ -79,7 +79,7 @@ export const getConversationList = async (
               let: { convId: '$_id' },
               pipeline: [
                 { $match: { $expr: { $eq: ['$conversationId', '$$convId'] } } },
-                { $match: { msgByUserId: { $ne: userObjectId }, seen: false } },
+                { $match: { msgByUser: { $ne: userObjectId }, seen: false } },
                 { $count: 'unseenCount' },
               ],
               as: 'unseenData',
