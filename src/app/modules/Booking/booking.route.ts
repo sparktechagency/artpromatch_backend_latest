@@ -53,6 +53,21 @@ router
     BookingController.createSession
   );
 
+  router
+  .route('/complete-session/:bookingId')
+  .post(
+    auth(ROLE.ARTIST),
+    validateRequest(BookingValidation.completeSessionSchema),
+    BookingController.completeSession
+  );
+
+    router
+  .route('/delete-session/:bookingId')
+  .delete(
+    auth(ROLE.ARTIST),
+    BookingController.deleteSession
+  );
+
 router
   .route('/create')
   .post(
