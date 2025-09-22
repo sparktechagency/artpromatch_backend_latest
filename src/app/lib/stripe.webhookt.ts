@@ -66,7 +66,6 @@ export const stripeWebhookHandler = asyncHandler(
       //     { runValidators: true }
       //   );
 
-
       //   const artist = await ArtistPreferences.findOne(
       //     { artistId: booking.artist },
       //     'notificationChannels'
@@ -257,7 +256,6 @@ export const stripeWebhookHandler = asyncHandler(
           logger.error('payment capture failed');
         }
 
-
         const booking = await Booking.findOne({
           'payment.client.paymentIntentId': pi.id,
         });
@@ -350,7 +348,8 @@ export const stripeWebhookHandler = asyncHandler(
         break;
       }
 
-      default: console.log(`Unhandled event type ${event.type}`);
+      default:
+        console.log(`Unhandled event type ${event.type}`);
     }
 
     res.status(200).json({ received: true });

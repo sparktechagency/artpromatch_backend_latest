@@ -712,7 +712,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
         'Artist not found or restricted.'
       );
     }
-    console.log(userData);
 
     // Step 2: If Stripe account exists but not ready yet
     if (artist.stripeAccountId && !artist.isStripeReady) {
@@ -743,9 +742,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 
     // Step 3: If no Stripe account, create a new one
     if (!artist.stripeAccountId) {
-
-      console.log('äccess');
-
       const account = await stripe.accounts.create({
         type: 'express',
         email: (artist?.auth as any)?.email,
@@ -759,8 +755,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
           payouts: { schedule: { interval: 'manual' } },
         },
       });
-
-      console.log(account);
 
       const onboardingData = await stripe.accountLinks.create({
         account: account.id,

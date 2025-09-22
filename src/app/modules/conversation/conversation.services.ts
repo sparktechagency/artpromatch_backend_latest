@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 import Conversation from './conversation.model';
 import { Auth } from '../Auth/auth.model';
 import QueryBuilder from '../../builders/QueryBuilder';
-import Message from '../Message/message.modal';
+import Message from '../Message/message.model';
 
 const getConversation = async (
   profileId: string,

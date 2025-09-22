@@ -6,7 +6,7 @@ import { getSocketIO, onlineUsers } from '../../socket copy/socketConnection';
 import { AppError } from '../../utils';
 import { Auth } from '../Auth/auth.model';
 import { NewMessagePayload } from './message.interface';
-import Message from './message.modal';
+import Message from './message.model';
 
 // send message
 const new_message_IntoDb = async (
