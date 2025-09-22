@@ -125,6 +125,13 @@ router
     ArtistController.getArtistSchedule
   );
 
+
+ router
+  .route('/boost-profile')
+  .post(
+    auth(ROLE.ARTIST),
+    ArtistController.boostProfile
+  );
 // getAvailabilityExcludingTimeOff
 // router
 //   .route('/availability/:id')

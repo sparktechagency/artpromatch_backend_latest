@@ -5,12 +5,11 @@ import Stripe from 'stripe';
 import config from '../config';
 import logger from '../config/logger';
 import ArtistPreferences from '../modules/ArtistPreferences/artistPreferences.model';
-import { IAuth } from '../modules/Auth/auth.interface';
+// import { IAuth } from '../modules/Auth/auth.interface';
 import { Auth } from '../modules/Auth/auth.model';
 import { PAYMENT_STATUS } from '../modules/Booking/booking.constant';
 import Booking from '../modules/Booking/booking.model';
-import Client from '../modules/Client/client.model';
-import ClientPreferences from '../modules/ClientPreferences/clientPreferences.model';
+
 import { NOTIFICATION_TYPE } from '../modules/notification/notification.constant';
 import {
   sendNotificationByEmail,
@@ -18,6 +17,8 @@ import {
   sendPushNotification,
 } from '../modules/notification/notification.utils';
 import { AppError, asyncHandler } from '../utils';
+import { ArtistBoost } from '../modules/BoostProfile/boost.profile.model';
+import Artist from '../modules/Artist/artist.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -65,7 +66,6 @@ export const stripeWebhookHandler = asyncHandler(
       //     },
       //     { runValidators: true }
       //   );
-
 
       //   const artist = await ArtistPreferences.findOne(
       //     { artistId: booking.artist },
@@ -117,14 +117,35 @@ export const stripeWebhookHandler = asyncHandler(
 
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-
-        try {
-          const bookingId = session.metadata?.bookingId;
-          const userId = session.metadata?.userId ?? '';
-          const paymentIntentId =
+         const paymentIntentId =
             typeof session.payment_intent === 'string'
               ? session.payment_intent
               : session.payment_intent?.id;
+         const artistId = session.metadata?.artistId ?? '';
+        try {
+          const boostId = session.metadata?.boostId;
+
+          if (boostId) {
+            console.log(boostId)
+            await ArtistBoost.findOneAndUpdate(
+              { _id: boostId },
+              { paymentStatus: 'succeeded', isActive: true, paymentIntentId: paymentIntentId },
+              { new: true }
+            );
+
+            // also update artist.boost
+            await Artist.findByIdAndUpdate(artistId, {
+              boost: {
+                lastBoostAt: new Date(),
+                endTime: new Date(Date.now() + 12 * 60 * 60 * 1000),
+                isActive: true,
+              },
+            });
+            break;
+          }
+          const bookingId = session.metadata?.bookingId;
+          const userId = session.metadata?.userId ?? '';
+         
 
           if (!bookingId) {
             logger.warn('Checkout session missing bookingId in metadata', {
@@ -248,82 +269,6 @@ export const stripeWebhookHandler = asyncHandler(
         break;
       }
 
-      // payment intent succeed
-      case 'payment_intent.succeeded': {
-        const pi = event.data.object as Stripe.PaymentIntent;
-
-        // console.log('pi', pi);
-        if (pi.status !== 'succeeded') {
-          logger.error('payment capture failed');
-        }
-
-
-        const booking = await Booking.findOne({
-          'payment.client.paymentIntentId': pi.id,
-        });
-        if (!booking) {
-          logger.error('booking not found');
-          break;
-        }
-        booking.status = 'confirmed';
-        booking.paymentStatus = 'captured';
-        booking.payment.client.chargeId = (pi.latest_charge as string) || '';
-
-        await booking.save();
-
-        const client = await ClientPreferences.findOne(
-          { clientId: booking.client },
-          'notificationChannels'
-        );
-
-        if (client?.notificationChannels.includes('app')) {
-          sendNotificationBySocket({
-            title: 'Confirmed Booking',
-            message: `your booking is now confirmed by ${booking.artistInfo.fullName} for ${booking.serviceName}.`,
-            receiver: booking.client.toString() ?? '',
-            type: NOTIFICATION_TYPE.CONFIRMED_BOOKING,
-          });
-        }
-
-        if (client?.notificationChannels.includes('email')) {
-          sendNotificationByEmail(
-            booking.artistInfo.email,
-            NOTIFICATION_TYPE.BOOKING_REQUEST,
-            {
-              fullName: booking.clientInfo.fullName,
-              serviceName: booking.serviceName,
-            }
-          );
-        }
-        const date = new Date();
-
-        const formatted = date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        });
-
-        if (client?.notificationChannels.includes('sms')) {
-          const clientDoc = await Client.findOne({
-            _id: client.clientId,
-          }).populate<{ auth: IAuth }>('auth', 'fcmToken');
-
-          if (!clientDoc) {
-            throw new AppError(httpStatus.NOT_FOUND, 'user not found');
-          }
-
-          if (clientDoc.auth?.fcmToken) {
-            await sendPushNotification(clientDoc.auth.fcmToken, {
-              title: 'New Booking Request',
-              content: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
-              time: formatted,
-            });
-          }
-        }
-
-        break;
-      }
-
       // payment failed
       case 'payment_intent.payment_failed': {
         const intent = event.data.object as Stripe.PaymentIntent;
@@ -350,7 +295,8 @@ export const stripeWebhookHandler = asyncHandler(
         break;
       }
 
-      default: console.log(`Unhandled event type ${event.type}`);
+      default:
+        console.log(`Unhandled event type ${event.type}`);
     }
 
     res.status(200).json({ received: true });

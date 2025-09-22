@@ -10,21 +10,21 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import morgan from 'morgan';
+import cron from 'node-cron';
+import httpStatus from 'http-status';
 import express, { Application, NextFunction, Request, Response } from 'express';
-import routes from './app/routes';
-import { globalErrorHandler, notFound } from './app/utils';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
+import morgan from 'morgan';
+import routes from './app/routes';
+import { AppError, globalErrorHandler, notFound } from './app/utils';
 
 import { stripeWebhookHandler } from './app/lib/stripe.webhookt';
-
+import { expireBoosts } from './app/modules/Artist/artist.service';
 
 const app: Application = express();
 
 const httpServer = createServer(app);
 app.set('httpServer', httpServer);
-
 
 app.use(
   cors({
@@ -40,7 +40,11 @@ app.use(
     ],
   })
 );
-app.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+app.post(
+  '/webhook',
+  express.raw({ type: 'application/json' }),
+  stripeWebhookHandler
+);
 app.use(cookieParser());
 app.use(morgan('dev'));
 
@@ -56,6 +60,17 @@ app.use('/api/v1', routes);
 //Testing
 app.get('/', (req: Request, res: Response, next: NextFunction) => {
   res.send({ message: 'Server is running like a Rabit!' });
+});
+
+cron.schedule('0 */6 * * *', async () => {
+   try {
+    await expireBoosts();
+  } catch (error: unknown) {
+    new AppError(
+          httpStatus.BAD_REQUEST,
+          error instanceof Error ? error.message : String(error)
+        )
+  }
 });
 
 //global error handler

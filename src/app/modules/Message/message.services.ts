@@ -5,8 +5,9 @@ import mongoose from 'mongoose';
 import { getSocketIO, onlineUsers } from '../../socket copy/socketConnection';
 import { AppError } from '../../utils';
 import { Auth } from '../Auth/auth.model';
-import { NewMessagePayload } from '../Message/message.interface';
 import Message from './message.model';
+import { NewMessagePayload } from './message.interface';
+
 
 // send message
 const new_message_IntoDb = async (
@@ -222,10 +223,10 @@ const deleteMessageById_IntoDb = async (messageId: string) => {
   }
 };
 
-const MessageService = {
+const MessageServices = {
   new_message_IntoDb,
   updateMessageById_IntoDb,
   deleteMessageById_IntoDb,
 };
 
-export default MessageService;
+export default MessageServices;

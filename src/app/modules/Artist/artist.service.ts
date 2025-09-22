@@ -28,6 +28,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import Stripe from 'stripe';
 import config from '../../config';
 import Booking from '../Booking/booking.model';
+import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
@@ -743,7 +744,6 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 
     // Step 3: If no Stripe account, create a new one
     if (!artist.stripeAccountId) {
-
       console.log('äccess');
 
       const account = await stripe.accounts.create({
@@ -822,6 +822,91 @@ const createService = async (
   return service;
 };
 
+const boostProfileIntoDb = async (user: IAuth) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const artist = await Artist.findOne({ auth: user.id }).session(session);
+    if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
+   
+    const boost = await ArtistBoost.create(
+      [
+        {
+          artist: artist._id,
+          paymentStatus: 'pending',
+          startTime: new Date(),
+          endTime: new Date(Date.now() + 12 * 60 * 60 * 1000),
+        },
+      ],
+      { session }
+    );
+
+
+    // create checkout session
+    const checkoutSession: any = await stripe.checkout.sessions.create(
+      {
+        payment_method_types: ['card'],
+        mode: 'payment',
+        payment_intent_data: {
+          capture_method: 'manual',
+        },
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: { name: 'Profile Boost' },
+              unit_amount: 100, // $1
+            },
+            quantity: 1,
+          },
+        ],
+        expand: ['payment_intent'],
+        metadata: { boostId: boost[0]?._id?.toString(),  artistId: artist._id.toString() },
+        success_url: `${process.env.CLIENT_URL}/boost/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.CLIENT_URL}/boost/cancel`,
+      },
+      { idempotencyKey: `boost_${boost[0].id.toString()}` }
+    );
+
+    // save boost record in DB (pending)
+  
+ 
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return checkoutSession.url;
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
+};
+
+export const expireBoosts = async () => {
+  const now = new Date();
+
+  // find boosts that are still active and past endTime
+  const expiredBoosts = await ArtistBoost.find({
+    endTime: { $lte: now },
+    isActive: true,
+  });
+
+  if (expiredBoosts.length === 0) return; // nothing to do
+
+  for (const boost of expiredBoosts) {
+    boost.isActive = false;
+    await boost.save();
+
+    // update the artist's boost info
+    await Artist.findByIdAndUpdate(boost.artist, {
+      'boost.isActive': false,
+      'boost.endTime': boost.endTime,
+    });
+  }
+}
+
 // getServicesByArtistFromDB
 // saveArtistAvailabilityIntoDB
 // const saveArtistAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
@@ -879,7 +964,7 @@ export const ArtistService = {
   updateArtistFlashesIntoDB,
   updateArtistPortfolioIntoDB,
   getArtistMonthlySchedule,
-
+  boostProfileIntoDb,
   // addArtistServiceIntoDB,
   getServicesByArtistFromDB,
   updateArtistServiceByIdIntoDB,

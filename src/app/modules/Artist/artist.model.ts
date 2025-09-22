@@ -1,11 +1,5 @@
-import { Schema, model } from 'mongoose';
-import {
-  ARTIST_TYPE,
-  expertiseTypes,
-  TBoost,
-  // TContact,
-  // TService,
-} from './artist.constant';
+import { model, Schema } from 'mongoose';
+import { ARTIST_TYPE, expertiseTypes, TBoost } from './artist.constant';
 import { IArtist } from './artist.interface';
 
 // // Subschema: Contact

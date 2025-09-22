@@ -68,7 +68,8 @@ export interface IBooking extends Document{
 
   artistEarning: number;
   paymentStatus: TPaymentStatus;
-  
+  otp?: string;
+  otpExpiresAt?: Date;
   stripeFee: number;
   platFormFee: number;
   // If booking cancelled (by artist usually)
@@ -79,6 +80,9 @@ export interface IBooking extends Document{
   rating?: number;
 
   isInGuestSpot: boolean;
+  completedAt?: Date;
   createdAt: Date,
   updatedAt: Date;
+
+  isOtpMatched(otp: string): Promise<boolean>;
 }

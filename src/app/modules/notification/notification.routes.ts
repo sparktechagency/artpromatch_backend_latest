@@ -1,24 +1,25 @@
 
 import express from 'express';
-import authentication from '../../middlewares/auth.middleware';
-import { ENUM_USER_ROLE } from '../../../enums/user-role';
+
 import notificationController from './notification.controller';
+import { auth } from '../../middlewares';
+import { ROLE } from '../Auth/auth.constant';
 
 const notificationRouter = express.Router();
 
 notificationRouter.get(
     '/get-notifications/:id',
-    authentication(ENUM_USER_ROLE.COOK,ENUM_USER_ROLE.RESTAURANT,ENUM_USER_ROLE.SUPER_ADMIN,ENUM_USER_ROLE.ADMIN),
+    auth(ROLE.ARTIST,ROLE.CLIENT),
     notificationController.getNotifications
 );
 notificationRouter.patch(
     '/mark-notification',
-    authentication(ENUM_USER_ROLE.COOK,ENUM_USER_ROLE.RESTAURANT,ENUM_USER_ROLE.SUPER_ADMIN,ENUM_USER_ROLE.ADMIN),
+    auth(ROLE.ARTIST,ROLE.CLIENT),
     notificationController.markAsSeen
 );
 notificationRouter.get(
     '/unseen-notification-count/:id',
-     authentication(ENUM_USER_ROLE.COOK,ENUM_USER_ROLE.RESTAURANT,ENUM_USER_ROLE.SUPER_ADMIN,ENUM_USER_ROLE.ADMIN),
+     auth(ROLE.ARTIST,ROLE.CLIENT),
     notificationController.getUnseenNotificationCount
 );
 

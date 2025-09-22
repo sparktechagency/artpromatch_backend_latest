@@ -1,18 +1,13 @@
 import { Document, Types } from 'mongoose';
 
 export interface IArtistBoost extends Document {
+  _id: Types.ObjectId;
   artist: Types.ObjectId;
-
   startTime: Date;
   endTime: Date;
-
-  price: number;
   paymentIntentId: string;
-  chargeId: string;
-
-  paymentStatus: 'Pending' | 'Succeeded' | 'Failed' | 'Refunded';
+  paymentStatus: 'pending' | 'succeeded' | 'failed';
   isActive: boolean;
-
   createdAt: Date;
   updatedAt: Date;
 }
