@@ -268,16 +268,17 @@ const getAllServicesFromDB = async (
   query: Record<string, unknown>
 ) => {
   if (user) {
+    // Step 1: Fetch Client
     const client = await Client.findOne({ auth: user._id });
 
     if (!client) {
       throw new AppError(httpStatus.NOT_FOUND, 'Your Client ID not found!');
     }
 
-    const longitude = client.location.coordinates[0]; // Client longitude
-    const latitude = client.location.coordinates[1]; // Client latitude
+    const [longitude, latitude] = client.location.coordinates; // Client longitude and latitude
     const radius = client.radius; // Client's search radius (in kilometers)
 
+    // Step 2: Artist type filter
     // Check if 'query.type' is provided. If not, fetch all types.
     let artistTypeFilter = {};
     if (typeof query?.type === 'string') {
@@ -289,65 +290,25 @@ const getAllServicesFromDB = async (
       };
     }
 
-    // Pagination parameters
+    // Step 3: Pagination
     const page = parseInt(query?.page as string) || 1;
     const limit = parseInt(query?.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Step 1: Artist list with distance
+    // Step 4: Get artists within radius
     const artists = await Artist.aggregate([
       {
         $geoNear: {
-          near: {
-            type: 'Point',
-            coordinates: [longitude, latitude],
-          },
+          near: { type: 'Point', coordinates: [longitude, latitude] },
           distanceField: 'distance',
-          maxDistance: radius * 99999000, // Convert radius to meters (radius is in kilometers, so multiply by 1000)
+          maxDistance: radius * 1000,
           spherical: true,
         },
       },
-      {
-        $match: {
-          ...artistTypeFilter,
-        },
-      },
-      {
-        $lookup: {
-          from: 'auths',
-          localField: 'auth',
-          foreignField: '_id',
-          as: 'auth',
-        },
-      },
-      {
-        $unwind: {
-          path: '$auth',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          type: 1,
-          expertise: 1,
-          city: 1,
-          profileViews: 1,
-          location: 1,
-          distance: 1,
-          'auth._id': 1,
-          'auth.fullName': 1,
-          'auth.email': 1,
-          'auth.phoneNumber': 1,
-          'auth.image': 1,
-        },
-      },
-      {
-        $skip: skip,
-      },
-      {
-        $limit: limit,
-      },
+      { $match: artistTypeFilter },
+      { $project: { _id: 1, distance: 1 } },
+      // { $skip: skip },  // must load all artists
+      // { $limit: limit }, // must load all artists
     ]);
 
     const artistDistanceMap = new Map(
@@ -356,9 +317,38 @@ const getAllServicesFromDB = async (
 
     const artistsIDs = artists.map((artist) => artist._id);
 
-    // Step 2: Get services of these artists
+    // Step 5: Build searchTerm filter
+    const searchTerm = (query?.searchTerm as string) || '';
+    let searchFilter: Record<string, unknown> = {};
+
+    if (searchTerm) {
+      const regex = new RegExp(searchTerm, 'i');
+      const numVal = Number(searchTerm);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const orConditions: any[] = [
+        { title: regex },
+        { description: regex },
+        { bodyLocation: regex },
+      ];
+
+      // id searchTerm is numeric then numeric match will be added
+      if (!isNaN(numVal)) {
+        orConditions.push(
+          { price: numVal },
+          { totalCompletedOrder: numVal },
+          { totalReviewCount: numVal },
+          { avgRating: numVal }
+        );
+      }
+
+      searchFilter = { $or: orConditions };
+    }
+
+    // Step 6: Fetch Services with searchFilter and pagination
     const services = await Service.find({
       artist: { $in: artistsIDs },
+      ...searchFilter,
     })
       .populate({
         path: 'artist',
@@ -368,10 +358,11 @@ const getAllServicesFromDB = async (
           select: 'email fullName image role',
         },
       })
-      .lean() // return plain JS objects for easier modification
-      .exec();
+      .skip(skip)
+      .limit(limit)
+      .lean(); // return plain JS objects for easier modification
 
-    // Step 3: Inject distance into artist object
+    // Step 7: Inject distance into artist object
     const servicesWithDistance = services.map((service) => {
       const artistId = service.artist?._id?.toString();
       const distance = artistId ? artistDistanceMap.get(artistId) : null;
@@ -384,7 +375,12 @@ const getAllServicesFromDB = async (
       };
     });
 
-    const total = services.length || 0;
+    // Step 8: Total count for pagination
+    const total = await Service.countDocuments({
+      artist: { $in: artistsIDs },
+      ...searchFilter,
+    });
+    // const total = services.length || 0;
     const totalPage = Math.ceil(total / limit);
 
     return {
@@ -397,6 +393,7 @@ const getAllServicesFromDB = async (
       },
     };
   } else {
+    // if no user then QueryBuilder
     const serviceQuery = new QueryBuilder(
       Service.find().populate([
         {
@@ -423,25 +420,22 @@ const getAllServicesFromDB = async (
     const meta = await serviceQuery.countTotal();
 
     return { data, meta };
-
-    // const page = parseInt(query?.page as string) || 1;
-    // const limit = parseInt(query?.limit as string) || 10;
-
-    // const services = await Service.find({ isDeleted: false });
-
-    // const total = services.length || 0;
-    // const totalPage = Math.ceil(total / limit);
-
-    // return {
-    //   data: services,
-    //   meta: {
-    //     page,
-    //     limit,
-    //     total,
-    //     totalPage,
-    //   },
-    // };
   }
+};
+
+// updateClientRadiusIntoDB
+const updateClientRadiusIntoDB = async (user: IAuth, radius: number) => {
+  const client = await Client.findOneAndUpdate(
+    { auth: user._id },
+    { radius },
+    { new: true, runValidators: true }
+  ).select('_id radius');
+
+  if (!client) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
+  }
+
+  return null;
 };
 
 export const ClientService = {
@@ -451,4 +445,5 @@ export const ClientService = {
   updatePrivacySecuritySettings,
   getDiscoverArtistsFromDB,
   getAllServicesFromDB,
+  updateClientRadiusIntoDB,
 };

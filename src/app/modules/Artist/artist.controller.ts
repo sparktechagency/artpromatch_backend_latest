@@ -20,6 +20,29 @@ const getAllArtists = asyncHandler(async (req, res) => {
   });
 });
 
+// getOwnArtistData
+const getOwnArtistData = asyncHandler(async (req, res) => {
+  const result = await ArtistService.getOwnArtistDataFromDB(req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist retrieved successfully!',
+    data: result,
+  });
+});
+
+// getSingleArtist
+const getSingleArtist = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await ArtistService.getSingleArtistFromDB(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist retrieved successfully!',
+    data: result,
+  });
+});
+
 // update artist personal info
 const updateArtistPersonalInfo = asyncHandler(async (req, res) => {
   const result = await ArtistService.updateArtistPersonalInfoIntoDB(
@@ -289,6 +312,8 @@ const deleteAccount = asyncHandler(async (req, res) => {
 
 export const ArtistController = {
   getAllArtists,
+  getOwnArtistData,
+  getSingleArtist,
   updateArtistPersonalInfo,
   updateArtistProfile,
   boostProfile,

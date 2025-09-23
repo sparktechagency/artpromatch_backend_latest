@@ -47,4 +47,12 @@ router.route('/discover').get(auth(), ClientController.getDiscoverArtists);
 
 router.route('/').get(ClientController.getAllServices);
 
+router
+  .route('/radius')
+  .patch(
+    auth(ROLE.CLIENT),
+    validateRequest(ClientValidation.updateClientRadiusSchema),
+    ClientController.updateClientRadius
+  );
+
 export const ClientRoutes = router;
