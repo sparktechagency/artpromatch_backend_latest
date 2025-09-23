@@ -94,6 +94,20 @@ const getAllServices = asyncHandler(async (req, res) => {
   });
 });
 
+// updateClientRadius
+const updateClientRadius = asyncHandler(async (req, res) => {
+  const result = await ClientService.updateClientRadiusIntoDB(
+    req.user,
+    req.body.radius
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Radius updated successfully!',
+    data: result,
+  });
+});
+
 export const ClientController = {
   updateProfile,
   updatePreferences,
@@ -101,4 +115,5 @@ export const ClientController = {
   updatePrivacySecuritySettings,
   getDiscoverArtists,
   getAllServices,
+  updateClientRadius,
 };

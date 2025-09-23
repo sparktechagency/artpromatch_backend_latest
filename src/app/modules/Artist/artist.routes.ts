@@ -13,6 +13,14 @@ const router = Router();
 // getAllArtists
 router.route('/').get(auth(ROLE.ARTIST), ArtistController.getAllArtists);
 
+// getOwnArtistData
+router.route('/own').get(auth(ROLE.ARTIST), ArtistController.getOwnArtistData);
+
+// getSingleArtist
+router
+  .route('/:id')
+  .get(auth(ROLE.CLIENT, ROLE.ARTIST), ArtistController.getSingleArtist);
+
 // updateArtistPersonalInfo
 router
   .route('/')

@@ -126,6 +126,14 @@ const clientPreferencesSchema = z.object({
   }),
 });
 
+const securitySettingsSchema = z.object({
+  body: z.object({
+    twoFactorAuthEnabled: z.boolean().optional(),
+    personalizedContent: z.boolean().optional(),
+    locationSuggestions: z.boolean().optional(),
+  }),
+});
+
 const NotificationPreferencesSchema = z.object({
   body: z.object({
     all: z.boolean().optional(),
@@ -144,11 +152,14 @@ const NotificationPreferencesSchema = z.object({
   }),
 });
 
-export const securitySettingsSchema = z.object({
+const updateClientRadiusSchema = z.object({
   body: z.object({
-    twoFactorAuthEnabled: z.boolean().optional(),
-    personalizedContent: z.boolean().optional(),
-    locationSuggestions: z.boolean().optional(),
+    radius: z.coerce
+      .number({
+        required_error: 'Radius is required',
+        invalid_type_error: 'Radius must be a number',
+      })
+      .positive('Radius must be greater than 0'),
   }),
 });
 
@@ -176,4 +187,5 @@ export const ClientValidation = {
   clientPreferencesSchema,
   securitySettingsSchema,
   NotificationPreferencesSchema,
+  updateClientRadiusSchema,
 };

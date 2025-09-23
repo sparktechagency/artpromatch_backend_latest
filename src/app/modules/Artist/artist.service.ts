@@ -144,6 +144,31 @@ const getAllArtistsFromDB = async (
   };
 };
 
+// getOwnArtistDataFromDB
+const getOwnArtistDataFromDB = async (userData: IAuth) => {
+  const artist = await Artist.findOne({ auth: userData._id });
+
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  }
+
+  return artist;
+};
+
+// getSingleArtistFromDB
+const getSingleArtistFromDB = async (artistId: string) => {
+  const artist = await Artist.findById(artistId);
+
+  if (!artist) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Logged in artist location not found!'
+    );
+  }
+
+  return artist;
+};
+
 // update artist person info into db
 const updateArtistPersonalInfoIntoDB = async (
   user: IAuth,
@@ -1041,6 +1066,8 @@ export const expireBoosts = async () => {
 
 export const ArtistService = {
   getAllArtistsFromDB,
+  getOwnArtistDataFromDB,
+  getSingleArtistFromDB,
   updateArtistPersonalInfoIntoDB,
   updateArtistProfileIntoDB,
   updateArtistPreferencesIntoDB,
