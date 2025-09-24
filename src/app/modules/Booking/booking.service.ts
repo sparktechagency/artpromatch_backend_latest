@@ -1133,30 +1133,46 @@ const completeBookingIntoDb = async (
   session.startTransaction();
 
   try {
-    const booking = await Booking.findById(bookingId).session(session);
-    if (!booking) throw new Error('Booking not found');
+    const booking = await Booking.findById(bookingId)
+      .select(
+        'status paymentStatus payment stripeFee otpExpiresAt service client artist'
+      )
+      .populate<{ service: IService }>('service', 'totalCompletedOrder')
+      .session(session);
+    if (!booking)
+      throw new AppError(httpStatus.BAD_REQUEST, 'Booking not found');
 
-    const artist = await Artist.findOne(
-      { auth: user.id },
-      'stripeAccountId'
-    ).session(session);
+    const [artist, service] = await Promise.all([
+      Artist.findOne(
+        { auth: user.id },
+        'stripeAccountId totalCompletedService'
+      ).session(session),
+      Service.findById(booking.service)
+        .select('totalCompletedOrder')
+        .session(session),
+    ]);
+
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+    if (!service) throw new AppError(httpStatus.NOT_FOUND, 'Service not found');
 
     if (booking.status !== 'ready_for_completion')
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'this booking is not for delivery'
+        'this booking is not ready for delivery'
       );
 
     if (booking.paymentStatus !== 'captured')
-      throw new AppError(httpStatus.NOT_FOUND, 'no payment found');
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'payment is not captured by stripe'
+      );
 
     const isOtpCorrect = await booking.isOtpMatched(otp);
     if (!isOtpCorrect)
       throw new AppError(httpStatus.BAD_REQUEST, 'invalid otp');
 
     if (booking.otpExpiresAt && booking.otpExpiresAt < new Date())
-      throw new AppError(httpStatus.BAD_REQUEST, 'invalid otp');
+      throw new AppError(httpStatus.BAD_REQUEST, 'otp time is expired');
 
     const paymentIntent = await stripe.paymentIntents.retrieve(
       booking.payment.client.paymentIntentId as string
@@ -1172,7 +1188,10 @@ const completeBookingIntoDb = async (
     const artistAmount = paymentIntent.amount_received - adminFee - stripeFee;
 
     if (!artist.stripeAccountId)
-      throw new AppError(httpStatus.NOT_FOUND, 'stripe account not found');
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Artist stripe account not found! please open you stripe account'
+      );
 
     // create transfer (external call)
     const transfer = await stripe.transfers.create({
@@ -1182,13 +1201,22 @@ const completeBookingIntoDb = async (
       source_transaction: booking.payment.client.chargeId!,
     });
 
-    booking.status = 'completed';
-    booking.paymentStatus = 'succeeded';
-    booking.completedAt = new Date();
-    booking.artistEarning = artistAmount / 100;
-    booking.payment.artist.transferId = transfer.id;
+    booking.set({
+      status: 'completed',
+      paymentStatus: 'succeeded',
+      completedAt: new Date(),
+      artistEarning: artistAmount / 100,
+      'payment.artist.transferId': transfer.id,
+    });
 
-    await booking.save({ session });
+    artist.totalCompletedService += 1;
+    service.totalCompletedOrder += 1;
+
+    await Promise.all([
+      booking.save({ session }),
+      artist.save({ session }),
+      service.save({ session }),
+    ]);
 
     await session.commitTransaction();
     session.endSession();

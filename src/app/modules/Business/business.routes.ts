@@ -38,6 +38,13 @@ router
     BusinessController.updateBusinessSecuritySettings
   );
 
+router
+  .route('/get-artist')
+  .get(
+    auth(ROLE.BUSINESS),
+    BusinessController.fetchBusinessArtist
+  );
+
 // updateTimeOff
 router
   .route('/time-off')

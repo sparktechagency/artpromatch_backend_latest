@@ -41,7 +41,6 @@ const businessSchema = new Schema<IBusiness>(
       enum: Object.values(SERVICES_OFFERED),
       default: [],
     },
-
     // Contact & location
     city: { type: String, required: true },
     location: {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const createRequestSchema = z.object({
   body: z.object({
-    receiverId: z
+    artistId: z
       .string()
       .min(1, 'receivedId is required')
       .regex(/^[0-9a-fA-F]{24}$/, 'Invalid MongoDB ObjectId'),

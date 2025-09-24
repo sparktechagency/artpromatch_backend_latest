@@ -5,11 +5,6 @@ import { IRequest } from './request.interface';
 // Define the request schema
 const requestSchema = new Schema<IRequest>(
   {
-    senderType: {
-      type: String,
-      enum: ['ARTIST', 'BUSINESS'],
-      required: true,
-    },
     artistId: {
       type: Schema.Types.ObjectId,
       ref: 'Artist',

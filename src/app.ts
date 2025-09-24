@@ -62,7 +62,7 @@ app.get('/', (req: Request, res: Response, next: NextFunction) => {
   res.send({ message: 'Server is running like a Rabit!' });
 });
 
-cron.schedule('0 */6 * * *', async () => {
+cron.schedule('0 */2 * * *', async () => {
    try {
     await expireBoosts();
   } catch (error: unknown) {

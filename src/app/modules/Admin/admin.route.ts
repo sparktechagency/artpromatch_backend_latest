@@ -22,6 +22,28 @@ router
 //   );
 
 // verifyArtistByAdmin
+
+router
+  .route('/dashboard')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN, ROLE.ARTIST),
+    AdminController.fetchDashboardPage
+  );
+
+router
+  .route('/dashboard/yearly-revenue')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN, ROLE.ARTIST),
+    AdminController.getYearlyRevenueStats
+  );
+
+router
+  .route('/dashboard/yearly-appoiontment')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN, ROLE.ARTIST),
+    AdminController.getYearlyAppointmentStats
+  );
+
 router
   .route('/verify-artist/:artistId')
   .patch(

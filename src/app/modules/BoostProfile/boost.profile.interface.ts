@@ -6,6 +6,7 @@ export interface IArtistBoost extends Document {
   startTime: Date;
   endTime: Date;
   paymentIntentId: string;
+  charge: number;
   paymentStatus: 'pending' | 'succeeded' | 'failed';
   isActive: boolean;
   createdAt: Date;

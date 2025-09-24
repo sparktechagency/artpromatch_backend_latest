@@ -10,6 +10,7 @@ export default {
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
   otp_expiry_minutes: process.env.OTP_EXPIRY_MINUTES,
   admin_commision: process.env.ADMIN_COMMISION,
+  boost_charge: process.env.BOOST_CHARGE,
   jwt: {
     access_secret: process.env.JWT_ACCESS_SECRET,
     access_expires_in: process.env.JWT_ACCESS_EXPIRES_IN,
