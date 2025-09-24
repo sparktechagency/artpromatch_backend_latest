@@ -21,8 +21,6 @@ export const handleMessagePage = async (
     participants: IAuth[];
   }>('participants', '-password -refreshToken');
 
-  console.log('conversation', conversation);
-
   if (!conversation) {
     return socket.emit('socket-error', {
       event: 'message-page',
@@ -66,7 +64,6 @@ export const handleMessagePage = async (
     (msg) => msg.msgByUser.toString() === otherUser._id.toString() && !msg.seen
   );
 
-  console.log('unseenmessage', unseenMessages);
   if (unseenMessages.length > 0) {
     const messageIds = unseenMessages.map((msg) => msg._id);
 
