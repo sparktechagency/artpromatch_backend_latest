@@ -73,4 +73,5 @@ export interface IArtistSchedule {
   weeklySchedule: IWeeklySchedule;
   activeGuestSpot: Types.ObjectId | null;
   offDays: IOffDays;
+  slots: string[];
 }

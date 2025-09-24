@@ -39,6 +39,7 @@ type TSessionData = {
   date: Date;
   startTime: string;
   endTime: string;
+  
 };
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
