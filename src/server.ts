@@ -13,7 +13,7 @@ import { Server } from 'http';
 import { connect } from 'mongoose';
 import app from './app';
 import config from './app/config';
-import { connectSocket } from './app/socket copy/socketConnection';
+import { connectSocket } from './app/socket/socketConnection';
 import { Logger } from './app/utils';
 import seedingAdmin from './app/utils/seeding';
 
