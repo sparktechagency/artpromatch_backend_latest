@@ -16,7 +16,7 @@ import {
   TProfileFileFields,
   TSocialLoginPayload,
 } from '../../types';
-import { AppError, Logger, sendOtpEmail } from '../../utils';
+import { AppError, sendOtpEmail } from '../../utils';
 import Artist from '../Artist/artist.model';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import Business from '../Business/business.model';
@@ -976,7 +976,7 @@ const updateProfilePhotoIntoDB = async (
     try {
       await fs.promises.unlink(user.image);
     } catch (error: unknown) {
-      Logger.error('Error deleting old file:', error);
+      console.error('Error deleting old file:', error);
     }
   }
 

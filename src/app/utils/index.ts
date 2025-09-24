@@ -1,4 +1,4 @@
-import { Logger } from './logger';
+// import { Logger } from './logger';
 import AppError from './AppError';
 import asyncHandler from './asyncHandler';
 import { deleteFile } from './deleteFile';
@@ -24,5 +24,5 @@ export {
   sendOtpEmail,
   deleteFile,
   sendContactUsEmail,
-  Logger
+  // Logger
 };

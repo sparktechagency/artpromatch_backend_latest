@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import config from '../config';
-import logger from '../config/logger';
+// import logger from '../config/logger';
 import ArtistPreferences from '../modules/ArtistPreferences/artistPreferences.model';
 // import { IAuth } from '../modules/Auth/auth.interface';
 import { Auth } from '../modules/Auth/auth.model';
@@ -117,19 +117,23 @@ export const stripeWebhookHandler = asyncHandler(
 
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-         const paymentIntentId =
-            typeof session.payment_intent === 'string'
-              ? session.payment_intent
-              : session.payment_intent?.id;
-         const artistId = session.metadata?.artistId ?? '';
+        const paymentIntentId =
+          typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : session.payment_intent?.id;
+        const artistId = session.metadata?.artistId ?? '';
         try {
           const boostId = session.metadata?.boostId;
 
           if (boostId) {
-            console.log(boostId)
+            console.log(boostId);
             await ArtistBoost.findOneAndUpdate(
               { _id: boostId },
-              { paymentStatus: 'succeeded', isActive: true, paymentIntentId: paymentIntentId },
+              {
+                paymentStatus: 'succeeded',
+                isActive: true,
+                paymentIntentId: paymentIntentId,
+              },
               { new: true }
             );
 
@@ -145,17 +149,16 @@ export const stripeWebhookHandler = asyncHandler(
           }
           const bookingId = session.metadata?.bookingId;
           const userId = session.metadata?.userId ?? '';
-         
 
           if (!bookingId) {
-            logger.warn('Checkout session missing bookingId in metadata', {
+            console.warn('Checkout session missing bookingId in metadata', {
               sessionId: session.id,
               event: event.type,
             });
             break;
           }
 
-          logger.info('Checkout session completed', {
+          console.info('Checkout session completed', {
             bookingId,
             userId,
             sessionId: session.id,
@@ -166,7 +169,7 @@ export const stripeWebhookHandler = asyncHandler(
             'artistInfo clientInfo client artist serviceName'
           );
           if (!booking) {
-            logger.error('Booking not found', { bookingId });
+            console.error('Booking not found', { bookingId });
             break;
           }
 
@@ -188,7 +191,7 @@ export const stripeWebhookHandler = asyncHandler(
           const user = await Auth.findById(userId, 'fcmToken');
 
           if (!user) {
-            logger.warn('User not found for booking', { bookingId, userId });
+            console.warn('User not found for booking', { bookingId, userId });
           }
 
           // Notifications
@@ -200,12 +203,12 @@ export const stripeWebhookHandler = asyncHandler(
                 receiver: booking.artist.toString() ?? '',
                 type: NOTIFICATION_TYPE.BOOKING_REQUEST,
               });
-              logger.info('App notification sent', {
+              console.info('App notification sent', {
                 bookingId,
                 artistId: booking.artist,
               });
             } catch (err) {
-              logger.error('Failed to send app notification', {
+              console.error('Failed to send app notification', {
                 error: err,
                 bookingId,
               });
@@ -222,12 +225,12 @@ export const stripeWebhookHandler = asyncHandler(
                   serviceName: booking.serviceName,
                 }
               );
-              logger.info('Email notification sent', {
+              console.info('Email notification sent', {
                 bookingId,
                 artistId: booking.artist,
               });
             } catch (err) {
-              logger.error('Failed to send email notification', {
+              console.error('Failed to send email notification', {
                 error: err,
                 bookingId,
               });
@@ -246,9 +249,9 @@ export const stripeWebhookHandler = asyncHandler(
                 content: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
                 time: formattedDate,
               });
-              logger.info('Push notification sent', { bookingId, userId });
+              console.info('Push notification sent', { bookingId, userId });
             } catch (err) {
-              logger.error('Failed to send push notification', {
+              console.error('Failed to send push notification', {
                 error: err,
                 bookingId,
                 userId,
@@ -256,7 +259,7 @@ export const stripeWebhookHandler = asyncHandler(
             }
           }
         } catch (err) {
-          logger.error(
+          console.error(
             'Webhook handler failed for checkout.session.completed',
             {
               error: err,
