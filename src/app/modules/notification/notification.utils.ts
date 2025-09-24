@@ -34,7 +34,6 @@ export const sendNotificationByEmail = async (
       to: email,
       subject: `Steady Hands - ${type.replace('_', ' ')}`,
       html,
-
     };
 
     await transporter.sendMail(mailOptions);
@@ -78,19 +77,19 @@ export const sendPushNotification = async (
         title: data.title,
         body: data.content,
       },
-      token: fcmToken, 
+      token: fcmToken,
       data: {
-        time: data.time, 
+        time: data.time,
       },
     };
 
     const response = await firebaseAdmin.messaging().send(message);
-    console.log('Push sent:', response);
+
     return response;
   } catch (error: unknown) {
     throw new AppError(
       httpStatus.NO_CONTENT,
-      error instanceof Error ? error.message : String(error),
+      error instanceof Error ? error.message : String(error)
     );
   }
 };

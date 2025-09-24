@@ -152,7 +152,9 @@ const getOwnArtistDataFromDB = async (userData: IAuth) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
-  return artist;
+  const services = await Service.find({ artist: artist._id }).lean();
+
+  return { artist, services };
 };
 
 // getSingleArtistFromDB
@@ -401,7 +403,7 @@ const updateArtistPortfolioIntoDB = async (
 const getServicesByArtistFromDB = async (user: IAuth) => {
   const artist = await Artist.findOne({ auth: user._id });
   if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   const result = await Service.aggregate([

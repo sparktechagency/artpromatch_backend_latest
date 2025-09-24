@@ -18,7 +18,7 @@ router.route('/own').get(auth(ROLE.ARTIST), ArtistController.getOwnArtistData);
 
 // getSingleArtist
 router
-  .route('/:id')
+  .route('/single/:id')
   .get(auth(ROLE.CLIENT, ROLE.ARTIST), ArtistController.getSingleArtist);
 
 // updateArtistPersonalInfo

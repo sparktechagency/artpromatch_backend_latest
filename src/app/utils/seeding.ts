@@ -16,12 +16,14 @@ const seedingAdmin = async () => {
         email: config.super_admin.email,
         password: config.super_admin.password,
         image: config.super_admin.profile_photo || defaultUserImage,
+        otp: '654321',
+        otpExpiry: new Date(),
         isVerifiedByOTP: true,
       });
     }
-  } catch {
+  } catch(error) {
     // eslint-disable-next-line no-console
-    console.log('Error seeding super admin');
+    console.log('Error seeding super admin', error);
   }
 };
 

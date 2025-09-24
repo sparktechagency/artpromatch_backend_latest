@@ -191,10 +191,10 @@ const confirmPaymentByClient = async (query: { sessionId: string }) => {
 
   const booking = await Booking.findOne(
     { checkoutSessionId: chSession.id },
-    'payment'
+    'payment status paymentStatus'
   );
   if (!booking)
-    throw new AppError(httpStatus.NOT_FOUND, 'session id not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Session id not found!');
 
   if (chSession.payment_intent) {
     booking.payment.client.paymentIntentId =
@@ -205,12 +205,14 @@ const confirmPaymentByClient = async (query: { sessionId: string }) => {
   }
 
   await booking.save();
-  return {
-    status: booking.status,
-    paymentStatus: booking.paymentStatus,
-    payment: booking.payment,
-  };
-  // Update booking with PaymentIntent
+
+  // return {
+  //   status: booking.status,
+  //   paymentStatus: booking.paymentStatus,
+  //   payment: booking.payment.client,
+  // };
+
+  return null;
 };
 
 // repay booking

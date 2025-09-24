@@ -19,25 +19,6 @@ import seedingAdmin from './app/utils/seeding';
 
 let server: Server;
 
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  Logger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled Rejection:', error);
-  if (server) {
-    server.close((error) => {
-      console.error('Server closed due to unhandled rejection');
-      Logger.error('Server closed due to unhandled rejection', error);
-      process.exit(1);
-    });
-  } else {
-    process.exit(1);
-  }
-});
-
 async function bootstrap() {
   try {
     await connect(config.db_url as string);
@@ -49,6 +30,7 @@ async function bootstrap() {
     server = server.listen(config.port, () => {
       console.log(`🚀 Application is running on port ${config.port}`);
     });
+
     connectSocket(server);
   } catch (err: any) {
     Logger.error('Failed to connect to database:', err);
@@ -80,5 +62,24 @@ process.on('SIGINT', () => {
     });
   } else {
     process.exit(0);
+  }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  Logger.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled Rejection:', error);
+  if (server) {
+    server.close((error) => {
+      console.error('Server closed due to unhandled rejection');
+      Logger.error('Server closed due to unhandled rejection', error);
+      process.exit(1);
+    });
+  } else {
+    process.exit(1);
   }
 });

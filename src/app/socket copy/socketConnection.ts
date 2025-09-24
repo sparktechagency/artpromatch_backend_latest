@@ -1,15 +1,15 @@
 /* eslint-disable no-console */
 import { Server as HTTPServer } from 'http';
 import { Server as chatServer, Socket } from 'socket.io';
-
 import handleChatEvents from './handleChatEvents';
-
 import { Auth } from '../modules/Auth/auth.model';
 import Conversation from '../modules/conversation/conversation.model';
 import { SOCKET_EVENTS } from './socket.constant';
 
 let io: chatServer;
+
 const onlineUsers = new Map<string, string>();
+
 const connectSocket = (server: HTTPServer) => {
   if (!io) {
     io = new chatServer(server, {
@@ -23,10 +23,12 @@ const connectSocket = (server: HTTPServer) => {
       connectTimeout: 45000,
     });
   }
+
   io.on(SOCKET_EVENTS.CONNECTION, async (socket: Socket) => {
     console.log('Client connected:', socket.id);
 
     const userId = socket.handshake.query.id as string;
+
     if (!userId) {
       socket.emit('error', 'User ID is required');
       socket.disconnect();
@@ -41,6 +43,7 @@ const connectSocket = (server: HTTPServer) => {
     }
 
     const currentUserId = currentUser._id.toString();
+
     socket.join(currentUserId);
 
     onlineUsers.set(currentUserId, socket.id);
@@ -64,7 +67,7 @@ const connectSocket = (server: HTTPServer) => {
 
 const getSocketIO = () => {
   if (!io) {
-    throw new Error('socket.io is not initialized');
+    throw new Error('Socket.io is not initialized!');
   }
   return io;
 };

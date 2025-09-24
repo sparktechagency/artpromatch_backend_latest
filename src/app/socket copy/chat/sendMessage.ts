@@ -60,7 +60,7 @@ export const handleSendMessage = async (
 
   // auto-seen logic
   const room = io.sockets.adapter.rooms.get(conversation._id.toString());
-  console.log('room', room);
+
   if (room && room.size > 1) {
     for (const socketId of room) {
       const s = io.sockets.sockets.get(socketId);

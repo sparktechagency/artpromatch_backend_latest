@@ -20,7 +20,7 @@ const confirmPaymentByClient = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'payment Successfully!',
+    message: 'Payment successfull!',
     data: result,
   });
 });
@@ -30,7 +30,7 @@ const repayBooking = asyncHandler(async (req, res) => {
   const result = await BookingService.repayBookingIntoDb(req.user, req.body);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'payment Successfully!',
+    message: 'Payment successfull!',
     data: result,
   });
 });
@@ -142,10 +142,12 @@ const deleteSession = asyncHandler(async (req, res) => {
 // confirm booking
 const confirmBookingByArtist = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
+
   const result = await BookingService.confirmBookingByArtist(bookingId);
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'booking confirm Successfully by Artist!',
+    message: 'Booking confirmed Successfully!',
     data: result,
   });
 });
