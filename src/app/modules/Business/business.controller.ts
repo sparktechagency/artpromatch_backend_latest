@@ -3,6 +3,7 @@ import { asyncHandler } from '../../utils';
 import { BusinessService } from './business.service';
 import sendResponse from '../../utils/sendResponse';
 
+
 const updateBusinessProfile = asyncHandler(async (req, res) => {
   const result = await BusinessService.updateBusinessProfile(
     req.user,
@@ -77,6 +78,20 @@ const updateTimeOff = asyncHandler(async (req, res) => {
   });
 });
 
+
+const fetchBusinessArtist = asyncHandler(async (req, res) => {
+  const result = await BusinessService.getBusinessArtists(
+    req.user,
+    req.query
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Artist removed successfully!',
+    data: result,
+  });
+});
+
 const removeArtist = asyncHandler(async (req, res) => {
   const result = await BusinessService.removeArtistFromDB(
     req.user,
@@ -96,6 +111,7 @@ export const BusinessController = {
   updateBusinessNotificationPreferences,
   updateBusinessSecuritySettings,
   // updateAvailability,
+  fetchBusinessArtist,
   updateTimeOff,
   removeArtist,
 };

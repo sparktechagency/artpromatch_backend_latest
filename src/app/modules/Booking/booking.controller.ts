@@ -14,6 +14,7 @@ const createBooking = asyncHandler(async (req, res) => {
   });
 });
 
+// confirm payment by client
 const confirmPaymentByClient = asyncHandler(async (req, res) => {
   const query = req.query as { sessionId: string };
   const result = await BookingService.confirmPaymentByClient(query);
@@ -90,6 +91,7 @@ const completeSession = asyncHandler(async (req, res) => {
   });
 });
 
+// artist marks as completed
 const artistMarksCompleted = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const result = await BookingService.artistMarksCompletedIntoDb(
@@ -104,6 +106,7 @@ const artistMarksCompleted = asyncHandler(async (req, res) => {
   });
 });
 
+// complete booking
 const completeBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const otp = req.body.otp;

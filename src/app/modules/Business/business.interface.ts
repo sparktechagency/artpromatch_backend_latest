@@ -7,13 +7,13 @@ import {
 } from './business.constants';
 
 export interface IBusiness extends Document {
+  _id: Types.ObjectId;
   auth: Types.ObjectId;
 
   // Core details
   studioName: string;
   businessType: TBusinessType;
   servicesOffered: TServiceOffered[];
-
   // Contact & location
   location: { type: 'Point'; coordinates: [number, number] };
   stringLocation: string;

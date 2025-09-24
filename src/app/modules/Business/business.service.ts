@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Business from './business.model';
-import { IAuth } from '../Auth/auth.interface';
-import { AppError } from '../../utils';
 import httpStatus from 'http-status';
-import { startSession } from 'mongoose';
-import {
-  TUpdateBusinessProfilePayload,
-  TUpdateBusinessNotificationPayload,
-  TUpdateBusinessSecuritySettingsPayload,
-} from './business.validation';
+import mongoose, { startSession } from 'mongoose';
+import { AppError } from '../../utils';
+import Artist from '../Artist/artist.model';
+import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
+import Business from './business.model';
+import {
+  TUpdateBusinessNotificationPayload,
+  TUpdateBusinessProfilePayload,
+  TUpdateBusinessSecuritySettingsPayload,
+} from './business.validation';
 
 // Update Business Profile
 const updateBusinessProfile = async (
@@ -180,6 +181,87 @@ const updateTimeOff = async (user: IAuth, data: any) => {
   return business;
 };
 
+const getBusinessArtists = async (
+  user: IAuth,
+  query: Record<string, any> = {}
+) => {
+  const page = Number(query.page) > 0 ? Number(query.page) : 1;
+  const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
+  const skip = (page - 1) * limit;
+
+  const business = await Business.findOne({ auth: user._id });
+  if (!business)
+    throw new AppError(httpStatus.BAD_REQUEST, 'business not found');
+
+  const pipeline: any[] = [
+    {
+      $match: {
+        business: new mongoose.Types.ObjectId(business._id),
+        isConnBusiness: true,
+      },
+    },
+
+    // 🔹 Lookup artist auth info
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'auth',
+        foreignField: '_id',
+        as: 'artistAuth',
+      },
+    },
+    { $unwind: '$artistAuth' },
+
+    // 🔹 Lookup business info
+    {
+      $lookup: {
+        from: 'businesses',
+        localField: 'business',
+        foreignField: '_id',
+        as: 'businessInfo',
+      },
+    },
+    { $unwind: '$businessInfo' },
+
+    // 🔹 Final projection
+    {
+      $project: {
+        _id: 1,
+        fullName: '$artistAuth.fullName',
+        email: '$artistAuth.email',
+        phone: '$artistAuth.phone',
+        city: 1,
+        stringLocation: 1,
+        avgRating: 1,
+        portfolio: 1,
+        flashes: 1,
+      },
+    },
+
+    // Pagination
+    { $skip: skip },
+    { $limit: limit },
+  ];
+
+  const data = await Artist.aggregate(pipeline);
+
+  // total count (without pagination)
+  const total = await Artist.countDocuments({
+    business: business._id,
+    isConnBusiness: true,
+  });
+
+  return {
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+  };
+};
+
 // removeArtistFromDB
 const removeArtistFromDB = async (user: IAuth, artistId: string) => {
   const business = await Business.findOne({ auth: user._id });
@@ -201,6 +283,7 @@ export const BusinessService = {
   updateBusinessNotificationPreferences,
   updateBusinessSecuritySettings,
   // updateGuestSpotsIntoDB,
+  getBusinessArtists,
   updateTimeOff,
   removeArtistFromDB,
 };

@@ -912,14 +912,17 @@ const boostProfileIntoDb = async (user: IAuth) => {
   session.startTransaction();
 
   try {
-    const artist = await Artist.findOne({ auth: user.id }).session(session);
+    const artist = await Artist.findOne({ auth: user.id },"_id boost").session(session);
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
+   
+    if(artist.boost.endTime && artist.boost.endTime > new Date()) throw new AppError(httpStatus.BAD_REQUEST,"Artist already boost his profile")
 
     const boost = await ArtistBoost.create(
       [
         {
           artist: artist._id,
           paymentStatus: 'pending',
+          charge: Number(config.boost_charge),
           startTime: new Date(),
           endTime: new Date(Date.now() + 12 * 60 * 60 * 1000),
         },
@@ -932,15 +935,12 @@ const boostProfileIntoDb = async (user: IAuth) => {
       {
         payment_method_types: ['card'],
         mode: 'payment',
-        payment_intent_data: {
-          capture_method: 'manual',
-        },
         line_items: [
           {
             price_data: {
               currency: 'usd',
               product_data: { name: 'Profile Boost' },
-              unit_amount: 100, // $1
+              unit_amount: Math.round(Number(config.boost_charge)*100),
             },
             quantity: 1,
           },
@@ -955,9 +955,9 @@ const boostProfileIntoDb = async (user: IAuth) => {
       },
       { idempotencyKey: `boost_${boost[0].id.toString()}` }
     );
-
     // save boost record in DB (pending)
-
+    boost[0].paymentStatus = 'succeeded';
+    await boost[0].save({session})
     await session.commitTransaction();
     session.endSession();
 
@@ -969,6 +969,7 @@ const boostProfileIntoDb = async (user: IAuth) => {
   }
 };
 
+// expire boost
 export const expireBoosts = async () => {
   const now = new Date();
 

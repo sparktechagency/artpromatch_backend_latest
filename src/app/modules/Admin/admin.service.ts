@@ -2,12 +2,17 @@ import httpStatus from 'http-status';
 import { AppError } from '../../utils';
 import Folder from '../Folder/folder.model';
 // import fs from 'fs';
+import { PipelineStage } from 'mongoose';
+import QueryBuilder from 'mongoose-query-builders';
+import config from '../../config';
 import Artist from '../Artist/artist.model';
+import { IAuth } from '../Auth/auth.interface';
+import Booking from '../Booking/booking.model';
+import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
 import Client from '../Client/client.model';
-import QueryBuilder from 'mongoose-query-builders';
 import SecretReview from '../SecretReview/secretReview.model';
-import { PipelineStage } from 'mongoose';
+import { Auth } from '../Auth/auth.model';
 
 // getAllArtistsFoldersFromDB
 const getAllArtistsFoldersFromDB = async () => {
@@ -315,9 +320,203 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
   return { data, meta };
 };
 
+const fetchDasboardPageData = async () => {
+ const totalClients = await Auth.countDocuments({ role: "CLIENT" });
+const totalArtists = await Auth.countDocuments({ role: "ARTIST" });
+const totalBusinesses = await Auth.countDocuments({ role: "BUSINESS" });
+ const adminCommision = Number(config.admin_commision) / 100;
+  const adminBookingIncomeAgg = await Booking.aggregate([
+    {
+      $group: {
+        _id: null,
+        total: {
+          $sum: {
+            $multiply: [
+              { $subtract: ['$price', '$stripeFee'] }, // artist earnings
+              adminCommision, // 5% admin cut
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  // Admin income from boosts (assuming full amount goes to admin)
+  const adminBoostIncomeAgg = await ArtistBoost.aggregate([
+    {
+      $group: {
+        _id: null,
+        total: { $sum: '$charge' },
+      },
+    },
+  ]);
+
+  const totalAdminIncome =
+    (adminBookingIncomeAgg[0]?.total || 0) +
+    (adminBoostIncomeAgg[0]?.total || 0);
+
+  // ---- New Users (last 5) ----
+
+  const rawUsers = await Client.find()
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .populate<{ auth: IAuth }>({
+      path: 'auth',
+      select: 'fullName email phoneNumber',
+    });
+
+  const newUsers = rawUsers.map((u) => ({
+    _id: u._id,
+    fullName: u.auth?.fullName || '',
+    email: u.auth?.email || '',
+    phone: u.auth?.phoneNumber || '',
+  }));
+
+  // ---- Top Artists (Example: by completed bookings count) ----
+  const topArtists = await Booking.aggregate([
+    { $match: { status: 'completed' } },
+
+    {
+      $group: {
+        _id: '$artist',
+        taskCompleted: { $sum: 1 },
+      },
+    },
+
+    { $sort: { taskCompleted: -1 } },
+    { $limit: 3 },
+
+    {
+      $lookup: {
+        from: 'artists',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'artist',
+      },
+    },
+    { $unwind: '$artist' },
+
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'artist.auth',
+        foreignField: '_id',
+        as: 'auth',
+      },
+    },
+    { $unwind: '$auth' },
+
+    {
+      $project: {
+        _id: 0,
+        fullName: '$auth.fullName',
+        type: '$artist.type',
+      },
+    },
+  ]);
+
+  return {
+    stats: {
+      totalClients,
+      artists: totalArtists,
+      businesses: totalBusinesses,
+      earnings: totalAdminIncome,
+    },
+    newUsers,
+    topArtists,
+  };
+};
+
+const getYearlyAppointmentStats = async (year: number) => {
+  const appointments = await Booking.aggregate([
+    {
+      $project: {
+        year: { $year: '$createdAt' },
+        month: { $month: '$createdAt' },
+      },
+    },
+    { $match: { year } },
+    {
+      $group: {
+        _id: '$month',
+        appointment: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const result: { month: number; appointment: number }[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const appt = appointments.find((a) => a._id === m);
+    result.push({
+      month: m,
+      appointment: appt?.appointment || 0,
+    });
+  }
+
+  return result;
+};
+
+// 2. Revenue grouped by year+month
+export const getYearlyRevenueStats = async (year: number) => {
+  const adminCommision = Number(config.admin_commision) / 100;
+  const bookingIncome = await Booking.aggregate([
+    {
+      $project: {
+        year: { $year: '$createdAt' },
+        month: { $month: '$createdAt' },
+        adminIncome: {
+          $multiply: [{ $subtract: ['$price', '$stripeFee'] }, adminCommision],
+        },
+      },
+    },
+    { $match: { year } },
+    {
+      $group: {
+        _id: '$month',
+        earning: { $sum: '$adminIncome' },
+      },
+    },
+  ]);
+
+  // --- Boost income (full amount)
+  const boostIncome = await ArtistBoost.aggregate([
+    {
+      $project: {
+        year: { $year: '$createdAt' },
+        month: { $month: '$createdAt' },
+        adminIncome: '$charge',
+      },
+    },
+    { $match: { year } },
+    {
+      $group: {
+        _id: '$month',
+        earning: { $sum: '$adminIncome' },
+      },
+    },
+  ]);
+
+  // --- Merge both incomes month by month
+  const result: { month: number; earning: number }[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const booking = bookingIncome.find((b) => b._id === m)?.earning || 0;
+    const boost = boostIncome.find((b) => b._id === m)?.earning || 0;
+
+    result.push({
+      month: m,
+      earning: booking + boost,
+    });
+  }
+
+  return result;
+};
+
 export const AdminService = {
   getAllArtistsFoldersFromDB,
   // changeStatusOnFolder,
+  getYearlyRevenueStats,
+  getYearlyAppointmentStats,
+  fetchDasboardPageData,
   verifyArtistByAdminIntoDB,
   verifyBusinessByAdminIntoDB,
   fetchAllArtistsFromDB,

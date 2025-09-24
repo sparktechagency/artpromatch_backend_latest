@@ -11,22 +11,26 @@ router
   .post(auth(ROLE.BUSINESS, ROLE.ARTIST), validateRequest(requestValidation.createRequestSchema) ,RequestController.createRequest);
 
 router
-  .route('/me')
+  .route('/')
   .get(
     auth(ROLE.BUSINESS, ROLE.ARTIST),
     RequestController.fetchMyRequests
   );
 
 router
-  .route('/incoming')
+  .route('/')
   .get(
-    auth(ROLE.BUSINESS, ROLE.ARTIST),
-    RequestController.fetchIncomingRequests
+    auth(ROLE.ARTIST),
+    RequestController.fetchMyRequests
   );
   
 router
   .route('/:id')
-  .put(auth(ROLE.ARTIST), RequestController.acceptRequestFromArtist)
-  .delete(auth(ROLE.ARTIST, ROLE.BUSINESS), RequestController.removeRequest);
+  .put(auth(ROLE.ARTIST), RequestController.statusChangedByArtist)
+  .put(auth(ROLE.BUSINESS), RequestController.addToJoinStudio);
+
+router
+  .route('/studio/:id')
+  .put(auth(ROLE.BUSINESS), RequestController.addToJoinStudio);
 
 export const RequestRoute = router;

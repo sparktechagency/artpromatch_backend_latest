@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
-import { asyncHandler } from '../../utils';
-import { AdminService } from './admin.service';
+import { AppError, asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
+import { AdminService } from './admin.service';
 
 // getAllArtistsFolders
 const getAllArtistsFolders = asyncHandler(async (req, res) => {
@@ -87,7 +87,6 @@ const fetchAllClients = asyncHandler(async (req, res) => {
   });
 });
 
-
 // fetchAllSecretReviews
 const fetchAllSecretReviews = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllSecretReviewsFromDB(req.query);
@@ -100,9 +99,60 @@ const fetchAllSecretReviews = asyncHandler(async (req, res) => {
   });
 });
 
+const fetchDashboardPage = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchDasboardPageData();
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Dashboard data retrieved successFully!',
+    data: result,
+  });
+});
+
+const getYearlyAppointmentStats = asyncHandler(async (req, res) => {
+  const year = parseInt(req.query.year as string, 10);
+  if (!year || isNaN(year)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'year query param required (e.g. 2025)'
+    );
+  }
+  const result = await AdminService.getYearlyAppointmentStats(year);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Dashboard data retrieved successFully!',
+    data: result,
+  });
+});
+
+
+const getYearlyRevenueStats = asyncHandler(async (req, res) => {
+  console.log(req.query)
+  const year = parseInt(req.query.year as string, 10);
+  console.log(year)
+  if (!year || isNaN(year)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'year query param required (e.g. 2025)'
+    );
+  }
+  const result = await AdminService.getYearlyRevenueStats(year);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Dashboard data retrieved successFully!',
+    data: result,
+  });
+});
+
+
 export const AdminController = {
   getAllArtistsFolders,
   // changeStatusOnFolder,
+  getYearlyRevenueStats,
+  getYearlyAppointmentStats,
+  fetchDashboardPage,
   verifyArtistByAdmin,
   verifyBusinessByAdmin,
   fetchAllArtists,
