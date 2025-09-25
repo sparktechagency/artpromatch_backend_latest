@@ -128,7 +128,7 @@ const getYearlyAppointmentStats = asyncHandler(async (req, res) => {
 
 
 const getYearlyRevenueStats = asyncHandler(async (req, res) => {
-  console.log(req.query)
+  console.log(req.user)
   const year = parseInt(req.query.year as string, 10);
   console.log(year)
   if (!year || isNaN(year)) {

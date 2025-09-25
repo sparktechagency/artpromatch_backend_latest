@@ -1019,7 +1019,7 @@ const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
     throw new AppError(httpStatus.BAD_REQUEST, 'payment not found');
   }
 
-  if (booking.status !== 'ready_for_completion') {
+  if (booking.status !== 'confirmed') {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'booking is not ready for delivery'
@@ -1042,6 +1042,56 @@ const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
     client.auth.fullName
   );
   return otp;
+};
+
+// resend otp booking
+
+const resendBookingOtp = async (bookingId: string) => {
+  const booking = await Booking.findById(bookingId).populate<{
+    client: IClient;
+  }>('client artist status paymentStatus');
+  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+  const client = await Client.findById(booking.client).populate<{
+    auth: IAuth;
+  }>('auth');
+
+  if (!client) throw new AppError(httpStatus.NOT_FOUND, 'client not found');
+
+  if (booking.status !== 'confirmed') {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'OTP can only be resent for confirmed bookings'
+    );
+  }
+
+  // if not expired, prevent spamming
+  if (booking.otpExpiresAt && booking.otpExpiresAt > new Date()) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'OTP is still valid, wait until it expires'
+    );
+  }
+
+  // generate new OTP (e.g., 6-digit)
+  const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // set expiry (e.g., 5 minutes from now)
+  const expiry = new Date(Date.now() + 2 * 60 * 1000);
+
+  booking.otp = newOtp;
+  booking.otpExpiresAt = expiry;
+
+  await booking.save();
+
+  // TODO: integrate with SMS/email sender
+  await sendOtpEmailForBookingCompletion(
+    client.auth.email,
+    newOtp,
+    client.auth.fullName
+  );
+
+  return newOtp;
 };
 
 // cancel booking
@@ -1157,10 +1207,10 @@ const completeBookingIntoDb = async (
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
     if (!service) throw new AppError(httpStatus.NOT_FOUND, 'Service not found');
 
-    if (booking.status !== 'ready_for_completion')
+    if (booking.status !== 'confirmed')
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'this booking is not ready for delivery'
+        'this booking is not confirmed'
       );
 
     if (booking.paymentStatus !== 'captured')
@@ -1209,6 +1259,8 @@ const completeBookingIntoDb = async (
       completedAt: new Date(),
       artistEarning: artistAmount / 100,
       'payment.artist.transferId': transfer.id,
+      otp: undefined,
+      otpExpiresAt: undefined,
     });
 
     artist.totalCompletedService += 1;
@@ -1237,6 +1289,7 @@ const completeBookingIntoDb = async (
 export const BookingService = {
   createBookingIntoDB,
   repayBookingIntoDb,
+  resendBookingOtp,
   cancelBookingIntoDb,
   getArtistDailySchedule,
   completeBookingIntoDb,

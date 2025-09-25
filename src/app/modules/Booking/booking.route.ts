@@ -67,6 +67,12 @@ router
   .route('/mark-as-completed/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.artistMarksCompleted);
 
+
+  
+router
+  .route('/resend-booking-otp/:bookingId')
+  .post(auth(ROLE.ARTIST), BookingController.resendBookingOtp);
+
 router
   .route('/complete/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.completeBooking);
