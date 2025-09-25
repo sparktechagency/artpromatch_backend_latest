@@ -18,6 +18,7 @@ export const validateRequest = (schema: AnyZodObject) => {
   );
 };
 
+
 export const validateRequestFromFormData = (schema: AnyZodObject) => {
   return asyncHandler(
     async (req: Request, _res: Response, next: NextFunction) => {

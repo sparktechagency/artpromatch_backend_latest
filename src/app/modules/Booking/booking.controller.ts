@@ -106,6 +106,21 @@ const artistMarksCompleted = asyncHandler(async (req, res) => {
   });
 });
 
+
+const resendBookingOtp = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+  const result = await BookingService.resendBookingOtp(
+    bookingId
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message:
+      'otp is sent your customer phone or email.please take that otp from him to complete the booking!',
+    data: result,
+  });
+});
+
+
 // complete booking
 const completeBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
@@ -212,4 +227,5 @@ export const BookingController = {
   createSession,
   confirmBookingByArtist,
   completeBooking,
+  resendBookingOtp
 };
