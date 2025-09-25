@@ -1,9 +1,10 @@
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import fs from 'fs';
 import httpStatus from 'http-status';
 import { startSession, Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
-import { AppError, Logger } from '../../utils';
+import { AppError } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import { Auth } from '../Auth/auth.model';
@@ -893,7 +894,7 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 
     return null; // Fallback
   } catch (error) {
-    Logger.error('Stripe Onboarding Error:', error);
+    console.error('Stripe Onboarding Error:', error);
     throw new AppError(
       httpStatus.SERVICE_UNAVAILABLE,
       'Stripe onboarding service unavailable'

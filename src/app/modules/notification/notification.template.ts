@@ -1,7 +1,12 @@
-import config from "../../config";
-import { TNotification } from "./notification.constant";
+import config from '../../config';
+import { TNotification } from './notification.constant';
 
-const baseEmailTemplate = (title: string, message: string, actionText?: string, redirectUrl?: string) => `
+const baseEmailTemplate = (
+  title: string,
+  message: string,
+  actionText?: string,
+  redirectUrl?: string
+) => `
   <!DOCTYPE html>
   <html lang="en">
   <head>
@@ -113,7 +118,10 @@ export type NotificationPayloads =
   | GuestComingPayload;
 
 // Templates for each notification type
-export const notificationTemplates: Record<TNotification, (data: NotificationPayloads) => string> = {
+export const notificationTemplates: Record<
+  TNotification,
+  (data: NotificationPayloads) => string
+> = {
   booking_request: (data: NotificationPayloads) => {
     const { fullName, serviceName } = data as BookingRequestPayload;
     return baseEmailTemplate(
@@ -155,6 +163,21 @@ export const notificationTemplates: Record<TNotification, (data: NotificationPay
     return baseEmailTemplate(
       'Guest is Coming',
       `Hi ${fullName}, your guest <b>${guestName}</b> is coming on <b>${date}</b>. Please be prepared.`
+    );
+  },
+
+  join_studio_request: (data: NotificationPayloads) => {
+    // You may want to define a specific payload interface for this notification type
+    // For now, we'll use fullName as a generic example
+    const { fullName } = data;
+
+    return baseEmailTemplate(
+      'Studio Join Request',
+      `Hello${
+        fullName ? ' ' + fullName : ''
+      }, you have a new request to join the studio. Please review the details.`,
+      'Review Request',
+      `${config.client_url}/studio-requests`
     );
   },
 };

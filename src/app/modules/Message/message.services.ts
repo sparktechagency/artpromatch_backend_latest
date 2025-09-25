@@ -2,12 +2,11 @@ import Conversation from '../conversation/conversation.model';
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import { startSession } from 'mongoose';
-import { getSocketIO, onlineUsers } from '../../socket copy/socketConnection';
+import { getSocketIO, onlineUsers } from '../../socket/socketConnection';
 import { AppError } from '../../utils';
 import { Auth } from '../Auth/auth.model';
 import Message from './message.model';
 import { NewMessagePayload } from './message.interface';
-
 
 // send message
 const new_message_IntoDb = async (

@@ -395,12 +395,14 @@ const getAllServicesFromDB = async (
   } else {
     // if no user then QueryBuilder
     const serviceQuery = new QueryBuilder(
-      Service.find().populate([
-        {
-          path: 'artist',
-          select: 'type expertise city stringLocation hourlyRate description',
+      Service.find().populate({
+        path: 'artist',
+        select: 'type expertise city stringLocation hourlyRate description',
+        populate: {
+          path: 'auth',
+          select: 'fullName image',
         },
-      ]),
+      }),
       query
     )
       .search([
@@ -420,6 +422,7 @@ const getAllServicesFromDB = async (
     const meta = await serviceQuery.countTotal();
 
     return { data, meta };
+
   }
 };
 

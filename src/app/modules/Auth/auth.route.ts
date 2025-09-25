@@ -168,4 +168,13 @@ router
     AuthController.updateAuthData
   );
 
+// 17. updateAuthData
+router
+  .route('/save-fcm-token')
+  .put(
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
+    validateRequest(AuthValidation.updateFcmTokenSchema),
+    AuthController.updateFcmToken
+  );
+
 export const AuthRoutes = router;

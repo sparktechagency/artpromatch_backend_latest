@@ -37,6 +37,8 @@ app.use(
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5175',
+      'https://dlmiked-artpro-match-5500-client.vercel.app',
+      'https://dlmiked-artpro-match-5500-artist.vercel.app',
     ],
   })
 );

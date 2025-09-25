@@ -16,7 +16,7 @@ import {
   TProfileFileFields,
   TSocialLoginPayload,
 } from '../../types';
-import { AppError, Logger, sendOtpEmail } from '../../utils';
+import { AppError, sendOtpEmail } from '../../utils';
 import Artist from '../Artist/artist.model';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import Business from '../Business/business.model';
@@ -976,7 +976,7 @@ const updateProfilePhotoIntoDB = async (
     try {
       await fs.promises.unlink(user.image);
     } catch (error: unknown) {
-      Logger.error('Error deleting old file:', error);
+      console.error('Error deleting old file:', error);
     }
   }
 
@@ -1538,6 +1538,30 @@ const updateAuthDataIntoDB = async (
   };
 };
 
+// 18. updateFcmTokenIntoDB
+const updateFcmTokenIntoDB = async (
+  payload: { userId: string; fcmToken: string },
+  userData: IAuth
+) => {
+  if (userData._id.toString() !== payload.userId) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Bad request!');
+  }
+
+  const user = await Auth.findByIdAndUpdate(
+    userData._id,
+    {
+      fcmToken: payload.fcmToken,
+    },
+    { new: true }
+  );
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  return null;
+};
+
 export const AuthService = {
   createAuthIntoDB,
   sendSignupOtpAgain,
@@ -1559,4 +1583,5 @@ export const AuthService = {
   deleteSpecificUserAccount,
   getNewAccessTokenFromServer,
   updateAuthDataIntoDB,
+  updateFcmTokenIntoDB,
 };

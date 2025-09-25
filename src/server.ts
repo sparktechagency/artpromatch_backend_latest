@@ -13,8 +13,8 @@ import { Server } from 'http';
 import { connect } from 'mongoose';
 import app from './app';
 import config from './app/config';
-import { connectSocket } from './app/socket copy/socketConnection';
-import { Logger } from './app/utils';
+import { connectSocket } from './app/socket/socketConnection';
+// import { Logger } from './app/utils';
 import seedingAdmin from './app/utils/seeding';
 
 let server: Server;
@@ -33,7 +33,7 @@ async function bootstrap() {
 
     connectSocket(server);
   } catch (err: any) {
-    Logger.error('Failed to connect to database:', err);
+    console.error('Failed to connect to database:', err);
     process.exit(1);
   }
 }
@@ -44,7 +44,7 @@ process.on('SIGTERM', () => {
   console.log('SIGTERM received');
   if (server) {
     server.close((error) => {
-      Logger.error('Server closed due to SIGTERM', error);
+      console.error('Server closed due to SIGTERM', error);
       process.exit(0);
     });
   } else {
@@ -57,7 +57,7 @@ process.on('SIGINT', () => {
   if (server) {
     server.close((error) => {
       console.log('Server closed due to SIGINT');
-      Logger.error('Server closed due to SIGINT', error);
+      console.error('Server closed due to SIGINT', error);
       process.exit(0);
     });
   } else {
@@ -67,7 +67,7 @@ process.on('SIGINT', () => {
 
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
-  Logger.error('Uncaught Exception:', error);
+  console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
@@ -76,7 +76,7 @@ process.on('unhandledRejection', (error) => {
   if (server) {
     server.close((error) => {
       console.error('Server closed due to unhandled rejection');
-      Logger.error('Server closed due to unhandled rejection', error);
+      console.error('Server closed due to unhandled rejection', error);
       process.exit(1);
     });
   } else {

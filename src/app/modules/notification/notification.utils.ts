@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import nodemailer from 'nodemailer';
 import config from '../../config';
 import firebaseAdmin from '../../config/firebase.config';
-import { getSocketIO } from '../../socket copy/socketConnection';
+import { getSocketIO } from '../../socket/socketConnection';
 import { AppError } from '../../utils';
 import getUserNotificationCount from '../../utils/getUnseenNotificationCount';
 import { TNotification } from './notification.constant';

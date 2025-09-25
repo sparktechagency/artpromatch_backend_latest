@@ -265,6 +265,17 @@ const updateAuthData = asyncHandler(async (req, res) => {
   });
 });
 
+// 18. updateFcmToken
+const updateFcmToken = asyncHandler(async (req, res) => {
+  const result = await AuthService.updateFcmTokenIntoDB(req.body, req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Token updated successfully!',
+    data: result,
+  });
+});
+
 export const AuthController = {
   createAuth,
   sendSignupOtpAgain,
@@ -286,4 +297,5 @@ export const AuthController = {
   deleteSpecificUserAccount,
   getNewAccessToken,
   updateAuthData,
+  updateFcmToken,
 };
