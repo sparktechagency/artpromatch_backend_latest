@@ -167,7 +167,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
   );
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'booking cancel Successfully!',
+    message: 'Booking cancel Successfully!',
     data: result,
   });
 });

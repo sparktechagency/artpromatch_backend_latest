@@ -436,6 +436,21 @@ const updateAuthDataSchema = z.object({
   }),
 });
 
+// updateFcmTokenSchema
+const updateFcmTokenSchema = z.object({
+  body: z.object({
+    userId: z.string({
+      required_error: 'UserId is required!',
+      invalid_type_error: 'UserId must be string!',
+    }),
+
+    fcmToken: z.string({
+      required_error: 'Fcm Token is required!',
+      invalid_type_error: 'Fcm Token must be string!',
+    }),
+  }),
+});
+
 // // resendOtpSchema
 // const resendOtpSchema = z.object({
 //   body: z.object({
@@ -484,6 +499,7 @@ export const AuthValidation = {
   deactivateUserAccountSchema,
   // getAccessTokenSchema,
   updateAuthDataSchema,
+  updateFcmTokenSchema,
   // resendOtpSchema,
   // accessTokenSchema,
   // otpSchema,

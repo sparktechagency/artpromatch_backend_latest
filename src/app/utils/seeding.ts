@@ -8,7 +8,7 @@ const seedingAdmin = async () => {
       role: ROLE.SUPER_ADMIN,
       email: config.super_admin.email,
     });
-     console.log("admin")
+
     if (!admin) {
       await Auth.create({
         fullName: 'Super Admin',
@@ -21,7 +21,7 @@ const seedingAdmin = async () => {
         isVerifiedByOTP: true,
       });
     }
-  } catch(error) {
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.log('Error seeding super admin', error);
   }
