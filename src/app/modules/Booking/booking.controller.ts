@@ -122,8 +122,6 @@ const completeBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const otp = req.body.otp;
 
-  console.log({ bookingId, otp });
-
   if (!otp) throw new AppError(httpStatus.BAD_REQUEST, 'OTP is required');
 
   if (!bookingId)
@@ -134,6 +132,7 @@ const completeBooking = asyncHandler(async (req, res) => {
     bookingId,
     otp
   );
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message:
