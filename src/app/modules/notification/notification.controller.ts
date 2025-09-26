@@ -5,8 +5,7 @@ import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 
 const getNotifications = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.params.id;
-  const data = await notificationServices.getAllNotifications(req.query, userId);
+  const data = await notificationServices.getAllNotifications(req.user,req.query);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Notification seen successfully',

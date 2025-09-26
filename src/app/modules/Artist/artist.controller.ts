@@ -206,6 +206,18 @@ const updateArtistServiceById = asyncHandler(async (req, res) => {
   });
 });
 
+// get artist dashboard
+const getArtistDashboardPage = asyncHandler(async (req, res) => {
+  const result = await ArtistService.getArtistDashboardPage(req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Service deleted successfully!',
+    data: result,
+  });
+});
+
+
 // deleteArtistService
 const deleteArtistService = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -332,6 +344,7 @@ export const ArtistController = {
   setArtistTimeOff,
   createConnectedAccountAndOnboardingLinkForArtist,
   deleteAccount,
+  getArtistDashboardPage
   // updateAvailability,
   // getAvailabilityExcludingTimeOff,
 };

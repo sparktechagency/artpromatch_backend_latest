@@ -8,7 +8,9 @@ import { FolderRoutes } from '../modules/Folder/folder.route';
 import { AdminRoutes } from '../modules/Admin/admin.route';
 import { RequestRoute } from '../modules/Request/request.route';
 import { GuestSpotRoutes } from '../modules/GuestSpot/guestSpot.route';
-import messageRoutes from '../modules/Message/message.routes';
+import messageRoutes from '../modules/message/message.routes';
+import notificationRoutes from '../modules/notification/notification.routes';
+
 
 const router = Router();
 
@@ -49,6 +51,10 @@ const moduleRoutes = [
   {
     path: '/messages',
     route: messageRoutes,
+  },
+    {
+    path: '/notification',
+    route: notificationRoutes,
   },
   {
     path: '/guestspots',
