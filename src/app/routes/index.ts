@@ -8,7 +8,7 @@ import { FolderRoutes } from '../modules/Folder/folder.route';
 import { AdminRoutes } from '../modules/Admin/admin.route';
 import { RequestRoute } from '../modules/Request/request.route';
 import { GuestSpotRoutes } from '../modules/GuestSpot/guestSpot.route';
-import messageRoutes from '../modules/message/message.routes';
+import messageRoutes from '../modules/Message/message.route';
 import notificationRoutes from '../modules/notification/notification.routes';
 
 
