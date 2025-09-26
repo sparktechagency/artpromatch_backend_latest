@@ -1201,6 +1201,7 @@ const completeBookingIntoDb = async (
         { auth: user.id },
         'stripeAccountId totalCompletedService'
       ).session(session),
+
       Service.findById(booking.service)
         .select('totalCompletedOrder')
         .session(session),
@@ -1236,6 +1237,7 @@ const completeBookingIntoDb = async (
     const paymentIntent = await stripe.paymentIntents.retrieve(
       booking.payment.client.paymentIntentId as string
     );
+    
     if (!paymentIntent)
       throw new AppError(httpStatus.NOT_FOUND, 'no payment found');
 
