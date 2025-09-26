@@ -3,9 +3,10 @@ import { Types } from 'mongoose';
 
 import Notification from './notification.model';
 import QueryBuilder from 'mongoose-query-builders';
+import { IAuth } from '../Auth/auth.interface';
 
-const getAllNotifications = async (query: Record<string, unknown>, userId: string) => {
-  const baseQuery = Notification.find({ receiver: userId });
+const getAllNotifications = async ( user: IAuth, query: Record<string, unknown>,) => {
+  const baseQuery = Notification.find({ receiver: user.id });
 
   const builder = new QueryBuilder(baseQuery, query);
 

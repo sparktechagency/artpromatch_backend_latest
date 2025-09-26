@@ -5,22 +5,22 @@ import notificationController from './notification.controller';
 import { auth } from '../../middlewares';
 import { ROLE } from '../Auth/auth.constant';
 
-const notificationRouter = express.Router();
+const notificationRoutes = express.Router();
 
-notificationRouter.get(
-    '/get-notifications/:id',
+notificationRoutes.get(
+    '/me',
     auth(ROLE.ARTIST,ROLE.CLIENT),
     notificationController.getNotifications
 );
-notificationRouter.patch(
+notificationRoutes.patch(
     '/mark-notification',
     auth(ROLE.ARTIST,ROLE.CLIENT),
     notificationController.markAsSeen
 );
-notificationRouter.get(
+notificationRoutes.get(
     '/unseen-notification-count/:id',
      auth(ROLE.ARTIST,ROLE.CLIENT),
     notificationController.getUnseenNotificationCount
 );
 
-export default notificationRouter
+export default notificationRoutes

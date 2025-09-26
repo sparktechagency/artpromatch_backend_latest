@@ -1021,52 +1021,52 @@ export const expireBoosts = async () => {
   }
 };
 
-// getServicesByArtistFromDB
-// saveArtistAvailabilityIntoDB
-// const saveArtistAvailabilityIntoDB = async (user: IAuth, payload: TAvailability) => {
-//   const { day, slots } = payload;
+const getArtistDashboardPage = async (user:IAuth) => {
+   const artist = await Artist.findOne({ auth: user.id }).select('_id');
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+  }
 
-//   // Step 1: Normalize into 1-hour blocks
-//   const hourlySlots = slots.flatMap((slot) =>
-//     splitIntoHourlySlots(slot.start, slot.end)
-//   );
+  // Step 2: aggregate booking stats for this artist
+  const [bookingStats] = await Booking.aggregate([
+    {
+      $match: {
+        artist: artist._id,
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        pendingBooking: {
+          $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
+        },
+        currentBooking: {
+          $sum: { $cond: [{ $eq: ["$status", "confirmed"] }, 1, 0] },
+        },
+        completedOrder: {
+          $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+        },
+        artistEarning: {
+          $sum: {
+            $cond: [{ $eq: ["$status", "completed"] }, "$artistEarning", 0],
+          },
+        },
+      },
+    },
+  ]);
 
-//   // Step 2: Deduplicate within request
-//   const uniqueSlots = removeDuplicateSlots(hourlySlots);
+  const totalServices = await Service.countDocuments({ artist: artist._id });
 
-//   // Step 3: Fetch existing slots for that day
-//   const existing = await Slot.findOne({ auth: user._id, day });
+  // Step 4: final response
+  return {
+    pendingBooking: bookingStats?.pendingBooking || 0,
+    currentBooking: bookingStats?.currentBooking || 0,
+    completedOrder: bookingStats?.completedOrder || 0,
+    artistEarning: bookingStats?.artistEarning || 0,
+    totalService: totalServices,
+  };
+};
 
-//   if (existing) {
-//     const existingSlots = existing.slots;
-
-//     // Step 4: Check overlap
-//     if (hasOverlap(existingSlots, uniqueSlots)) {
-//       throw new AppError(
-//         status.BAD_REQUEST,
-//         'New slots overlap with existing slots'
-//       );
-//     }
-
-//     // Step 5: Merge, dedupe, and sort
-//     const merged = removeDuplicateSlots([
-//       ...existingSlots,
-//       ...uniqueSlots,
-//     ]).sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
-
-//     // Step 6: Save
-//     existing.set('slots', merged);
-//     await existing.save();
-//     return existing;
-//   } else {
-//     // First time adding slots
-//     return await Slot.create({
-//       auth: user._id,
-//       day,
-//       slots: uniqueSlots,
-//     });
-//   }
-// };
 
 export const ArtistService = {
   getAllArtistsFromDB,
@@ -1081,6 +1081,7 @@ export const ArtistService = {
   updateArtistPortfolioIntoDB,
   getArtistMonthlySchedule,
   boostProfileIntoDb,
+  getArtistDashboardPage,
   // addArtistServiceIntoDB,
   getServicesByArtistFromDB,
   updateArtistServiceByIdIntoDB,
