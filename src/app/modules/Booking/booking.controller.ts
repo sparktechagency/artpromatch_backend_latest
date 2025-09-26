@@ -98,20 +98,17 @@ const artistMarksCompleted = asyncHandler(async (req, res) => {
     req.user,
     bookingId
   );
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message:
-      'otp is sent your customer phone or email.please take that otp from him to complete the booking!',
+    message: 'OTP is sent the client phone. Please input the OTP here!',
     data: result,
   });
 });
-
 
 const resendBookingOtp = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
-  const result = await BookingService.resendBookingOtp(
-    bookingId
-  );
+  const result = await BookingService.resendBookingOtp(bookingId);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message:
@@ -119,15 +116,19 @@ const resendBookingOtp = asyncHandler(async (req, res) => {
     data: result,
   });
 });
-
 
 // complete booking
 const completeBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const otp = req.body.otp;
-  if (!otp) throw new AppError(httpStatus.BAD_REQUEST, 'otp is required');
+
+  console.log({ bookingId, otp });
+
+  if (!otp) throw new AppError(httpStatus.BAD_REQUEST, 'OTP is required');
+
   if (!bookingId)
-    throw new AppError(httpStatus.BAD_REQUEST, 'booking id is required');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Booking id is required');
+
   const result = await BookingService.completeBookingIntoDb(
     req.user,
     bookingId,
@@ -136,7 +137,7 @@ const completeBooking = asyncHandler(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message:
-      'Congratulations! Booking Completed Successfully! money is transferred your account. stripe will pay it after 7 days',
+      'Congratulations! Booking Completed Successfully! Money is transferred to your account. Stripe will pay it after 7 days',
     data: result,
   });
 });
@@ -227,5 +228,5 @@ export const BookingController = {
   createSession,
   confirmBookingByArtist,
   completeBooking,
-  resendBookingOtp
+  resendBookingOtp,
 };

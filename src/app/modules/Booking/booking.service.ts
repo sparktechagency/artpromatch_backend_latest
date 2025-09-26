@@ -1188,10 +1188,11 @@ const completeBookingIntoDb = async (
   try {
     const booking = await Booking.findById(bookingId)
       .select(
-        'status paymentStatus payment stripeFee otpExpiresAt service client artist'
+        'status paymentStatus payment stripeFee otpExpiresAt service client artist otp'
       )
       .populate<{ service: IService }>('service', 'totalCompletedOrder')
       .session(session);
+    
     if (!booking)
       throw new AppError(httpStatus.BAD_REQUEST, 'Booking not found');
 
@@ -1200,6 +1201,7 @@ const completeBookingIntoDb = async (
         { auth: user.id },
         'stripeAccountId totalCompletedService'
       ).session(session),
+
       Service.findById(booking.service)
         .select('totalCompletedOrder')
         .session(session),
@@ -1230,6 +1232,7 @@ const completeBookingIntoDb = async (
     const paymentIntent = await stripe.paymentIntents.retrieve(
       booking.payment.client.paymentIntentId as string
     );
+    
     if (!paymentIntent)
       throw new AppError(httpStatus.NOT_FOUND, 'no payment found');
 
