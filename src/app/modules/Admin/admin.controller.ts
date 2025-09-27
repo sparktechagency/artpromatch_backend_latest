@@ -126,11 +126,8 @@ const getYearlyAppointmentStats = asyncHandler(async (req, res) => {
   });
 });
 
-
 const getYearlyRevenueStats = asyncHandler(async (req, res) => {
-  console.log(req.user)
   const year = parseInt(req.query.year as string, 10);
-  console.log(year)
   if (!year || isNaN(year)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -146,10 +143,20 @@ const getYearlyRevenueStats = asyncHandler(async (req, res) => {
   });
 });
 
+const getAllBookingsForAdmin = asyncHandler(async (req, res) => {
+  const result = await AdminService.getAllBookingsForAdminIntoDb(req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Bookings data retrieved successFully!',
+    data: result,
+  });
+});
 
 export const AdminController = {
   getAllArtistsFolders,
   // changeStatusOnFolder,
+  getAllBookingsForAdmin,
   getYearlyRevenueStats,
   getYearlyAppointmentStats,
   fetchDashboardPage,

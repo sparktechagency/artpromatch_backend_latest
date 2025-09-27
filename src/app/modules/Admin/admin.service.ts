@@ -7,12 +7,12 @@ import QueryBuilder from 'mongoose-query-builders';
 import config from '../../config';
 import Artist from '../Artist/artist.model';
 import { IAuth } from '../Auth/auth.interface';
+import { Auth } from '../Auth/auth.model';
 import Booking from '../Booking/booking.model';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
 import Client from '../Client/client.model';
 import SecretReview from '../SecretReview/secretReview.model';
-import { Auth } from '../Auth/auth.model';
 
 // getAllArtistsFoldersFromDB
 const getAllArtistsFoldersFromDB = async () => {
@@ -321,10 +321,10 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
 };
 
 const fetchDasboardPageData = async () => {
- const totalClients = await Auth.countDocuments({ role: "CLIENT" });
-const totalArtists = await Auth.countDocuments({ role: "ARTIST" });
-const totalBusinesses = await Auth.countDocuments({ role: "BUSINESS" });
- const adminCommision = Number(config.admin_commision) / 100;
+  const totalClients = await Auth.countDocuments({ role: 'CLIENT' });
+  const totalArtists = await Auth.countDocuments({ role: 'ARTIST' });
+  const totalBusinesses = await Auth.countDocuments({ role: 'BUSINESS' });
+  const adminCommision = Number(config.admin_commision) / 100;
   const adminBookingIncomeAgg = await Booking.aggregate([
     {
       $group: {
@@ -457,7 +457,7 @@ const getYearlyAppointmentStats = async (year: number) => {
 };
 
 // 2. Revenue grouped by year+month
-export const getYearlyRevenueStats = async (year: number) => {
+const getYearlyRevenueStats = async (year: number) => {
   const adminCommision = Number(config.admin_commision) / 100;
   const bookingIncome = await Booking.aggregate([
     {
@@ -511,6 +511,65 @@ export const getYearlyRevenueStats = async (year: number) => {
   return result;
 };
 
+const getAllBookingsForAdminIntoDb = async (query: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) => {
+  const page = query.page ? Number(query.page) : 1;
+  const limit = query.limit ? Number(query.limit) : 10;
+  const skip = (page - 1) * limit;
+
+  const matchStage: Record<string, unknown> = {};
+
+  if (query.search) {
+    matchStage.$or = [
+      { 'clientInfo.fullName': { $regex: query.search, $options: 'i' } },
+      { 'clientInfo.phone': { $regex: query.search, $options: 'i' } },
+      { 'artistInfo.fullName': { $regex: query.search, $options: 'i' } },
+      { 'artistInfo.phone': { $regex: query.search, $options: 'i' } },
+      { serviceName: { $regex: query.search, $options: 'i' } },
+      { status: { $regex: query.search, $options: 'i' } },
+      { paymentStatus: { $regex: query.search, $options: 'i' } },
+    ];
+  }
+
+  const pipeline: PipelineStage[] = [
+    { $match: matchStage },
+    { $sort: { createdAt: -1 } },
+    {
+      $project: {
+        serviceName: 1,
+        status: 1,
+        paymentStatus: 1,
+        createdAt: 1,
+        'clientInfo.fullName': 1,
+        'clientInfo.phone': 1,
+        'artistInfo.fullName': 1,
+        'artistInfo.phone': 1,
+        price: 1
+      },
+    },
+    {
+      $facet: {
+        data: [{ $skip: skip }, { $limit: limit }],
+        totalCount: [{ $count: 'count' }],
+      },
+    },
+  ];
+
+  const result = await Booking.aggregate(pipeline);
+
+  return {
+    meta: {
+      page,
+      limit,
+      total: result[0]?.totalCount[0]?.count || 0,
+    },
+    data: result[0]?.data || [],
+  };
+};
+
 export const AdminService = {
   getAllArtistsFoldersFromDB,
   // changeStatusOnFolder,
@@ -523,4 +582,5 @@ export const AdminService = {
   fetchAllBusinessesFromDB,
   fetchAllClientsFromDB,
   fetchAllSecretReviewsFromDB,
+  getAllBookingsForAdminIntoDb,
 };
