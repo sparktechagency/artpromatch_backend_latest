@@ -1078,6 +1078,7 @@ const getArtistDashboardPage = async (user: IAuth) => {
     _id: b._id,
     FullName: b.clientInfo?.fullName || null,
     serviceName: b.serviceName,
+    image: user.image,
     createdAt: b.createdAt,
   }));
 
