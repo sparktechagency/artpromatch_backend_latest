@@ -119,6 +119,7 @@ const getAllArtistsFromDB = async (
         stringLocation: 1,
         distance: 1,
         avgRating: 1,
+        totalReviewCount: 1,
         hourlyRate: 1,
         totalCompletedService: 1,
         // Only these fields from auth
