@@ -1,11 +1,11 @@
+import { connectedAccountSchema } from '../ClientPreferences/clientPreferences.model';
+import { IBusinessPreferences } from './businessPreferences.interface';
 import { model, Schema } from 'mongoose';
 // import {
 //   CANCELLATION_POLICY,
 //   PREFERRED_ARTIST_TYPE,
 //   PREFERRED_EXPERIENCE,
 // } from './businessPreference.constants';
-import { connectedAccountSchema } from '../ClientPreferences/clientPreferences.model';
-import { IBusinessPreferences } from './businessPreferences.interface';
 
 const businessPreferencesSchema = new Schema<IBusinessPreferences>(
   {

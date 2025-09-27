@@ -1,14 +1,12 @@
-
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import { startSession } from 'mongoose';
 import { getSocketIO, onlineUsers } from '../../socket/socketConnection';
 import { AppError } from '../../utils';
-import { Auth } from '../Auth/auth.model';
+import Auth from '../Auth/auth.model';
 import { NewMessagePayload } from './message.interface';
 import Message from './message.model';
-import { Conversation } from '../Conversation/conversation.model';
-
+import Conversation from '../Conversation/conversation.model';
 
 // send message
 const new_message_IntoDb = async (
@@ -224,10 +222,8 @@ const deleteMessageById_IntoDb = async (messageId: string) => {
   }
 };
 
-const MessageServices = {
+export const MessageServices = {
   new_message_IntoDb,
   updateMessageById_IntoDb,
   deleteMessageById_IntoDb,
 };
-
-export default MessageServices;

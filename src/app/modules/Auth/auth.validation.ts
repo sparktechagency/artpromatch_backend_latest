@@ -1,12 +1,12 @@
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import { z } from 'zod';
+import { favoriteTattoos, serviceTypes } from '../Client/client.constant';
 import { ARTIST_TYPE, expertiseTypes } from '../Artist/artist.constant';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { ROLE } from './auth.constant';
 import {
   OPERATING_DAYS,
   SERVICES_OFFERED,
 } from '../Business/business.constants';
-import { favoriteTattoos, serviceTypes } from '../Client/client.constant';
-import { ROLE } from './auth.constant';
+import { z } from 'zod';
 
 // Reusable validators
 export const zodEnumFromObject = <T extends Record<string, string>>(obj: T) =>

@@ -55,4 +55,5 @@ const ClientPreferences = model<IClientPreferences>(
   'ClientPreferences',
   clientPreferencesSchema
 );
+
 export default ClientPreferences;

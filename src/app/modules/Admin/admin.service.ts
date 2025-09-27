@@ -1,13 +1,12 @@
 import httpStatus from 'http-status';
 import { AppError } from '../../utils';
 import Folder from '../Folder/folder.model';
-// import fs from 'fs';
 import { PipelineStage } from 'mongoose';
 import QueryBuilder from 'mongoose-query-builders';
 import config from '../../config';
 import Artist from '../Artist/artist.model';
 import { IAuth } from '../Auth/auth.interface';
-import { Auth } from '../Auth/auth.model';
+import Auth from '../Auth/auth.model';
 import Booking from '../Booking/booking.model';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
@@ -547,7 +546,7 @@ const getAllBookingsForAdminIntoDb = async (query: {
         'clientInfo.phone': 1,
         'artistInfo.fullName': 1,
         'artistInfo.phone': 1,
-        price: 1
+        price: 1,
       },
     },
     {

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { auth } from '../../middlewares';
 import { ROLE } from '../Auth/auth.constant';
 import { AdminController } from './admin.controller';
+import { auth } from '../../middlewares';
 
 const router = Router();
 
@@ -71,8 +71,6 @@ router.route('/fetch-artists').get(AdminController.fetchAllArtists);
 
 // fetchAllBusinesses
 router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
-
-
 
 // fetchAllClients
 router.route('/fetch-clients').get(AdminController.fetchAllClients);

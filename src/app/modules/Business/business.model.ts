@@ -1,7 +1,6 @@
 import { model, Schema } from 'mongoose';
 import { BUSINESS_TYPE, SERVICES_OFFERED } from './business.constants';
 import { IBusiness } from './business.interface';
-// import { TContact } from '../Artist/artist.constant';
 
 // const timeRangeSchema = new Schema<{ start: string; end: string }>(
 //   {

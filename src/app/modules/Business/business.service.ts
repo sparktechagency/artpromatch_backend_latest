@@ -4,7 +4,7 @@ import mongoose, { startSession } from 'mongoose';
 import { AppError } from '../../utils';
 import Artist from '../Artist/artist.model';
 import { IAuth } from '../Auth/auth.interface';
-import { Auth } from '../Auth/auth.model';
+import Auth from '../Auth/auth.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
 import Business from './business.model';
 import {

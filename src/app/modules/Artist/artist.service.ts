@@ -7,7 +7,7 @@ import { TAvailability } from '../../schema/slotValidation';
 import { AppError } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
-import { Auth } from '../Auth/auth.model';
+import Auth from '../Auth/auth.model';
 import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import {
   IService,
@@ -940,10 +940,16 @@ const boostProfileIntoDb = async (user: IAuth) => {
   session.startTransaction();
 
   try {
-    const artist = await Artist.findOne({ auth: user.id },"_id boost").session(session);
+    const artist = await Artist.findOne({ auth: user.id }, '_id boost').session(
+      session
+    );
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
-   
-    if(artist.boost.endTime && artist.boost.endTime > new Date()) throw new AppError(httpStatus.BAD_REQUEST,"Artist already boost his profile")
+
+    if (artist.boost.endTime && artist.boost.endTime > new Date())
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Artist already boost his profile'
+      );
 
     const boost = await ArtistBoost.create(
       [
@@ -968,7 +974,7 @@ const boostProfileIntoDb = async (user: IAuth) => {
             price_data: {
               currency: 'usd',
               product_data: { name: 'Profile Boost' },
-              unit_amount: Math.round(Number(config.boost_charge)*100),
+              unit_amount: Math.round(Number(config.boost_charge) * 100),
             },
             quantity: 1,
           },
@@ -985,7 +991,7 @@ const boostProfileIntoDb = async (user: IAuth) => {
     );
     // save boost record in DB (pending)
     boost[0].paymentStatus = 'succeeded';
-    await boost[0].save({session})
+    await boost[0].save({ session });
     await session.commitTransaction();
     session.endSession();
 
@@ -1021,8 +1027,8 @@ export const expireBoosts = async () => {
   }
 };
 
-const getArtistDashboardPage = async (user:IAuth) => {
-   const artist = await Artist.findOne({ auth: user.id }).select('_id');
+const getArtistDashboardPage = async (user: IAuth) => {
+  const artist = await Artist.findOne({ auth: user.id }).select('_id');
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
   }
@@ -1038,17 +1044,17 @@ const getArtistDashboardPage = async (user:IAuth) => {
       $group: {
         _id: null,
         pendingBooking: {
-          $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
+          $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] },
         },
         currentBooking: {
-          $sum: { $cond: [{ $eq: ["$status", "confirmed"] }, 1, 0] },
+          $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] },
         },
         completedOrder: {
-          $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
         },
         artistEarning: {
           $sum: {
-            $cond: [{ $eq: ["$status", "completed"] }, "$artistEarning", 0],
+            $cond: [{ $eq: ['$status', 'completed'] }, '$artistEarning', 0],
           },
         },
       },
@@ -1066,7 +1072,6 @@ const getArtistDashboardPage = async (user:IAuth) => {
     totalService: totalServices,
   };
 };
-
 
 export const ArtistService = {
   getAllArtistsFromDB,

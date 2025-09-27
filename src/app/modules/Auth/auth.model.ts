@@ -144,4 +144,6 @@ authSchema.methods.isPasswordCorrect = async function (password: string) {
   return await bcrypt.compare(password, this.password);
 };
 
-export const Auth = model<IAuth, IAuthModel>('Auth', authSchema);
+const Auth = model<IAuth, IAuthModel>('Auth', authSchema);
+
+export default Auth;

@@ -1,6 +1,5 @@
 // import { Types, Document } from 'mongoose';
 // import { TWeekDay } from '../Artist/artist.constant';
-
 import { Types } from 'mongoose';
 
 // export interface IAvailabilitySlot extends Document {

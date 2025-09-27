@@ -1,7 +1,6 @@
 import { Types, Document } from 'mongoose';
 import { TNotificationChannel } from '../Client/client.constant';
 import { ConnectedAccount } from '../ClientPreferences/clientPreferences.interface';
-// import { TCancellationPolicy } from '../Artist/artist.constant';
 
 export interface IArtistPreferences extends Document {
   artistId: Types.ObjectId;

@@ -6,10 +6,12 @@ import { getSocketIO } from '../../socket/socketConnection';
 import { AppError } from '../../utils';
 import getUserNotificationCount from '../../utils/getUnseenNotificationCount';
 import { TNotification } from './notification.constant';
-import { NotificationPayloads, notificationTemplates } from './notification.template';
+import {
+  NotificationPayloads,
+  notificationTemplates,
+} from './notification.template';
 import { INotificationPayload } from './notification.interface';
 import Notification from './notification.model';
-
 
 export const sendNotificationByEmail = async (
   email: string,

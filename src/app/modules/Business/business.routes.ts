@@ -40,10 +40,7 @@ router
 
 router
   .route('/get-artist')
-  .get(
-    auth(ROLE.BUSINESS),
-    BusinessController.fetchBusinessArtist
-  );
+  .get(auth(ROLE.BUSINESS), BusinessController.fetchBusinessArtist);
 
 // updateTimeOff
 router

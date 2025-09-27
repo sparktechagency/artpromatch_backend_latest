@@ -6,5 +6,5 @@ export interface IFolder extends Document {
   name: string;
   for: TFolderFor;
   images: string[];
-  // isPublished: boolean;
+  isPublished: boolean;
 }

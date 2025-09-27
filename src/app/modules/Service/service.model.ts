@@ -83,4 +83,5 @@ serviceSchema.pre('aggregate', function (next) {
 });
 
 const Service = model<IService>('Service', serviceSchema);
+
 export default Service;

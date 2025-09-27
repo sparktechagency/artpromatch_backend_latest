@@ -1,5 +1,4 @@
 import { Document } from 'mongoose';
-// import { locationSchema } from '../Location/location.model';
 import {
   ArtistType,
   DateFormat,
@@ -11,7 +10,7 @@ import {
 import { Types } from 'mongoose';
 
 export interface IClient extends Document {
-  _id: Types.ObjectId
+  _id: Types.ObjectId;
   image?: string;
   location: { type: 'Point'; coordinates: [number, number] };
   stringLocation: string;

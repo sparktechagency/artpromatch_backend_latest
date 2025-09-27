@@ -36,4 +36,5 @@ const secretReviewSchema = new Schema<ISecretReview>(
 );
 
 const SecretReview = model<ISecretReview>('SecretReview', secretReviewSchema);
+
 export default SecretReview;

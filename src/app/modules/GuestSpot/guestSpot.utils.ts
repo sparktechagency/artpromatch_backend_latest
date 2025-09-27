@@ -2,6 +2,7 @@
  * Convert time string like "10 am", "9:30 pm" into minutes from midnight
  * Example: "10 am" -> 600, "9:30 pm" -> 21*60 + 30 = 1290
  */
+
 export function convertTimeToMinutes(timeStr: string): number {
   // "10 am" or "9:30 pm"
   const [time, meridian] = timeStr.toLowerCase().split(' ');
