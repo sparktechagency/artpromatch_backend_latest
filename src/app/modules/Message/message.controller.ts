@@ -2,7 +2,7 @@ import { RequestHandler } from 'express';
 import httpStatus from 'http-status';
 import sendResponse from '../../utils/sendResponse';
 import { asyncHandler } from '../../utils';
-import MessageServices from './message.services';
+import MessageServices from './message.service';
 
 
 const new_message: RequestHandler = asyncHandler(async (req, res) => {

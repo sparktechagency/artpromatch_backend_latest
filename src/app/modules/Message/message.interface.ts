@@ -18,5 +18,5 @@ export interface NewMessagePayload {
 
 export interface MulterRequest extends Request {
   files?: Express.Multer.File[]; // or a dictionary if using `.fields()`
-  file?: Express.Multer.File;    // for single file via `.single()`
+  file?: Express.Multer.File; // for single file via `.single()`
 }

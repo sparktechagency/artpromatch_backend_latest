@@ -134,6 +134,7 @@ const getYearlyRevenueStats = asyncHandler(async (req, res) => {
       'year query param required (e.g. 2025)'
     );
   }
+
   const result = await AdminService.getYearlyRevenueStats(year);
 
   sendResponse(res, {

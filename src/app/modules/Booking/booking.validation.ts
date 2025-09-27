@@ -2,10 +2,11 @@ import { z } from 'zod';
 
 // MongoDB ObjectId regex
 
-
 // Booking validation schema
 
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+
+// bookingSchema
 const bookingSchema = z.object({
   body: z.object({
     service: z.string({ required_error: 'Service is required' }),
@@ -34,8 +35,30 @@ const bookingSchema = z.object({
   }),
 });
 
+// reviewAfterAServiceIsCompletedSchema
+const reviewAfterAServiceIsCompletedSchema = z.object({
+  body: z.object({
+    bookingId: z
+      .string({ required_error: 'Booking ID is required' })
+      .min(1, 'Booking ID cannot be empty'),
 
+    review: z
+      .string({ required_error: 'Review is required' })
+      .min(1, 'Review cannot be empty'),
 
+    rating: z.coerce
+      .number({ required_error: 'Rating is required' })
+      .min(0, 'Rating must be at least 0')
+      .max(5, 'Rating cannot exceed 5')
+      .multipleOf(0.5, 'Rating must be in 0.5 increments'),
+
+    secretReviewForAdmin: z
+      .string({ required_error: 'Secret review is required' })
+      .min(1, 'Secret review cannot be empty'),
+  }),
+});
+
+// createBookingSchema
 const createBookingSchema = z.object({
   body: z.object({
     serviceId: z.string({ required_error: 'Service is required' }),
@@ -61,20 +84,22 @@ const createBookingSchema = z.object({
         if (isNaN(date.getTime())) throw new Error('Invalid date string');
         return date;
       }),
-
   }),
 });
 
+// timeString
 const timeString = z
   .string()
   .regex(
     /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(am|pm)$/i,
     'Time must be in hh:mm am/pm format'
   );
+
+// createSessionSchema
 const createSessionSchema = z.object({
   body: z.object({
-      sessionId: z.string().optional(),
-      date: z
+    sessionId: z.string().optional(),
+    date: z
       .string()
       .regex(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
@@ -88,17 +113,15 @@ const createSessionSchema = z.object({
 
     startTime: timeString,
     endTime: timeString,
-     
-  })
-})
+  }),
+});
 
-
+// completeSessionSchema
 const completeSessionSchema = z.object({
   body: z.object({
-      sessionId: z.string({ required_error: 'Service is required' }),
-  })
-})
-
+    sessionId: z.string({ required_error: 'Service is required' }),
+  }),
+});
 
 // getAvailabilitySchema
 const getAvailabilitySchema = z.object({
@@ -111,10 +134,11 @@ const getAvailabilitySchema = z.object({
 
 export const BookingValidation = {
   bookingSchema,
+  reviewAfterAServiceIsCompletedSchema,
   getAvailabilitySchema,
   createBookingSchema,
   createSessionSchema,
-  completeSessionSchema
+  completeSessionSchema,
 };
 
 export type TBookingData = z.infer<typeof createBookingSchema.shape.body>;
