@@ -43,7 +43,8 @@ const getUserBookings = asyncHandler(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Booking retrieve Successfully!',
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
