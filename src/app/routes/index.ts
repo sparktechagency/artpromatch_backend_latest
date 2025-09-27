@@ -7,9 +7,9 @@ import { BusinessRoutes } from '../modules/Business/business.routes';
 import { ClientRoutes } from '../modules/Client/client.route';
 import { FolderRoutes } from '../modules/Folder/folder.route';
 import { GuestSpotRoutes } from '../modules/GuestSpot/guestSpot.route';
-import notificationRoutes from '../modules/notification/notification.routes';
-import { RequestRoute } from '../modules/Request/request.route';
 import { messageRoutes } from '../modules/Message/message.route';
+import notificationRoutes from '../modules/Notification/notification.routes';
+import { RequestRoute } from '../modules/Request/request.route';
 
 const router = Router();
 

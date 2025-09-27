@@ -1,6 +1,8 @@
 import config from '../../config';
 import { TNotification } from './notification.constant';
 
+
+
 const baseEmailTemplate = (
   title: string,
   message: string,

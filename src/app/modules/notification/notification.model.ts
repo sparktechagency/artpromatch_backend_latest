@@ -2,6 +2,7 @@ import { model, Schema } from 'mongoose';
 import { INotification } from './notification.interface';
 import { NOTIFICATION_TYPE } from './notification.constant';
 
+
 const notificationSchema = new Schema<INotification>(
   {
     title: {
