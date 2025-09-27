@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import { AuthRoutes } from '../modules/Auth/auth.route';
-import { ClientRoutes } from '../modules/Client/client.route';
-import { ArtistRoutes } from '../modules/Artist/artist.routes';
-import { BusinessRoutes } from '../modules/Business/business.routes';
-import { BookingRoutes } from '../modules/Booking/booking.route';
-import { FolderRoutes } from '../modules/Folder/folder.route';
 import { AdminRoutes } from '../modules/Admin/admin.route';
-import { RequestRoute } from '../modules/Request/request.route';
+import { ArtistRoutes } from '../modules/Artist/artist.routes';
+import { AuthRoutes } from '../modules/Auth/auth.route';
+import { BookingRoutes } from '../modules/Booking/booking.route';
+import { BusinessRoutes } from '../modules/Business/business.routes';
+import { ClientRoutes } from '../modules/Client/client.route';
+import { FolderRoutes } from '../modules/Folder/folder.route';
 import { GuestSpotRoutes } from '../modules/GuestSpot/guestSpot.route';
-import messageRoutes from '../modules/Message/message.route';
-import notificationRoutes from '../modules/notification/notification.routes';
 
+import notificationRoutes from '../modules/notification/notification.routes';
+import { RequestRoute } from '../modules/Request/request.route';
+import messageRoutes from '../modules/message/message.routes';
 
 const router = Router();
 
@@ -52,7 +52,7 @@ const moduleRoutes = [
     path: '/messages',
     route: messageRoutes,
   },
-    {
+  {
     path: '/notification',
     route: notificationRoutes,
   },
