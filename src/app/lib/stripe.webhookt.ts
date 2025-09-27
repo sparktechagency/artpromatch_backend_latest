@@ -200,7 +200,7 @@ export const stripeWebhookHandler = asyncHandler(
               await sendNotificationBySocket({
                 title: 'New Booking Request',
                 message: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
-                receiver: booking.artist.toString() ?? '',
+                receiver: userId ?? '',
                 type: NOTIFICATION_TYPE.BOOKING_REQUEST,
               });
               console.info('App notification sent', {

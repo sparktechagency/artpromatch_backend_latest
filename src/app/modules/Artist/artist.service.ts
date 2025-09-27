@@ -30,14 +30,15 @@ import Stripe from 'stripe';
 import config from '../../config';
 import Booking from '../Booking/booking.model';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
-import { IWeeklySchedule } from '../Schedule/schedule.interface';
-import ArtistSchedule from '../Schedule/schedule.model';
-import Service from '../Service/service.model';
 import {
   deleteSingleImage,
   deleteSomeImages,
   deleteSomeMulterFiles,
 } from '../Folder/folder.utils';
+import Notification from '../Notification/notification.model';
+import { IWeeklySchedule } from '../Schedule/schedule.interface';
+import ArtistSchedule from '../Schedule/schedule.model';
+import Service from '../Service/service.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -1063,6 +1064,40 @@ const getArtistDashboardPage = async (user: IAuth) => {
 
   const totalServices = await Service.countDocuments({ artist: artist._id });
 
+  const latestBookings = await Booking.find({
+    artist: artist._id,
+    status: 'pending',
+  })
+    .select('clientInfo.fullName createdAt serviceName') // only include client's fullName
+    .sort({ createdAt: -1 })
+    .limit(2)
+    .lean(); // <-- returns plain JSON instead of mongoose docs
+
+  // reshape result
+  const latestBookingRequest = latestBookings.map((b) => ({
+    _id: b._id,
+    FullName: b.clientInfo?.fullName || null,
+    serviceName: b.serviceName,
+    createdAt: b.createdAt,
+  }));
+
+  // Step 5: latest 2 notifications for artist
+  const latestNotificationsRaw = await Notification.find({
+    receiver: user.id,
+  })
+    .select('type createdAt receiver')
+    .populate<{receiver: IAuth}>('receiver', 'fullName')
+    .sort({ createdAt: -1 })
+    .limit(2)
+    .lean();
+
+    console.log("notification",latestNotificationsRaw)
+  const latestNotifications = latestNotificationsRaw.map((n) => ({
+    _id: n._id,
+    type: n.type,
+    createdAt: n.createdAt,
+    receiverName: n.receiver?.fullName || null,
+  }));
   // Step 4: final response
   return {
     pendingBooking: bookingStats?.pendingBooking || 0,
@@ -1070,6 +1105,8 @@ const getArtistDashboardPage = async (user: IAuth) => {
     completedOrder: bookingStats?.completedOrder || 0,
     artistEarning: bookingStats?.artistEarning || 0,
     totalService: totalServices,
+    latestBookingRequest: latestBookingRequest,
+    latestNotifications: latestNotifications,
   };
 };
 
