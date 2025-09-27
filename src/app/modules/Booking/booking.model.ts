@@ -12,7 +12,6 @@ import {
   IPaymentClient,
 } from './booking.interface';
 
-
 export const sessionSchema = new Schema({
   sessionNumber: { type: Number, default: 0 },
 
@@ -168,22 +167,17 @@ bookingSchema.index({ 'artistInfo.fullName': 1 });
 bookingSchema.index({ 'artistInfo.email': 1 });
 bookingSchema.index({ 'artistInfo.phone': 1 });
 
-
 bookingSchema.pre('save', async function (next) {
   if (!this.isModified('otp')) return next();
 
   if (this.otp != null) {
-    this.otp = await bcrypt.hash(
-      this.otp.toString(),6);
+    this.otp = await bcrypt.hash(this.otp.toString(), 6);
   }
 
   next();
-})
-
+});
 
 bookingSchema.methods.isOtpMatched = async function (otp: string) {
-  console.log(otp,this.otp)
-  console.log(await bcrypt.compare(otp, this.otp))
   return await bcrypt.compare(otp, this.otp);
 };
 

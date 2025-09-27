@@ -188,8 +188,8 @@ const cancelBooking = asyncHandler(async (req, res) => {
 });
 
 // review
-const ReviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
-  const result = await BookingService.ReviewAfterAServiceIsCompletedIntoDB(
+const reviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
+  const result = await BookingService.reviewAfterAServiceIsCompletedIntoDB(
     req.body,
     req.user
   );
@@ -214,7 +214,7 @@ const ReviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
 // });
 
 export const BookingController = {
-  ReviewAfterAServiceIsCompleted,
+  reviewAfterAServiceIsCompleted,
   confirmPaymentByClient,
   getArtistSchedule,
   completeSession,

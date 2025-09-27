@@ -17,7 +17,6 @@ import { createServer } from 'http';
 import morgan from 'morgan';
 import routes from './app/routes';
 import { AppError, globalErrorHandler, notFound } from './app/utils';
-
 import { stripeWebhookHandler } from './app/lib/stripe.webhookt';
 import { expireBoosts } from './app/modules/Artist/artist.service';
 

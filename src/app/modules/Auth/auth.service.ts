@@ -976,6 +976,7 @@ const updateProfilePhotoIntoDB = async (
     try {
       await fs.promises.unlink(user.image);
     } catch (error: unknown) {
+      // eslint-disable-next-line no-console
       console.error('Error deleting old file:', error);
     }
   }

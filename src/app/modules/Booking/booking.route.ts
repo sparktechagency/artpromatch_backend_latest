@@ -18,8 +18,8 @@ router
   .route('/review')
   .post(
     auth(ROLE.CLIENT),
-    validateRequest(BookingValidation.bookingSchema),
-    BookingController.ReviewAfterAServiceIsCompleted
+    validateRequest(BookingValidation.reviewAfterAServiceIsCompletedSchema),
+    BookingController.reviewAfterAServiceIsCompleted
   );
 
 router
@@ -67,8 +67,6 @@ router
   .route('/mark-as-completed/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.artistMarksCompleted);
 
-
-  
 router
   .route('/resend-booking-otp/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.resendBookingOtp);

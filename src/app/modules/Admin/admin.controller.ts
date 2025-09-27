@@ -126,17 +126,16 @@ const getYearlyAppointmentStats = asyncHandler(async (req, res) => {
   });
 });
 
-
 const getYearlyRevenueStats = asyncHandler(async (req, res) => {
-  console.log(req.user)
   const year = parseInt(req.query.year as string, 10);
-  console.log(year)
+
   if (!year || isNaN(year)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'year query param required (e.g. 2025)'
     );
   }
+
   const result = await AdminService.getYearlyRevenueStats(year);
 
   sendResponse(res, {
@@ -145,7 +144,6 @@ const getYearlyRevenueStats = asyncHandler(async (req, res) => {
     data: result,
   });
 });
-
 
 export const AdminController = {
   getAllArtistsFolders,

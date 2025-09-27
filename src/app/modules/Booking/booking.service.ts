@@ -39,7 +39,6 @@ type TSessionData = {
   date: Date;
   startTime: string;
   endTime: string;
-  
 };
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
@@ -751,28 +750,44 @@ const getArtistDailySchedule = async (user: IAuth, date: Date) => {
   return result;
 };
 
-// ReviewAfterAServiceIsCompletedIntoDB
-const ReviewAfterAServiceIsCompletedIntoDB = async (
+// reviewAfterAServiceIsCompletedIntoDB
+const reviewAfterAServiceIsCompletedIntoDB = async (
   payload: TReviewData,
-  clientData: IAuth
+  userData: IAuth
 ) => {
   const { bookingId, review, rating, secretReviewForAdmin } = payload;
 
+  const client = await Client.findOne({
+    auth: userData._id,
+  });
+
+  if (!client) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Your Client account not found!');
+  }
+
   const booking = await Booking.findOne({
     _id: bookingId,
-    client: clientData.id,
-  }).populate(['Artist', 'Client', 'Service']);
+    client: client._id,
+  }).populate(['artist', 'client', 'service']);
 
   if (!booking) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
+    throw new AppError(httpStatus.NOT_FOUND, 'Booking not found!');
+  }
+
+  const secretReview = await SecretReview.findOne({
+    service: booking.service._id,
+    booking: booking._id,
+  });
+
+  if (secretReview) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Review already posted!');
   }
 
   // Start a MongoDB session for transaction
   const session = await startSession();
+  session.startTransaction();
 
   try {
-    session.startTransaction();
-
     // artist avgRating & totalReviewCount
     const artist = booking.artist as unknown as IArtist;
 
@@ -781,7 +796,7 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
       (artist.totalReviewCount + 1);
 
     artist.totalReviewCount = artist.totalReviewCount + 1;
-    artist.save({ session });
+    await artist.save({ session });
 
     // service avgRating & totalReviewCount
     const service = booking.service as unknown as IService;
@@ -789,12 +804,12 @@ const ReviewAfterAServiceIsCompletedIntoDB = async (
       (service.avgRating * service.totalReviewCount + rating) /
       (service.totalReviewCount + 1);
     service.totalReviewCount = service.totalReviewCount + 1;
-    service.save({ session });
+    await service.save({ session });
 
     // booking review & rating
     booking.review = review;
     booking.rating = rating;
-    booking.save({ session });
+    await booking.save({ session });
 
     const secretReview = await SecretReview.create(
       [
@@ -1206,8 +1221,7 @@ const completeBookingIntoDb = async (
         .select('totalCompletedOrder')
         .session(session),
     ]);
-    
-    console.log(booking.payment)
+
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
     if (!service) throw new AppError(httpStatus.NOT_FOUND, 'Service not found');
 
@@ -1237,7 +1251,7 @@ const completeBookingIntoDb = async (
     const paymentIntent = await stripe.paymentIntents.retrieve(
       booking.payment.client.paymentIntentId as string
     );
-    
+
     if (!paymentIntent)
       throw new AppError(httpStatus.NOT_FOUND, 'no payment found');
 
@@ -1254,15 +1268,13 @@ const completeBookingIntoDb = async (
         'Artist stripe account not found! please open you stripe account'
       );
 
-
     const transfer = await stripe.transfers.create({
       amount: artistAmount,
       currency: paymentIntent.currency,
       destination: artist.stripeAccountId!,
       source_transaction: booking.payment.client.chargeId!,
     });
-     
-    console.log({transfer: transfer})
+
     // ✅ mark booking completed + cleanup otp fields
     booking.set({
       status: 'completed',
@@ -1298,7 +1310,6 @@ const completeBookingIntoDb = async (
   }
 };
 
-
 export const BookingService = {
   createBookingIntoDB,
   repayBookingIntoDb,
@@ -1311,7 +1322,7 @@ export const BookingService = {
   artistMarksCompletedIntoDb,
   confirmPaymentByClient,
   getUserBookings,
-  ReviewAfterAServiceIsCompletedIntoDB,
+  reviewAfterAServiceIsCompletedIntoDB,
   createOrUpdateSessionIntoDB,
   confirmBookingByArtist,
 };
