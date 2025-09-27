@@ -780,7 +780,7 @@ const reviewAfterAServiceIsCompletedIntoDB = async (
   });
 
   if (secretReview) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Review already posted!');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Review already posted!');
   }
 
   // Start a MongoDB session for transaction

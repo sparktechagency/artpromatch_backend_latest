@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import httpStatus from 'http-status';
 import { auth, validateRequest } from '../../middlewares';
 import { ROLE } from '../Auth/auth.constant';
@@ -8,10 +8,7 @@ import { validateRequestFromFormData } from '../../middlewares/validateRequest';
 import MessageValidationSchema from './message.validation';
 import MessageController from './message.controller';
 
-
-
-
-const router = express.Router();
+const router = Router();
 
 router.post(
   '/new_message',
@@ -101,6 +98,4 @@ router.delete(
   MessageController.deleteMessageById
 );
 
-const messageRoutes = router;
-
-export default messageRoutes;
+export const messageRoutes = router;
