@@ -483,6 +483,13 @@ const createOrUpdateSessionIntoDB = async (
   const booking = await Booking.findById(bookingId);
   if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
+    if (['pending', 'failed'].includes(booking.paymentStatus)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'payment are not found or failed'
+    );
+  }
+
   if (booking.status === 'cancelled') {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -503,13 +510,6 @@ const createOrUpdateSessionIntoDB = async (
       (s) => s._id?.toString() === sessionId
     );
     if (!session) throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
-
-    if (session.status === 'completed') {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Cannot edit a completed session'
-      );
-    }
 
     // update fields
     session.date = date;
