@@ -17,12 +17,12 @@ import Artist from '../Artist/artist.model';
 import { IClient } from '../Client/client.interface';
 import Client from '../Client/client.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
-import { NOTIFICATION_TYPE } from '../notification/notification.constant';
+import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
 import {
   sendNotificationByEmail,
   sendNotificationBySocket,
   sendPushNotification,
-} from '../notification/notification.utils';
+} from '../Notification/notification.utils';
 import Service from '../Service/service.model';
 import { parseTimeToMinutes } from './booking.utils';
 import { TBookingData } from './booking.validation';

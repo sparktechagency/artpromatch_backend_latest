@@ -1,4 +1,4 @@
-import Conversation from '../conversation/conversation.model';
+
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import { startSession } from 'mongoose';
@@ -7,6 +7,8 @@ import { AppError } from '../../utils';
 import { Auth } from '../Auth/auth.model';
 import { NewMessagePayload } from './message.interface';
 import Message from './message.model';
+import { Conversation } from '../Conversation/conversation.model';
+
 
 // send message
 const new_message_IntoDb = async (

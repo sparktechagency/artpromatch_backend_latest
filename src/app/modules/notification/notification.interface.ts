@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 import { TNotification } from './notification.constant';
 
+
 export interface INotification {
     title: string;
     message: string;

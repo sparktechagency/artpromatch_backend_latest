@@ -4,8 +4,8 @@ import { AppError } from '../../utils';
 import Artist from '../Artist/artist.model';
 import { ROLE } from '../Auth/auth.constant';
 import Business from '../Business/business.model';
-import { NOTIFICATION_TYPE } from '../notification/notification.constant';
-import { sendNotificationBySocket } from '../notification/notification.utils';
+import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
+import { sendNotificationBySocket } from '../Notification/notification.utils';
 import { IAuth } from './../Auth/auth.interface';
 import { REQUEST_STATUS } from './request.constant';
 import RequestModel from './request.model';
@@ -256,10 +256,7 @@ const addToJoinStudioIntoDb = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Request not found!');
   }
 
-  const artist = await Artist.findOne(
-    { _id: request.artistId },
-    '_id'
-  );
+  const artist = await Artist.findOne({ _id: request.artistId }, '_id');
 
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
@@ -277,8 +274,7 @@ const addToJoinStudioIntoDb = async (user: IAuth, requestId: string) => {
       "Artist don't accept you request"
     );
 
-
-    const business  = await Artist.findOne(
+  const business = await Artist.findOne(
     { auth: user.id },
     'business isConnBusiness'
   );

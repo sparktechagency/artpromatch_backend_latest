@@ -10,15 +10,15 @@ import { Auth } from '../modules/Auth/auth.model';
 import { PAYMENT_STATUS } from '../modules/Booking/booking.constant';
 import Booking from '../modules/Booking/booking.model';
 
-import { NOTIFICATION_TYPE } from '../modules/notification/notification.constant';
+import Artist from '../modules/Artist/artist.model';
+import { ArtistBoost } from '../modules/BoostProfile/boost.profile.model';
+import { NOTIFICATION_TYPE } from '../modules/Notification/notification.constant';
 import {
   sendNotificationByEmail,
   sendNotificationBySocket,
   sendPushNotification,
-} from '../modules/notification/notification.utils';
+} from '../modules/Notification/notification.utils';
 import { AppError, asyncHandler } from '../utils';
-import { ArtistBoost } from '../modules/BoostProfile/boost.profile.model';
-import Artist from '../modules/Artist/artist.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 

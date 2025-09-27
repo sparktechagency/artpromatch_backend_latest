@@ -19,6 +19,6 @@ const conversationSchema = new Schema<IConversation>(
   }
 );
 
-const Conversation = model<IConversation>('Conversation', conversationSchema);
+export const Conversation = model<IConversation>('Conversation', conversationSchema);
 
-export default Conversation;
+
