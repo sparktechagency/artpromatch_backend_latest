@@ -1,11 +1,12 @@
-
 import { Types } from 'mongoose';
-
 import Notification from './notification.model';
 import QueryBuilder from 'mongoose-query-builders';
 import { IAuth } from '../Auth/auth.interface';
 
-const getAllNotifications = async ( user: IAuth, query: Record<string, unknown>,) => {
+const getAllNotifications = async (
+  user: IAuth,
+  query: Record<string, unknown>
+) => {
   const baseQuery = Notification.find({ receiver: user.id });
 
   const builder = new QueryBuilder(baseQuery, query);
@@ -36,7 +37,6 @@ const markNotificationAsSeen = async (notificationId: string) => {
   return updated;
 };
 
-
 const getAllUnseenNotificationCount = async (userId: string) => {
   const result = await Notification.aggregate([
     {
@@ -53,9 +53,8 @@ const getAllUnseenNotificationCount = async (userId: string) => {
   return result[0]?.unseenCount || 0;
 };
 
-
-export default {
+export const notificationService = {
   getAllNotifications,
   markNotificationAsSeen,
-  getAllUnseenNotificationCount
+  getAllUnseenNotificationCount,
 };

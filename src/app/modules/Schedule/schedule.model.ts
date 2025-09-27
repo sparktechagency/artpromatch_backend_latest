@@ -74,6 +74,7 @@ const ArtistSchedule = model<IArtistSchedule>(
   'ArtistSchedule',
   artistScheduleSchema
 );
+
 export default ArtistSchedule;
 
 /*

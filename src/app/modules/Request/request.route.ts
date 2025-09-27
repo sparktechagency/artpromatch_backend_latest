@@ -8,22 +8,18 @@ const router = Router();
 
 router
   .route('/send')
-  .post(auth(ROLE.BUSINESS, ROLE.ARTIST), validateRequest(requestValidation.createRequestSchema) ,RequestController.createRequest);
-
-router
-  .route('/')
-  .get(
+  .post(
     auth(ROLE.BUSINESS, ROLE.ARTIST),
-    RequestController.fetchMyRequests
+    validateRequest(requestValidation.createRequestSchema),
+    RequestController.createRequest
   );
 
 router
   .route('/')
-  .get(
-    auth(ROLE.ARTIST),
-    RequestController.fetchMyRequests
-  );
-  
+  .get(auth(ROLE.BUSINESS, ROLE.ARTIST), RequestController.fetchMyRequests);
+
+router.route('/').get(auth(ROLE.ARTIST), RequestController.fetchMyRequests);
+
 router
   .route('/:id')
   .put(auth(ROLE.ARTIST), RequestController.statusChangedByArtist)

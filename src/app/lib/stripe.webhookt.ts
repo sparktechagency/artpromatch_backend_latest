@@ -6,7 +6,7 @@ import config from '../config';
 // import logger from '../config/logger';
 import ArtistPreferences from '../modules/ArtistPreferences/artistPreferences.model';
 // import { IAuth } from '../modules/Auth/auth.interface';
-import { Auth } from '../modules/Auth/auth.model';
+import Auth from '../modules/Auth/auth.model';
 import { PAYMENT_STATUS } from '../modules/Booking/booking.constant';
 import Booking from '../modules/Booking/booking.model';
 

@@ -3,7 +3,6 @@ import { asyncHandler } from '../../utils';
 import { BusinessService } from './business.service';
 import sendResponse from '../../utils/sendResponse';
 
-
 const updateBusinessProfile = asyncHandler(async (req, res) => {
   const result = await BusinessService.updateBusinessProfile(
     req.user,
@@ -56,7 +55,6 @@ const updateBusinessSecuritySettings = asyncHandler(async (req, res) => {
   });
 });
 
-
 // updateAvailability
 // const updateAvailability = asyncHandler(async (req, res) => {
 //   const result = await BusinessService.updateGuestSpotsIntoDB(req.user, req.body);
@@ -78,12 +76,8 @@ const updateTimeOff = asyncHandler(async (req, res) => {
   });
 });
 
-
 const fetchBusinessArtist = asyncHandler(async (req, res) => {
-  const result = await BusinessService.getBusinessArtists(
-    req.user,
-    req.query
-  );
+  const result = await BusinessService.getBusinessArtists(req.user, req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

@@ -2,7 +2,7 @@ import { Socket } from 'socket.io';
 import httpStatus from 'http-status';
 import { AppError } from '../utils';
 import { JwtPayload } from 'jsonwebtoken';
-import { Auth } from '../modules/Auth/auth.model';
+import Auth from '../modules/Auth/auth.model';
 import { verifyToken } from '../lib';
 import config from '../config';
 

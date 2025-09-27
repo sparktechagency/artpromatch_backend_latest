@@ -10,8 +10,7 @@ export const createRequestSchema = z.object({
 });
 
 export const requestValidation = {
-    createRequestSchema
-}
-export type RequestPayload = z.infer<
-  typeof createRequestSchema.shape.body
->;
+  createRequestSchema,
+};
+
+export type RequestPayload = z.infer<typeof createRequestSchema.shape.body>;

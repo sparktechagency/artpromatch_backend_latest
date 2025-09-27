@@ -1,11 +1,6 @@
 import httpStatus from 'http-status';
-import {
-  AppError,
-  asyncHandler,
-  // options
-} from '../../utils';
+import { AppError, asyncHandler } from '../../utils';
 import { AuthService } from './auth.service';
-// import { CookieOptions } from 'express';
 import { TProfileFileFields } from '../../types';
 import sendResponse from '../../utils/sendResponse';
 

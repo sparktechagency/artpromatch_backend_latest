@@ -8,24 +8,22 @@ import { IAuth } from '../Auth/auth.interface';
 import SecretReview from '../SecretReview/secretReview.model';
 import { IService } from '../Service/service.interface';
 import Booking from './booking.model';
-
 import Stripe from 'stripe';
 import config from '../../config';
 import sendOtpEmailForBookingCompletion from '../../utils/sendOtpEmailForBookingCompletion';
-// import sendOtpSmsForCompleteBooking from '../../utils/sendOtpSmsforCompleteBooking';
 import Artist from '../Artist/artist.model';
 import { IClient } from '../Client/client.interface';
 import Client from '../Client/client.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
-import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
+import Service from '../Service/service.model';
+import { parseTimeToMinutes } from './booking.utils';
+import { TBookingData } from './booking.validation';
 import {
   sendNotificationByEmail,
   sendNotificationBySocket,
   sendPushNotification,
 } from '../Notification/notification.utils';
-import Service from '../Service/service.model';
-import { parseTimeToMinutes } from './booking.utils';
-import { TBookingData } from './booking.validation';
+import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
 
 type TReviewData = {
   bookingId: string;

@@ -1,27 +1,26 @@
-
-import express from 'express';
-
-
+import { Router } from 'express';
 import { auth } from '../../middlewares';
 import { ROLE } from '../Auth/auth.constant';
-import notificationController from './notification.controller';
+import { notificationController } from './notification.controller';
 
-const notificationRoutes = express.Router();
+const router = Router();
 
-notificationRoutes.get(
-    '/me',
-    auth(ROLE.ARTIST,ROLE.CLIENT),
-    notificationController.getNotifications
-);
-notificationRoutes.patch(
-    '/mark-notification',
-    auth(ROLE.ARTIST,ROLE.CLIENT),
-    notificationController.markAsSeen
-);
-notificationRoutes.get(
-    '/unseen-notification-count/:id',
-     auth(ROLE.ARTIST,ROLE.CLIENT),
-    notificationController.getUnseenNotificationCount
+router.get(
+  '/me',
+  auth(ROLE.ARTIST, ROLE.CLIENT),
+  notificationController.getNotifications
 );
 
-export default notificationRoutes
+router.patch(
+  '/mark-notification',
+  auth(ROLE.ARTIST, ROLE.CLIENT),
+  notificationController.markAsSeen
+);
+
+router.get(
+  '/unseen-notification-count/:id',
+  auth(ROLE.ARTIST, ROLE.CLIENT),
+  notificationController.getUnseenNotificationCount
+);
+
+export const notificationRoutes = router;

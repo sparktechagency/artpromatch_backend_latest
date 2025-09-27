@@ -1,11 +1,10 @@
+import { IArtist } from '../Artist/artist.interface';
 import { Document, Types } from 'mongoose';
-// import { TWeekDay } from '../Artist/artist.constant';
 import {
   TBookingStatus,
   TPaymentStatus,
   TSessionStatus,
 } from './booking.constant';
-import { IArtist } from '../Artist/artist.interface';
 
 export interface IBookingSession {
   _id?: string;

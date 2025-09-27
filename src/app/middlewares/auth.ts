@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import { AppError, asyncHandler } from '../utils';
 import { ROLE, TRole } from '../modules/Auth/auth.constant';
-import { Auth } from '../modules/Auth/auth.model';
+import Auth from '../modules/Auth/auth.model';
 import { verifyToken } from '../lib';
 import config from '../config';
 

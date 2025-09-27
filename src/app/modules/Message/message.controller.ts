@@ -2,8 +2,7 @@ import { RequestHandler } from 'express';
 import httpStatus from 'http-status';
 import sendResponse from '../../utils/sendResponse';
 import { asyncHandler } from '../../utils';
-import MessageServices from './message.service';
-
+import { MessageServices } from './message.service';
 
 const new_message: RequestHandler = asyncHandler(async (req, res) => {
   const result = await MessageServices.new_message_IntoDb(req.user, req.body);
@@ -37,10 +36,8 @@ const deleteMessageById: RequestHandler = asyncHandler(async (req, res) => {
   });
 });
 
-const MessageController = {
+export const MessageController = {
   new_message,
   updateMessageById,
   deleteMessageById,
 };
-
-export default MessageController;

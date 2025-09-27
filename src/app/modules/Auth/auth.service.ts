@@ -25,10 +25,10 @@ import Client from '../Client/client.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
 import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
-import { Auth } from './auth.model';
 import { AuthValidation, TProfilePayload } from './auth.validation';
 import sendOtpSms from '../../utils/sendOtpSms';
 import { getLocationName } from './auth.utils';
+import Auth from './auth.model';
 
 const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
 

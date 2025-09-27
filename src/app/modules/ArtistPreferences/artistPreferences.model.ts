@@ -1,7 +1,5 @@
 import { model, Schema } from 'mongoose';
 import { connectedAccountSchema } from '../ClientPreferences/clientPreferences.model';
-// import { cancellationPolicy } from '../Artist/artist.constant';
-// import { dateFormats, notificationChannel } from '../Client/client.constant';
 import { notificationChannel } from '../Client/client.constant';
 import { IArtistPreferences } from './artistPreferences.interface';
 

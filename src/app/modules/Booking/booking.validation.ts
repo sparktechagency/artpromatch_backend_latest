@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
 // MongoDB ObjectId regex
-
-// Booking validation schema
-
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
 
 // bookingSchema

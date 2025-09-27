@@ -182,4 +182,5 @@ bookingSchema.methods.isOtpMatched = async function (otp: string) {
 };
 
 const Booking = model<IBooking>('Booking', bookingSchema);
+
 export default Booking;

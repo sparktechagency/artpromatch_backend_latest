@@ -1,10 +1,5 @@
 import { Document, Types } from 'mongoose';
-// import { TContact } from '../Artist/artist.constant';
-import {
-  TBusinessType,
-  // TOperatingDay,
-  TServiceOffered,
-} from './business.constants';
+import { TBusinessType, TServiceOffered } from './business.constants';
 
 export interface IBusiness extends Document {
   _id: Types.ObjectId;

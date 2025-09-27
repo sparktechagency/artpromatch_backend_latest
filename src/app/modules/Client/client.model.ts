@@ -1,3 +1,4 @@
+import { IClient } from './client.interface';
 import { Schema, model } from 'mongoose';
 import {
   artistTypes,
@@ -7,8 +8,6 @@ import {
   homeViews,
   serviceTypes,
 } from './client.constant';
-import { IClient } from './client.interface';
-// import { locationSchema } from '../Location/location.model';
 
 const clientSchema = new Schema<IClient>(
   {
@@ -31,7 +30,7 @@ const clientSchema = new Schema<IClient>(
         required: true,
       },
     },
-    
+
     stringLocation: {
       type: String,
       required: true,

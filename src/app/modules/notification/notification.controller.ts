@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
-
 import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
-import notificationService from './notification.service';
-
-
+import { notificationService } from './notification.service';
 
 const getNotifications = asyncHandler(async (req: Request, res: Response) => {
-  const data = await notificationService.getAllNotifications(req.user,req.query);
+  const data = await notificationService.getAllNotifications(
+    req.user,
+    req.query
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -27,18 +27,22 @@ const markAsSeen = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-const getUnseenNotificationCount = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.params.id;
-  const count = await notificationService.getAllUnseenNotificationCount(userId);
+const getUnseenNotificationCount = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.params.id;
+    const count = await notificationService.getAllUnseenNotificationCount(
+      userId
+    );
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Unseen notification count fetched successfully',
-    data: count,
-  });
-});
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      message: 'Unseen notification count fetched successfully',
+      data: count,
+    });
+  }
+);
 
-export default {
+export const notificationController = {
   getNotifications,
   markAsSeen,
   getUnseenNotificationCount,
