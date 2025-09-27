@@ -5,8 +5,8 @@ import { startSession } from 'mongoose';
 import { getSocketIO, onlineUsers } from '../../socket/socketConnection';
 import { AppError } from '../../utils';
 import { Auth } from '../Auth/auth.model';
-import Message from './message.model';
 import { NewMessagePayload } from './message.interface';
+import Message from './message.model';
 
 // send message
 const new_message_IntoDb = async (

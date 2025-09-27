@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-export interface IMessage {
+export interface IMessage{
   text: string;
   imageUrl: string[];
   audioUrl: string;
