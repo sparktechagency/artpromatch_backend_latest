@@ -64,13 +64,13 @@ app.get('/', (req: Request, res: Response, next: NextFunction) => {
 });
 
 cron.schedule('0 */2 * * *', async () => {
-   try {
+  try {
     await expireBoosts();
   } catch (error: unknown) {
     new AppError(
-          httpStatus.BAD_REQUEST,
-          error instanceof Error ? error.message : String(error)
-        )
+      httpStatus.BAD_REQUEST,
+      error instanceof Error ? error.message : String(error)
+    );
   }
 });
 
