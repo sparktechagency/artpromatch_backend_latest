@@ -59,11 +59,20 @@ router
     AdminController.verifyBusinessByAdmin
   );
 
+router
+  .route('/get-all-bookings')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.getAllBookingsForAdmin
+  );
+
 // fetchAllArtists
 router.route('/fetch-artists').get(AdminController.fetchAllArtists);
 
 // fetchAllBusinesses
 router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
+
+
 
 // fetchAllClients
 router.route('/fetch-clients').get(AdminController.fetchAllClients);
