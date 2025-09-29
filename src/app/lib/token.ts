@@ -11,6 +11,8 @@ type TTokenData = {
   image: string;
   email: string;
   role: string;
+  isProfile: boolean;
+  isActive: boolean;
 };
 
 export const createAccessToken = (payload: TTokenData): string => {

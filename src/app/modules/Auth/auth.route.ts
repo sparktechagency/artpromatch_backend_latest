@@ -52,6 +52,14 @@ router.route('/create-Profile').post(
   AuthController.createProfile
 );
 
+// 5. checkProfileStatus
+router
+  .route('/check-status')
+  .get(
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
+    AuthController.checkProfileStatus
+  );
+
 // // clientCreateProfile
 // router.route('/client-create-Profile').post(
 //   auth(ROLE.CLIENT),

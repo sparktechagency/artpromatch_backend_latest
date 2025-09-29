@@ -65,6 +65,18 @@ const createProfile = asyncHandler(async (req, res) => {
   });
 });
 
+// 5. checkProfileStatus
+const checkProfileStatus = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const result = await AuthService.checkProfileStatusIntoDB(user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'This profile is varified!',
+    data: result,
+  });
+});
+
 // // clientCreateProfile
 // const clientCreateProfile = asyncHandler(async (req, res) => {
 //   const body = req.body;
@@ -277,6 +289,7 @@ export const AuthController = {
   verifySignupOtp,
   signin,
   createProfile,
+  checkProfileStatus,
   // clientCreateProfile,
   // artistCreateProfile,
   // businessCreateProfile,

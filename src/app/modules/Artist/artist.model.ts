@@ -88,7 +88,7 @@ const artistSchema = new Schema<IArtist>(
     },
     stringLocation: {
       type: String,
-      required: true,
+      default: 'USA',
     },
 
     currentLocation: {
