@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { auth } from '../../middlewares';
 import { FolderValidation } from './folder.validation';
 import { FolderController } from './folder.controller';
-import { ROLE } from '../auth/auth.constant';
+import { ROLE } from '../Auth/auth.constant';
 import { upload } from '../../lib';
 import {
   validateRequest,

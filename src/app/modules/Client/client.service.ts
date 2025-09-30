@@ -1,9 +1,9 @@
 import httpStatus from 'http-status';
 import { AppError } from '../../utils';
-import Artist from '../artist/artist.model';
-import { IAuth } from '../auth/auth.interface';
-import Auth from '../auth/auth.model';
-import ClientPreferences from '../clientPreferences/clientPreferences.model';
+import Artist from '../Artist/artist.model';
+import { IAuth } from '../Auth/auth.interface';
+import Auth from '../Auth/auth.model';
+import ClientPreferences from '../ClientPreferences/clientPreferences.model';
 import Client from './client.model';
 import {
   TUpdateNotificationPayload,
@@ -11,7 +11,7 @@ import {
   TUpdateProfilePayload,
   TUpdateSecuritySettingsPayload,
 } from './client.validation';
-import Service from '../service/service.model';
+import Service from '../Service/service.model';
 import QueryBuilder from 'mongoose-query-builders';
 
 // updateProfile

@@ -5,15 +5,15 @@ import httpStatus from 'http-status';
 import { startSession, Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
 import { AppError } from '../../utils';
-import ArtistPreferences from '../artistPreferences/artistPreferences.model';
-import { IAuth } from '../auth/auth.interface';
-import Auth from '../auth/auth.model';
-import { formatDay, normalizeWeeklySchedule } from '../schedule/schedule.utils';
+import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
+import { IAuth } from '../Auth/auth.interface';
+import Auth from '../Auth/auth.model';
+import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import {
   IService,
   TServiceImages,
   TServicePayload,
-} from '../service/service.interface';
+} from '../Service/service.interface';
 import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
@@ -28,17 +28,17 @@ import {
 import { JwtPayload } from 'jsonwebtoken';
 import Stripe from 'stripe';
 import config from '../../config';
-import Booking from '../booking/booking.model';
-import { ArtistBoost } from '../boostProfile/boost.profile.model';
+import Booking from '../Booking/booking.model';
+import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import {
   deleteSingleImage,
   deleteSomeImages,
   deleteSomeMulterFiles,
-} from '../folder/folder.utils';
-import Notification from '../notification/notification.model';
-import { IWeeklySchedule } from '../schedule/schedule.interface';
-import ArtistSchedule from '../schedule/schedule.model';
-import Service from '../service/service.model';
+} from '../Folder/folder.utils';
+import Notification from '../Notification/notification.model';
+import { IWeeklySchedule } from '../Schedule/schedule.interface';
+import ArtistSchedule from '../Schedule/schedule.model';
+import Service from '../Service/service.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 

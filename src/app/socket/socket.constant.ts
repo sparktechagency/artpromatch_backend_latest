@@ -1,4 +1,4 @@
-import { TRole } from '../modules/auth/auth.constant';
+import { TRole } from '../modules/Auth/auth.constant';
 
 export const SOCKET_EVENTS = {
   JOIN_CONVERSATION: 'join-conversation',

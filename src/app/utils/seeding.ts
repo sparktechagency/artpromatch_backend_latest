@@ -1,6 +1,6 @@
 import config from '../config';
-import { defaultUserImage, ROLE } from '../modules/auth/auth.constant';
-import Auth from '../modules/auth/auth.model';
+import { defaultUserImage, ROLE } from '../modules/Auth/auth.constant';
+import Auth from '../modules/Auth/auth.model';
 
 const seedingAdmin = async () => {
   try {

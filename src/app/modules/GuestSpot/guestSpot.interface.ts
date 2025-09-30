@@ -1,5 +1,5 @@
 import { Document, Types } from 'mongoose';
-import { IOffDays } from '../schedule/schedule.interface';
+import { IOffDays } from '../Schedule/schedule.interface';
 
 export interface IGuestSpot extends Document {
   artist: Types.ObjectId;

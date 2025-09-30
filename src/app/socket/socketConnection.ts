@@ -2,8 +2,8 @@
 import { Server as HTTPServer } from 'http';
 import { Server as chatServer, Socket } from 'socket.io';
 import handleChatEvents from './handleChatEvents';
-import Auth from '../modules/auth/auth.model';
-import Conversation from '../modules/conversation/conversation.model';
+import Auth from '../modules/Auth/auth.model';
+import Conversation from '../modules/Conversation/conversation.model';
 import { SOCKET_EVENTS } from './socket.constant';
 
 let io: chatServer;

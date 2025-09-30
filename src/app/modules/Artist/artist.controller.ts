@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import config from '../../config';
 import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
-import { TServiceImages } from '../service/service.interface';
+import { TServiceImages } from '../Service/service.interface';
 import { ArtistService } from './artist.service';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});

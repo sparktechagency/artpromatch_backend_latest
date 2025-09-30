@@ -28,7 +28,9 @@ export interface IAuth extends Document {
 
   // Instance methods
   isPasswordMatched(plainTextPassword: string): Promise<boolean>;
-  isJWTIssuedBeforePasswordChanged(jwtIssuedTimestamp: number | undefined): boolean;
+  isJWTIssuedBeforePasswordChanged(
+    jwtIssuedTimestamp: number | undefined
+  ): boolean;
   isPasswordCorrect(password: string): Promise<boolean>;
 }
 

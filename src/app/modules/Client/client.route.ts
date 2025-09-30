@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ClientController } from './client.controller';
 import { auth, validateRequest } from '../../middlewares';
-import { ROLE } from '../auth/auth.constant';
+import { ROLE } from '../Auth/auth.constant';
 import { ClientValidation } from './client.validation';
 
 const router = Router();

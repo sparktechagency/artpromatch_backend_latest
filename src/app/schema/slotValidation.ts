@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { WEEK_DAYS } from '../modules/artist/artist.constant';
+import { WEEK_DAYS } from '../modules/Artist/artist.constant';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 

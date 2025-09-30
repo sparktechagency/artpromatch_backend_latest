@@ -1,8 +1,8 @@
 import { Types } from 'mongoose';
-import Auth from '../modules/auth/auth.model';
-import Conversation from '../modules/conversation/conversation.model';
+import Auth from '../modules/Auth/auth.model';
+import Conversation from '../modules/Conversation/conversation.model';
 import { onlineUsers } from '../socket/socketConnection';
-import { IAuth } from '../modules/auth/auth.interface';
+import { IAuth } from '../modules/Auth/auth.interface';
 
 interface ConversationQuery {
   searchTerm?: string;
@@ -26,7 +26,7 @@ export const getConversationList = async (
       { name: { $regex: searchTerm, $options: 'i' } },
       '_id'
     );
-    
+
     const matchingUserIds = matchingUsers.map((u: IAuth) => u._id);
     if (matchingUserIds.length > 0) {
       userFilter = { participants: { $in: matchingUserIds } };

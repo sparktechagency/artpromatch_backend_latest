@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { ArtistController } from './artist.controller';
 import { auth, validateRequest } from '../../middlewares';
-import { ROLE } from '../auth/auth.constant';
+import { ROLE } from '../Auth/auth.constant';
 import { ArtistValidation } from './artist.validation';
 import { upload } from '../../lib';
 import { SlotValidation } from '../../schema/slotValidation';
-import { ArtistServiceValidation } from '../service/service.zod';
+import { ArtistServiceValidation } from '../Service/service.zod';
 import { validateRequestFromFormData } from '../../middlewares/validateRequest';
 
 const router = Router();
