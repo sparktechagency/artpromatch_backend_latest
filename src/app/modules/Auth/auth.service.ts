@@ -17,12 +17,12 @@ import {
   TSocialLoginPayload,
 } from '../../types';
 import { AppError, sendOtpEmail } from '../../utils';
-import Artist from '../Artist/artist.model';
-import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
-import Business from '../Business/business.model';
-import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
-import Client from '../Client/client.model';
-import ClientPreferences from '../ClientPreferences/clientPreferences.model';
+import Artist from '../artist/artist.model';
+import ArtistPreferences from '../artistPreferences/artistPreferences.model';
+import Business from '../business/business.model';
+import BusinessPreferences from '../businessPreferences/businessPreferences.model';
+import Client from '../client/client.model';
+import ClientPreferences from '../clientPreferences/clientPreferences.model';
 import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
 import { AuthValidation, TProfilePayload } from './auth.validation';

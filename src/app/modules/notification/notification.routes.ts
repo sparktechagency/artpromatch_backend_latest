@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { auth } from '../../middlewares';
-import { ROLE } from '../Auth/auth.constant';
+import { ROLE } from '../auth/auth.constant';
 import { notificationController } from './notification.controller';
 
 const router = Router();

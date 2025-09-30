@@ -1,11 +1,11 @@
-import { favoriteTattoos, serviceTypes } from '../Client/client.constant';
-import { ARTIST_TYPE, expertiseTypes } from '../Artist/artist.constant';
+import { favoriteTattoos, serviceTypes } from '../client/client.constant';
+import { ARTIST_TYPE, expertiseTypes } from '../artist/artist.constant';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { ROLE } from './auth.constant';
 import {
   OPERATING_DAYS,
   SERVICES_OFFERED,
-} from '../Business/business.constants';
+} from '../business/business.constants';
 import { z } from 'zod';
 
 // Reusable validators

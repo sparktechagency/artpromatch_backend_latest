@@ -1,11 +1,11 @@
 import { AppError } from '../../utils';
-import { IAuth } from '../Auth/auth.interface';
+import { IAuth } from '../auth/auth.interface';
 import httpStatus from 'http-status';
-import Booking from '../Booking/booking.model';
+import Booking from '../booking/booking.model';
 import GuestSpot from './guestSpot.model';
 import { convertTimeToMinutes } from './guestSpot.utils';
-import { IOffDays } from '../Schedule/schedule.interface';
-import Artist from '../Artist/artist.model';
+import { IOffDays } from '../schedule/schedule.interface';
+import Artist from '../artist/artist.model';
 
 // createGuestSpotIntoDB
 const createGuestSpotIntoDB = async (

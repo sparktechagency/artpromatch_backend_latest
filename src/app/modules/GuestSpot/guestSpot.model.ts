@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { offDaysSchema } from '../Schedule/schedule.model';
+import { offDaysSchema } from '../schedule/schedule.model';
 import { IGuestSpot } from './guestSpot.interface';
 
 const GuestSpotSchema = new Schema<IGuestSpot>(

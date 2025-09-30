@@ -1,4 +1,4 @@
-import { connectedAccountSchema } from '../ClientPreferences/clientPreferences.model';
+import { connectedAccountSchema } from '../clientPreferences/clientPreferences.model';
 import { IBusinessPreferences } from './businessPreferences.interface';
 import { model, Schema } from 'mongoose';
 // import {

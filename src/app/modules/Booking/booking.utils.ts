@@ -1,6 +1,6 @@
-import GuestSpot from '../GuestSpot/guestSpot.model';
-import { IWeeklySchedule } from '../Schedule/schedule.interface';
-import ArtistSchedule from '../Schedule/schedule.model';
+import GuestSpot from '../guestSpot/guestSpot.model';
+import { IWeeklySchedule } from '../schedule/schedule.interface';
+import ArtistSchedule from '../schedule/schedule.model';
 
 export const minToTimeString = (min: number) => {
   const h = Math.floor(min / 60);
@@ -15,24 +15,21 @@ export const roundUpMinutes = (min: number, step = 15) => {
 };
 
 export function parseTimeToMinutes(timeStr: string): number {
-  const [time, modifier] = timeStr.toLowerCase().split(" "); // e.g. "09:30 am"
-  const [hoursRaw, minutesRaw] = time.split(":").map(Number);
+  const [time, modifier] = timeStr.toLowerCase().split(' '); // e.g. "09:30 am"
+  const [hoursRaw, minutesRaw] = time.split(':').map(Number);
 
   let hours = hoursRaw;
   const minutes = minutesRaw; // ✅ now const
 
-  if (modifier === "pm" && hours !== 12) {
+  if (modifier === 'pm' && hours !== 12) {
     hours += 12;
   }
-  if (modifier === "am" && hours === 12) {
+  if (modifier === 'am' && hours === 12) {
     hours = 0;
   }
 
   return hours * 60 + minutes;
 }
-
-
-
 
 export const resolveScheduleForDate = async (artistId: string, date: Date) => {
   const dayName = date

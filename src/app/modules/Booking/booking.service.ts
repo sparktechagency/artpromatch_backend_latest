@@ -3,27 +3,27 @@
 import httpStatus from 'http-status';
 import { startSession, Types } from 'mongoose';
 import { AppError } from '../../utils';
-import { IArtist } from '../Artist/artist.interface';
-import { IAuth } from '../Auth/auth.interface';
-import SecretReview from '../SecretReview/secretReview.model';
-import { IService } from '../Service/service.interface';
+import { IArtist } from '../artist/artist.interface';
+import { IAuth } from '../auth/auth.interface';
+import SecretReview from '../secretReview/secretReview.model';
+import { IService } from '../service/service.interface';
 import Booking from './booking.model';
 import Stripe from 'stripe';
 import config from '../../config';
 import sendOtpEmailForBookingCompletion from '../../utils/sendOtpEmailForBookingCompletion';
-import Artist from '../Artist/artist.model';
-import { IClient } from '../Client/client.interface';
-import Client from '../Client/client.model';
-import ClientPreferences from '../ClientPreferences/clientPreferences.model';
-import Service from '../Service/service.model';
+import Artist from '../artist/artist.model';
+import { IClient } from '../client/client.interface';
+import Client from '../client/client.model';
+import ClientPreferences from '../clientPreferences/clientPreferences.model';
+import Service from '../service/service.model';
 import { parseTimeToMinutes } from './booking.utils';
 import { TBookingData } from './booking.validation';
 import {
   sendNotificationByEmail,
   sendNotificationBySocket,
   sendPushNotification,
-} from '../Notification/notification.utils';
-import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
+} from '../notification/notification.utils';
+import { NOTIFICATION_TYPE } from '../notification/notification.constant';
 
 type TReviewData = {
   bookingId: string;
@@ -483,7 +483,7 @@ const createOrUpdateSessionIntoDB = async (
   const booking = await Booking.findById(bookingId);
   if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
 
-    if (['pending', 'failed'].includes(booking.paymentStatus)) {
+  if (['pending', 'failed'].includes(booking.paymentStatus)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'payment are not found or failed'

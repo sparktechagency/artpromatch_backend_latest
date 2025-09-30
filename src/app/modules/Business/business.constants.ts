@@ -1,4 +1,4 @@
-import { ValueOf } from '../Auth/auth.constant';
+import { ValueOf } from '../auth/auth.constant';
 
 export const OPERATING_DAYS = {
   MONDAY: 'Monday',
@@ -27,5 +27,4 @@ export const BUSINESS_TYPE = {
   BOTH: 'Both',
 } as const;
 
-export type TBusinessType = typeof BUSINESS_TYPE[keyof typeof BUSINESS_TYPE];
-
+export type TBusinessType = (typeof BUSINESS_TYPE)[keyof typeof BUSINESS_TYPE];

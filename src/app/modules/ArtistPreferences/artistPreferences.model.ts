@@ -1,6 +1,6 @@
 import { model, Schema } from 'mongoose';
-import { connectedAccountSchema } from '../ClientPreferences/clientPreferences.model';
-import { notificationChannel } from '../Client/client.constant';
+import { connectedAccountSchema } from '../clientPreferences/clientPreferences.model';
+import { notificationChannel } from '../client/client.constant';
 import { IArtistPreferences } from './artistPreferences.interface';
 
 const artistPreferencesSchema = new Schema<IArtistPreferences>(
