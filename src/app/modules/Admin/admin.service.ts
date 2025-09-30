@@ -1,17 +1,17 @@
 import httpStatus from 'http-status';
 import { AppError } from '../../utils';
-import Folder from '../Folder/folder.model';
+import Folder from '../folder/folder.model';
 import { PipelineStage } from 'mongoose';
 import QueryBuilder from 'mongoose-query-builders';
 import config from '../../config';
-import Artist from '../Artist/artist.model';
-import { IAuth } from '../Auth/auth.interface';
-import Auth from '../Auth/auth.model';
-import Booking from '../Booking/booking.model';
-import { ArtistBoost } from '../BoostProfile/boost.profile.model';
-import Business from '../Business/business.model';
-import Client from '../Client/client.model';
-import SecretReview from '../SecretReview/secretReview.model';
+import Artist from '../artist/artist.model';
+import { IAuth } from '../auth/auth.interface';
+import Auth from '../auth/auth.model';
+import Booking from '../booking/booking.model';
+import { ArtistBoost } from '../boostProfile/boost.profile.model';
+import Business from '../business/business.model';
+import Client from '../client/client.model';
+import SecretReview from '../secretReview/secretReview.model';
 
 // getAllArtistsFoldersFromDB
 const getAllArtistsFoldersFromDB = async () => {

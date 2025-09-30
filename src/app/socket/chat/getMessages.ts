@@ -2,9 +2,9 @@ import { Socket } from 'socket.io';
 import { getSocketIO, onlineUsers } from '../socketConnection';
 
 import QueryBuilder from 'mongoose-query-builders';
-import { IAuth } from '../../modules/Auth/auth.interface';
-import Message from '../../modules/Message/message.model';
-import Conversation from '../../modules/Conversation/conversation.model';
+import { IAuth } from '../../modules/auth/auth.interface';
+import Message from '../../modules/message/message.model';
+import Conversation from '../../modules/conversation/conversation.model';
 
 export const handleMessagePage = async (
   socket: Socket,

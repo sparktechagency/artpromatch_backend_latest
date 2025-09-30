@@ -1,5 +1,5 @@
 import { Document, Types } from 'mongoose';
-import { TNotificationChannel } from '../Client/client.constant';
+import { TNotificationChannel } from '../client/client.constant';
 
 export interface ConnectedAccount {
   provider: 'google' | 'apple' | 'facebook';

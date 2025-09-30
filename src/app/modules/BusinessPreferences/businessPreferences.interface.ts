@@ -1,6 +1,6 @@
 import { Document, Types } from 'mongoose';
-import { TNotificationChannel } from '../Client/client.constant';
-import { ConnectedAccount } from '../ClientPreferences/clientPreferences.interface';
+import { TNotificationChannel } from '../client/client.constant';
+import { ConnectedAccount } from '../clientPreferences/clientPreferences.interface';
 // import {
 //   TCancellationPolicy,
 //   TPreferredArtistType,

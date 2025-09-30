@@ -1,15 +1,15 @@
 import { Router } from 'express';
-import { AdminRoutes } from '../modules/Admin/admin.route';
-import { ArtistRoutes } from '../modules/Artist/artist.routes';
-import { AuthRoutes } from '../modules/Auth/auth.route';
-import { BookingRoutes } from '../modules/Booking/booking.route';
-import { BusinessRoutes } from '../modules/Business/business.routes';
-import { ClientRoutes } from '../modules/Client/client.route';
-import { FolderRoutes } from '../modules/Folder/folder.route';
-import { GuestSpotRoutes } from '../modules/GuestSpot/guestSpot.route';
-import { messageRoutes } from '../modules/Message/message.route';
-import { notificationRoutes } from '../modules/Notification/notification.routes';
-import { RequestRoute } from '../modules/Request/request.route';
+import { AdminRoutes } from '../modules/admin/admin.route';
+import { ArtistRoutes } from '../modules/artist/artist.routes';
+import { AuthRoutes } from '../modules/auth/auth.route';
+import { BookingRoutes } from '../modules/booking/booking.route';
+import { BusinessRoutes } from '../modules/business/business.routes';
+import { ClientRoutes } from '../modules/client/client.route';
+import { FolderRoutes } from '../modules/folder/folder.route';
+import { GuestSpotRoutes } from '../modules/guestSpot/guestSpot.route';
+import { messageRoutes } from '../modules/message/message.route';
+import { notificationRoutes } from '../modules/notification/notification.routes';
+import { RequestRoute } from '../modules/request/request.route';
 
 const router = Router();
 
