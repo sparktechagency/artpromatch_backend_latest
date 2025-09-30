@@ -10,6 +10,9 @@ import { GuestSpotRoutes } from '../modules/GuestSpot/guestSpot.route';
 import { messageRoutes } from '../modules/Message/message.route';
 import { notificationRoutes } from '../modules/Notification/notification.routes';
 import { RequestRoute } from '../modules/Request/request.route';
+import { contentRoutes } from '../modules/Content/content.route';
+import { faqRoutes } from '../modules/Faq/faq.route';
+
 
 const router = Router();
 
@@ -59,6 +62,16 @@ const moduleRoutes = [
     path: '/guestspots',
     route: GuestSpotRoutes,
   },
+  {
+    path: '/content',
+    route: contentRoutes,
+  },
+    {
+    path: '/faq',
+    route: faqRoutes,
+  },
+
+
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
