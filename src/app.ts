@@ -14,11 +14,11 @@ import cron from 'node-cron';
 import httpStatus from 'http-status';
 import express, { Application, NextFunction, Request, Response } from 'express';
 import { createServer } from 'http';
-import morgan from 'morgan';
+// import morgan from 'morgan';
 import routes from './app/routes';
 import { AppError, globalErrorHandler, notFound } from './app/utils';
 import { stripeWebhookHandler } from './app/lib/stripe.webhookt';
-import { expireBoosts } from './app/modules/Artist/artist.service';
+import { expireBoosts } from './app/modules/artist/artist.service';
 
 const app: Application = express();
 
@@ -47,7 +47,7 @@ app.post(
   stripeWebhookHandler
 );
 app.use(cookieParser());
-app.use(morgan('dev'));
+// app.use(morgan('dev'));
 
 // static files
 app.use('/public', express.static('public'));

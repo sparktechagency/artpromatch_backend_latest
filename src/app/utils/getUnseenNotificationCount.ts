@@ -1,4 +1,4 @@
-import Notification from '../modules/Notification/notification.model';
+import Notification from '../modules/notification/notification.model';
 
 const getUserNotificationCount = async (receiver: string) => {
   const unseenCount = await Notification.countDocuments({

@@ -1,6 +1,6 @@
 import parsePhoneNumberFromString from 'libphonenumber-js';
 import { z } from 'zod';
-import { dateFormats, notificationChannel } from '../Client/client.constant';
+import { dateFormats, notificationChannel } from '../client/client.constant';
 import {
   ARTIST_TYPE,
   cancellationPolicy,

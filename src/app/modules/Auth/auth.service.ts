@@ -17,17 +17,17 @@ import {
   TSocialLoginPayload,
 } from '../../types';
 import { AppError, sendOtpEmail } from '../../utils';
-import Artist from '../Artist/artist.model';
-import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
-import Business from '../Business/business.model';
-import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
-import Client from '../Client/client.model';
-import ClientPreferences from '../ClientPreferences/clientPreferences.model';
+import Artist from '../artist/artist.model';
+import ArtistPreferences from '../artistPreferences/artistPreferences.model';
+import Business from '../business/business.model';
+import BusinessPreferences from '../businessPreferences/businessPreferences.model';
+import Client from '../client/client.model';
+import ClientPreferences from '../clientPreferences/clientPreferences.model';
 import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
 import { AuthValidation, TProfilePayload } from './auth.validation';
 import sendOtpSms from '../../utils/sendOtpSms';
-import { getLocationName } from './auth.utils';
+// import { getLocationName } from './auth.utils';
 import Auth from './auth.model';
 
 const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
@@ -183,13 +183,15 @@ const verifySignupOtpIntoDB = async (userEmail: string, otp: string) => {
 
   // Prepare user payload for tokens
   const userData = {
-    id: user._id.toString(),
-    email: user.email,
-    phoneNumber: user.phoneNumber,
+    id: user?._id.toString(),
+    email: user?.email,
+    phoneNumber: user?.phoneNumber,
     stringLocation: '123 Main St, Springfield, IL',
-    role: user.role,
+    role: user?.role,
     image: user?.image || defaultUserImage,
     fullName: user?.fullName,
+    isProfile: user?.isProfile,
+    isActive: user?.isActive,
   };
 
   // Generate access and refresh tokens
@@ -273,6 +275,8 @@ const signinIntoDB = async (payload: {
     email: user.email,
     role: user.role,
     image: user?.image || defaultUserImage,
+    isProfile: user?.isProfile,
+    isActive: user?.isActive,
   };
 
   // Generate tokens
@@ -305,6 +309,7 @@ const createProfileIntoDB = async (
   const {
     role,
     mainLocation,
+    stringLocation,
 
     radius,
     lookingFor,
@@ -313,9 +318,9 @@ const createProfileIntoDB = async (
 
     artistType,
     expertise,
-    studioName,
     city,
 
+    studioName,
     businessType,
     servicesOffered,
     contactNumber,
@@ -323,7 +328,7 @@ const createProfileIntoDB = async (
     operatingHours,
   } = payload;
 
-  // Extract file paths for ID verification images and business documents
+  // Extract file paths for ID verification images for artists
   const idCardFront = files.idFrontPart?.[0]?.path.replace(/\\/g, '/') || '';
   const idCardBack = files.idBackPart?.[0]?.path.replace(/\\/g, '/') || '';
   const selfieWithId = files.selfieWithId?.[0]?.path.replace(/\\/g, '/') || '';
@@ -337,7 +342,7 @@ const createProfileIntoDB = async (
     files.studioLicense?.[0]?.path.replace(/\\/g, '/') || '';
 
   // stringLocation
-  const stringLocation = getLocationName(mainLocation?.coordinates as number[]);
+  // const stringLocation = getLocationName(mainLocation?.coordinates as number[]);
 
   // Start a MongoDB session for transaction
   const session = await startSession();
@@ -392,7 +397,25 @@ const createProfileIntoDB = async (
       await session.commitTransaction();
       await session.endSession();
 
-      return client;
+      const jwtPayload = {
+        id: user._id.toString(),
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        stringLocation: stringLocation,
+        email: user.email,
+        image: user.image || defaultUserImage,
+        role: user.role,
+        isProfile: true,
+        isActive: user?.isActive,
+      };
+
+      const accessToken = createAccessToken(jwtPayload);
+      const refreshToken = createRefreshToken(jwtPayload);
+
+      return {
+        accessToken,
+        refreshToken,
+      };
     } else if (role === ROLE.ARTIST) {
       // ARTIST PROFILE CREATION
       const isExistArtist = await Artist.findOne({ auth: user._id });
@@ -407,10 +430,10 @@ const createProfileIntoDB = async (
         auth: user._id,
         type: artistType,
         expertise,
+        city,
         mainLocation,
         stringLocation,
         currentLocation: mainLocation,
-        city,
         idCardFront,
         idCardBack,
         selfieWithId,
@@ -438,7 +461,25 @@ const createProfileIntoDB = async (
       await session.commitTransaction();
       await session.endSession();
 
-      return artist;
+      const jwtPayload = {
+        id: user._id.toString(),
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        stringLocation: stringLocation,
+        email: user.email,
+        image: user.image || defaultUserImage,
+        role: user.role,
+        isProfile: true,
+        isActive: false,
+      };
+
+      const accessToken = createAccessToken(jwtPayload);
+      const refreshToken = createRefreshToken(jwtPayload);
+
+      return {
+        accessToken,
+        refreshToken,
+      };
     } else if (role === ROLE.BUSINESS) {
       // BUSINESS PROFILE CREATION
       const isExistBusiness = await Business.findOne({ auth: user._id });
@@ -451,12 +492,13 @@ const createProfileIntoDB = async (
 
       const businessPayload = {
         auth: user._id,
-        studioName,
-        businessType,
-        servicesOffered,
         location: mainLocation,
         stringLocation,
         city,
+
+        studioName,
+        businessType,
+        servicesOffered,
         contact: {
           phone: contactNumber,
           email: contactEmail,
@@ -489,7 +531,25 @@ const createProfileIntoDB = async (
       await session.commitTransaction();
       await session.endSession();
 
-      return business;
+      const jwtPayload = {
+        id: user._id.toString(),
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        stringLocation: stringLocation,
+        email: user.email,
+        image: user.image || defaultUserImage,
+        role: user.role,
+        isProfile: true,
+        isActive: false,
+      };
+
+      const accessToken = createAccessToken(jwtPayload);
+      const refreshToken = createRefreshToken(jwtPayload);
+
+      return {
+        accessToken,
+        refreshToken,
+      };
     }
   } catch (error: any) {
     // ❌ Roll back transaction in case of any error
@@ -527,6 +587,69 @@ const createProfileIntoDB = async (
       error?.message || 'Failed to create profile. Please try again.'
     );
   }
+};
+
+// 5. checkProfileStatusIntoDB
+const checkProfileStatusIntoDB = async (user: IAuth) => {
+  let stringLocation: string = '';
+  if (!user.isProfile) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'You need to create a profile!');
+  } else if (!user.isActive) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This profile is not checked yet, wait for the admin approval!'
+    );
+  } else if (user.role === 'CLIENT') {
+    const client = await Client.findOne({ auth: user?._id });
+
+    if (!client) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Your client profile not found!'
+      );
+    }
+    stringLocation = client.stringLocation;
+  } else if (user.role === 'ARTIST') {
+    const artist = await Artist.findOne({ auth: user?._id });
+
+    if (!artist) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Your client profile not found!'
+      );
+    }
+    stringLocation = artist.stringLocation;
+  } else if (user.role === 'BUSINESS') {
+    const business = await Business.findOne({ auth: user?._id });
+
+    if (!business) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Your client profile not found!'
+      );
+    }
+    stringLocation = business.stringLocation;
+  }
+
+  const jwtPayload = {
+    id: user._id.toString(),
+    fullName: user.fullName,
+    phoneNumber: user.phoneNumber,
+    stringLocation,
+    email: user.email,
+    image: user.image || defaultUserImage,
+    role: user.role,
+    isProfile: true,
+    isActive: user?.isActive,
+  };
+
+  const accessToken = createAccessToken(jwtPayload);
+  const refreshToken = createRefreshToken(jwtPayload);
+
+  return {
+    accessToken,
+    refreshToken,
+  };
 };
 
 // // clientCreateProfileIntoDB
@@ -865,7 +988,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
   const user = await Auth.isUserExistsByEmail(email);
 
   if (!user) {
-    const authRes = await Auth.create({
+    const newUser = await Auth.create({
       email,
       fcmToken,
       image,
@@ -876,7 +999,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       isVerifiedByOTP: true,
     });
 
-    if (!authRes) {
+    if (!newUser) {
       throw new AppError(
         httpStatus.INTERNAL_SERVER_ERROR,
         'Failed to create user into database!'
@@ -884,13 +1007,15 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
     }
 
     const userData = {
-      id: authRes._id.toString(),
-      email: authRes.email,
-      phoneNumber: authRes.phoneNumber,
+      id: newUser._id.toString(),
+      email: newUser.email,
+      phoneNumber: newUser.phoneNumber,
       stringLocation: '123 Main St, Springfield, IL',
-      role: authRes.role,
-      image: authRes?.image || defaultUserImage,
-      fullName: authRes?.fullName,
+      role: newUser.role,
+      image: newUser?.image || defaultUserImage,
+      fullName: newUser?.fullName,
+      isProfile: newUser?.isProfile,
+      isActive: newUser?.isActive,
     };
 
     const accessToken = createAccessToken(userData);
@@ -900,12 +1025,12 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
 
     return {
       response: {
-        fullName: authRes.fullName,
-        email: authRes.email,
-        phoneNumber: authRes.phoneNumber,
-        role: authRes.role,
-        image: authRes.image,
-        isProfile: authRes.isProfile,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+        image: newUser.image,
+        isProfile: newUser.isProfile,
       },
       accessToken,
       refreshToken,
@@ -938,6 +1063,8 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       role: user.role,
       image: user?.image || defaultUserImage,
       fullName: user?.fullName,
+      isProfile: user?.isProfile,
+      isActive: user?.isActive,
     };
 
     const accessToken = createAccessToken(userData);
@@ -1022,6 +1149,8 @@ const updateProfilePhotoIntoDB = async (
     email: userNewData.email,
     image: userNewData.image || defaultUserImage,
     role: userNewData.role,
+    isProfile: userNewData?.isProfile,
+    isActive: user?.isActive,
   };
 
   const accessToken = createAccessToken(jwtPayload);
@@ -1086,6 +1215,8 @@ const changePasswordIntoDB = async (
     email: user.email,
     image: user.image || defaultUserImage,
     role: user.role,
+    isProfile: user?.isProfile,
+    isActive: user?.isActive,
   };
 
   const accessToken = createAccessToken(jwtPayload);
@@ -1471,13 +1602,15 @@ const getNewAccessTokenFromServer = async (refreshToken: string) => {
 
   // Prepare user data for tokens
   const jwtPayload = {
-    id: user._id.toString(),
-    fullName: user.fullName,
-    phoneNumber: user.phoneNumber,
+    id: user?._id.toString(),
+    fullName: user?.fullName,
+    phoneNumber: user?.phoneNumber,
     stringLocation: stringLocation,
-    email: user.email,
-    image: user.image || defaultUserImage,
-    role: user.role,
+    email: user?.email,
+    image: user?.image || defaultUserImage,
+    role: user?.role,
+    isProfile: user?.isProfile,
+    isActive: user?.isActive,
   };
 
   const accessToken = createAccessToken(jwtPayload);
@@ -1530,6 +1663,8 @@ const updateAuthDataIntoDB = async (
     email: user.email,
     image: user.image || defaultUserImage,
     role: user.role,
+    isProfile: user?.isProfile,
+    isActive: user?.isActive,
   };
 
   const accessToken = createAccessToken(jwtPayload);
@@ -1569,6 +1704,7 @@ export const AuthService = {
   verifySignupOtpIntoDB,
   signinIntoDB,
   createProfileIntoDB,
+  checkProfileStatusIntoDB,
   // clientCreateProfileIntoDB,
   // artistCreateProfileIntoDB,
   // businessCreateProfileIntoDB,

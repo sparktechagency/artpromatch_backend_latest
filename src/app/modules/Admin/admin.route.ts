@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ROLE } from '../Auth/auth.constant';
+import { ROLE } from '../auth/auth.constant';
 import { AdminController } from './admin.controller';
 import { auth } from '../../middlewares';
 

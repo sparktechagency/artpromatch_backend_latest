@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import config from '../../config';
 import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
-import { TServiceImages } from '../Service/service.interface';
+import { TServiceImages } from '../service/service.interface';
 import { ArtistService } from './artist.service';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
@@ -217,7 +217,6 @@ const getArtistDashboardPage = asyncHandler(async (req, res) => {
   });
 });
 
-
 // deleteArtistService
 const deleteArtistService = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -344,7 +343,7 @@ export const ArtistController = {
   setArtistTimeOff,
   createConnectedAccountAndOnboardingLinkForArtist,
   deleteAccount,
-  getArtistDashboardPage
+  getArtistDashboardPage,
   // updateAvailability,
   // getAvailabilityExcludingTimeOff,
 };

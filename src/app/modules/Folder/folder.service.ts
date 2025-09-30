@@ -1,5 +1,5 @@
 import { AppError } from '../../utils';
-import { IAuth } from '../Auth/auth.interface';
+import { IAuth } from '../auth/auth.interface';
 import httpStatus from 'http-status';
 import Folder from './folder.model';
 import { IFolder } from './folder.interface';

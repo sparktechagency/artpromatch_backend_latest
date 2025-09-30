@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ConversationController } from './conversation.controller';
-import { ROLE } from '../Auth/auth.constant';
+import { ROLE } from '../auth/auth.constant';
 import { auth } from '../../middlewares';
 
 const router = Router();

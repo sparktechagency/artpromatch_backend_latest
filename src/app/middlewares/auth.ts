@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import { AppError, asyncHandler } from '../utils';
-import { ROLE, TRole } from '../modules/Auth/auth.constant';
-import Auth from '../modules/Auth/auth.model';
+import { TRole } from '../modules/auth/auth.constant';
+import Auth from '../modules/auth/auth.model';
 import { verifyToken } from '../lib';
 import config from '../config';
 
@@ -47,17 +47,24 @@ const auth = (...requiredRoles: TRole[]) => {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
+    if (!user.isProfile && !user.isActive) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'You are not authorized!');
+    }
+
     if (
-      (user.role === ROLE.ARTIST || user.role === ROLE.BUSINESS) &&
+      // (user.role === ROLE.ARTIST || user.role === ROLE.BUSINESS) &&
+      user.isProfile &&
       !user.isActive
     ) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         'Your profile is not activated by admin yet!'
       );
-    } else if (user.role === ROLE.CLIENT && !user.isActive) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
+
+    // else if (user.role === ROLE.CLIENT && user.isProfile && !user.isActive) {
+    //   throw new AppError(httpStatus.UNAUTHORIZED, 'Your profile is not activated by admin yet!');
+    // }
 
     if (requiredRoles.length && !requiredRoles.includes(user.role)) {
       throw new AppError(

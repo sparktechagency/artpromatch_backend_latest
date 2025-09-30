@@ -1,11 +1,11 @@
-import { favoriteTattoos, serviceTypes } from '../Client/client.constant';
-import { ARTIST_TYPE, expertiseTypes } from '../Artist/artist.constant';
+import { favoriteTattoos, serviceTypes } from '../client/client.constant';
+import { ARTIST_TYPE, expertiseTypes } from '../artist/artist.constant';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { ROLE } from './auth.constant';
 import {
   OPERATING_DAYS,
   SERVICES_OFFERED,
-} from '../Business/business.constants';
+} from '../business/business.constants';
 import { z } from 'zod';
 
 // Reusable validators
@@ -134,6 +134,11 @@ const createProfileSchema = z.object({
         invalid_type_error: 'Role must be CLIENT, ARTIST or BUSINESS',
       }),
 
+      stringLocation: z.string({
+        invalid_type_error: 'Address must be a  string!',
+        required_error: 'Address is required!',
+      }),
+
       mainLocation: z
         .object({
           // type: z.literal('Point').default('Point'), // Type must be 'Point'
@@ -243,9 +248,9 @@ const createProfileSchema = z.object({
 
         if (!data.mainLocation) {
           ctx.addIssue({
-            path: ['location'],
+            path: ['mainLocation'],
             code: z.ZodIssueCode.custom,
-            message: 'Location is required.',
+            message: 'Main Location is required.',
           });
         }
       }
@@ -277,9 +282,9 @@ const createProfileSchema = z.object({
 
         if (!data.mainLocation) {
           ctx.addIssue({
-            path: ['location'],
+            path: ['mainLocation'],
             code: z.ZodIssueCode.custom,
-            message: 'Primary location is required.',
+            message: 'Main Location is required.',
           });
         }
 

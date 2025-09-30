@@ -1,6 +1,6 @@
 import { Types, Document } from 'mongoose';
-import { TNotificationChannel } from '../Client/client.constant';
-import { ConnectedAccount } from '../ClientPreferences/clientPreferences.interface';
+import { TNotificationChannel } from '../client/client.constant';
+import { ConnectedAccount } from '../clientPreferences/clientPreferences.interface';
 
 export interface IArtistPreferences extends Document {
   artistId: Types.ObjectId;

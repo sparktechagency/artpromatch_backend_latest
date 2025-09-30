@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import { AdminRoutes } from '../modules/Admin/admin.route';
 import { ArtistRoutes } from '../modules/Artist/artist.routes';
 import { AuthRoutes } from '../modules/Auth/auth.route';

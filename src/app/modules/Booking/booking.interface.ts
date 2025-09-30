@@ -1,4 +1,4 @@
-import { IArtist } from '../Artist/artist.interface';
+import { IArtist } from '../artist/artist.interface';
 import { Document, Types } from 'mongoose';
 import {
   TBookingStatus,

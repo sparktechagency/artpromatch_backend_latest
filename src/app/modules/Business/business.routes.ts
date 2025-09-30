@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { BusinessController } from './business.controller';
 import { auth, validateRequest } from '../../middlewares';
-import { ROLE } from '../Auth/auth.constant';
+import { ROLE } from '../auth/auth.constant';
 import { BusinessValidation } from './business.validation';
 
 const router = Router();
