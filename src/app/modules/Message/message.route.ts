@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response, Router } from 'express';
 import httpStatus from 'http-status';
 import { auth, validateRequest } from '../../middlewares';
-import { ROLE } from '../auth/auth.constant';
+import { ROLE } from '../Auth/auth.constant';
 import { upload } from '../../lib';
 import { AppError } from '../../utils';
 import { validateRequestFromFormData } from '../../middlewares/validateRequest';

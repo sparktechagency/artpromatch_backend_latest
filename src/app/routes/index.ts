@@ -1,5 +1,4 @@
 import { Router } from 'express';
-
 import { AdminRoutes } from '../modules/Admin/admin.route';
 import { ArtistRoutes } from '../modules/Artist/artist.routes';
 import { AuthRoutes } from '../modules/Auth/auth.route';
@@ -13,6 +12,7 @@ import { notificationRoutes } from '../modules/Notification/notification.routes'
 import { RequestRoute } from '../modules/Request/request.route';
 import { contentRoutes } from '../modules/Content/content.route';
 import { faqRoutes } from '../modules/Faq/faq.route';
+
 
 const router = Router();
 

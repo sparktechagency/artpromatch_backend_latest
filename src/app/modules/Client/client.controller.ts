@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { asyncHandler } from '../../utils';
 import { ClientService } from './client.service';
 import sendResponse from '../../utils/sendResponse';
-import Auth from '../auth/auth.model';
+import Auth from '../Auth/auth.model';
 import { verifyToken } from '../../lib';
 import config from '../../config';
 import { JwtPayload } from 'jsonwebtoken';

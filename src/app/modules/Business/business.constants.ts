@@ -1,4 +1,4 @@
-import { ValueOf } from '../auth/auth.constant';
+import { ValueOf } from '../Auth/auth.constant';
 
 export const OPERATING_DAYS = {
   MONDAY: 'Monday',

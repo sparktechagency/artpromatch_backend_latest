@@ -1,6 +1,6 @@
-import GuestSpot from '../guestSpot/guestSpot.model';
-import { IWeeklySchedule } from '../schedule/schedule.interface';
-import ArtistSchedule from '../schedule/schedule.model';
+import GuestSpot from '../GuestSpot/guestSpot.model';
+import { IWeeklySchedule } from '../Schedule/schedule.interface';
+import ArtistSchedule from '../Schedule/schedule.model';
 
 export const minToTimeString = (min: number) => {
   const h = Math.floor(min / 60);

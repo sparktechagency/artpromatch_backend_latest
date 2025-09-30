@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import Notification from './notification.model';
 import QueryBuilder from 'mongoose-query-builders';
-import { IAuth } from '../auth/auth.interface';
+import { IAuth } from '../Auth/auth.interface';
 
 const getAllNotifications = async (
   user: IAuth,

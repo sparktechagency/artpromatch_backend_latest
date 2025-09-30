@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import { AppError } from '../../utils';
-import Artist from '../artist/artist.model';
-import { ROLE } from '../auth/auth.constant';
-import Business from '../business/business.model';
-import { NOTIFICATION_TYPE } from '../notification/notification.constant';
-import { sendNotificationBySocket } from '../notification/notification.utils';
-import { IAuth } from '../auth/auth.interface';
+import Artist from '../Artist/artist.model';
+import { ROLE } from '../Auth/auth.constant';
+import Business from '../Business/business.model';
+import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
+import { sendNotificationBySocket } from '../Notification/notification.utils';
+import { IAuth } from '../Auth/auth.interface';
 import { REQUEST_STATUS } from './request.constant';
 import RequestModel from './request.model';
 

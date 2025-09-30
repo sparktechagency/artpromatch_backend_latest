@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Types } from 'mongoose';
 import QueryBuilder from '../../builders/QueryBuilder';
-import Auth from '../auth/auth.model';
-import Message from '../message/message.model';
+import Auth from '../Auth/auth.model';
+import Message from '../Message/message.model';
 import Conversation from './conversation.model';
 
 const getConversation = async (
