@@ -9,7 +9,6 @@ import ArtistPreferences from '../modules/artistPreferences/artistPreferences.mo
 import Auth from '../modules/auth/auth.model';
 import { PAYMENT_STATUS } from '../modules/booking/booking.constant';
 import Booking from '../modules/booking/booking.model';
-
 import Artist from '../modules/artist/artist.model';
 import { ArtistBoost } from '../modules/boostProfile/boost.profile.model';
 import { NOTIFICATION_TYPE } from '../modules/notification/notification.constant';
