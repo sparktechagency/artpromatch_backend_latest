@@ -1,0 +1,13 @@
+import { Schema, model } from 'mongoose';
+import { IFaq } from './faq.interface';
+
+const faqSchema = new Schema<IFaq>(
+  {
+    question: { type: String, required: true, trim: true },
+    answer: { type: String, required: true},
+    isPublished: { type: Boolean, default: false },
+  },
+  { timestamps: true, versionKey: false }
+);
+
+export const Faq = model<IFaq>('Faq', faqSchema);
