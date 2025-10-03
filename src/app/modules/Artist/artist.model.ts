@@ -63,10 +63,10 @@ const artistSchema = new Schema<IArtist>(
       required: true,
     },
 
-    city: {
-      type: String,
-      required: true,
-    },
+    // city: {
+    //   type: String,
+    //   required: true,
+    // },
 
     stripeAccountId: {
       type: String,

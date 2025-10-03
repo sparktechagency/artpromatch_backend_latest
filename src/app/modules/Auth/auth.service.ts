@@ -318,7 +318,7 @@ const createProfileIntoDB = async (
 
     artistType,
     expertise,
-    city,
+    // city,
 
     studioName,
     businessType,
@@ -430,7 +430,7 @@ const createProfileIntoDB = async (
         auth: user._id,
         type: artistType,
         expertise,
-        city,
+        // city,
         mainLocation,
         stringLocation,
         currentLocation: mainLocation,
@@ -494,7 +494,7 @@ const createProfileIntoDB = async (
         auth: user._id,
         location: mainLocation,
         stringLocation,
-        city,
+        // city,
 
         studioName,
         businessType,
@@ -1271,12 +1271,73 @@ const forgotPassword = async (email: string) => {
   return { token };
 };
 
-// 10. verifyOtpForForgetPassword
-const verifyOtpForForgetPassword = async (payload: {
+// 9. sendForgotPasswordOtpAgain
+const sendForgotPasswordOtpAgain = async (forgotPassToken: string) => {
+  let decoded: any;
+  try {
+    decoded = jwt.verify(forgotPassToken, config.jwt.otp_secret!, {
+      ignoreExpiration: true,
+    });
+  } catch {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid token!');
+  }
+  const email = decoded.email;
+
+  if (!email) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid token!');
+  }
+
+  const user = await Auth.findOne({ email, isActive: true });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  const now = new Date();
+
+  // If OTP exists and not expired, reuse it
+  if (user.otp && user.otpExpiry && now < user.otpExpiry) {
+    // Do nothing, just reuse existing OTP
+    const remainingMs = user.otpExpiry.getTime() - now.getTime();
+    const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+
+    // await sendOtpEmail(email, user.otp, user.fullName || 'Guest');
+
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      `Last OTP is valid till now, use that in ${remainingMinutes} minutes!`
+    );
+  } else {
+    // Generate new OTP
+    const otp = generateOtp();
+    const otpExpiry = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+    await user.save();
+
+    // Send OTP
+    await sendOtpEmail(email, otp, user.fullName || 'Guest');
+  }
+
+  return null;
+};
+
+// 10. verifyOtpForForgotPassword
+const verifyOtpForForgotPassword = async (payload: {
   token: string;
   otp: string;
 }) => {
-  const { email } = verifyToken(payload.token, config.jwt.otp_secret!) as any;
+  let decoded: any;
+  try {
+    decoded = jwt.verify(payload.token, config.jwt.otp_secret!, {
+      ignoreExpiration: true,
+    });
+  } catch {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid token!');
+  }
+
+  const email = decoded.email;
 
   const user = await Auth.findOne({ email, isActive: true });
 
@@ -1325,13 +1386,17 @@ const resetPasswordIntoDB = async (
   resetPasswordToken: string,
   newPassword: string
 ) => {
+  if (!resetPasswordToken) {
+    throw new AppError(httpStatus.FORBIDDEN, 'Invalid reset password token!');
+  }
+
   const payload = verifyToken(resetPasswordToken, config.jwt.otp_secret!) as {
     email: string;
     isResetPassword?: boolean;
   };
 
   if (!payload?.isResetPassword) {
-    throw new AppError(httpStatus.FORBIDDEN, 'Invalid reset password token');
+    throw new AppError(httpStatus.FORBIDDEN, 'Invalid reset password token!');
   }
 
   const user = await Auth.findOne({ email: payload.email, isActive: true });
@@ -1712,7 +1777,8 @@ export const AuthService = {
   updateProfilePhotoIntoDB,
   changePasswordIntoDB,
   forgotPassword,
-  verifyOtpForForgetPassword,
+  sendForgotPasswordOtpAgain,
+  verifyOtpForForgotPassword,
   resetPasswordIntoDB,
   fetchProfileFromDB,
   fetchAllConnectedAcount,

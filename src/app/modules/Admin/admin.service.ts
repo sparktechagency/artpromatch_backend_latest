@@ -105,7 +105,8 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
     ]),
     query
   )
-    .search(['type', 'expertise', 'city'])
+    // .search(['type', 'expertise', 'city'])
+    .search(['type', 'expertise', 'stringLocation'])
     .filter()
     .sort()
     .sort()
@@ -137,7 +138,8 @@ const fetchAllBusinessesFromDB = async (query: Record<string, unknown>) => {
     query
   )
     .search([
-      'city',
+      // 'city',
+      'stringLocation',
       'servicesOffered',
       'businessType',
       'studioName',
@@ -253,7 +255,8 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
 
         artistType: '$artist.type',
         artistExpertise: '$artist.expertise',
-        artistCity: '$artist.city',
+        // artistCity: '$artist.city',
+        artistStringLocation: '$artist.stringLocation',
 
         artistEmail: '$auth.email',
         artistFullName: '$auth.fullName',

@@ -106,7 +106,7 @@ export const homeViews = {
 
 export const artistTypes = {
   TATTOO: 'Tattoo Artist',
-  PIERCER: 'Piercers',
+  PIERCER: 'Piercer',
   BOTH: 'Both',
 } as const;
 

@@ -28,7 +28,7 @@ const preferencesSchema = z.object({
       .default(homeViews.BOTH)
       .optional(),
 
-    // Preferred Artist Type (Tattoo Artist, Piercers, or Both)
+    // Preferred Artist Type (Tattoo Artist, Piercer, or Both)
     preferredArtistType: z
       .enum(Object.values(artistTypes) as [string, ...string[]])
       .default(artistTypes.BOTH)

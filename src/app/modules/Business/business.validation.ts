@@ -14,7 +14,7 @@ const businessPreferencesSchema = z.object({
   body: z.object({
     autoApproveGuestSpots: z.boolean(),
     cancellationPolicy: z.enum(['24-hour', '48-hour', '72-hour']),
-    preferredArtistType: z.enum(['Tattoo Artist', 'Piercers', 'Both']),
+    preferredArtistType: z.enum(['Tattoo Artist', 'Piercer', 'Both']),
     preferredExperience: z.enum(['1-3 years', '3-5 years', '5+ years']),
     notificationPreferences: z.array(z.enum(['app', 'email', 'sms'])),
     twoFactorAuthEnabled: z.boolean(),

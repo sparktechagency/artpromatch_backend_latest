@@ -231,7 +231,8 @@ const getDiscoverArtistsFromDB = async (
         _id: 1,
         type: 1,
         expertise: 1,
-        city: 1,
+        // city: 1,
+        stringLocation: 1,
         profileViews: 1,
         location: 1,
         distance: 1,
@@ -397,7 +398,8 @@ const getAllServicesFromDB = async (
     const serviceQuery = new QueryBuilder(
       Service.find().populate({
         path: 'artist',
-        select: 'type expertise city stringLocation hourlyRate description',
+        // select: 'type expertise city stringLocation hourlyRate description',
+        select: 'type expertise stringLocation hourlyRate description',
         populate: {
           path: 'auth',
           select: 'fullName image',

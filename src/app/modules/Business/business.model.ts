@@ -41,7 +41,7 @@ const businessSchema = new Schema<IBusiness>(
       default: [],
     },
     // Contact & location
-    city: { type: String, required: true },
+    // city: { type: String, required: true },
     location: {
       type: {
         type: String,
