@@ -148,7 +148,7 @@ const updateSchema = z.object({
         .array(z.enum(Object.values(expertiseTypes) as [string, ...string[]]))
         .optional(),
       studioName: z.string().optional(),
-      city: z.string().optional(),
+      // city: z.string().optional(),
       location: z
         .object({
           longitude: z.number().min(-180).max(180),

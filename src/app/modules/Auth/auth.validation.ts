@@ -35,7 +35,7 @@ const createAuthSchema = z.object({
       .string({
         required_error: 'Password is required',
       })
-      .min(6, { message: 'Password must be at least 6 characters long' })
+      .min(8, { message: 'Password must be at least 8 characters long' })
       .max(20, { message: 'Password cannot exceed 20 characters' })
       .regex(/[A-Z]/, {
         message: 'Password must contain at least one uppercase letter',
@@ -105,7 +105,7 @@ const signinSchema = z.object({
       .string({
         required_error: 'Password is required',
       })
-      .min(6, { message: 'Password must be at least 6 characters long' })
+      .min(8, { message: 'Password must be at least 8 characters long' })
       .max(20, { message: 'Password cannot exceed 20 characters' })
       .regex(/[A-Z]/, {
         message: 'Password must contain at least one uppercase letter',
@@ -175,7 +175,7 @@ const createProfileSchema = z.object({
       artistType: zodEnumFromObject(ARTIST_TYPE).optional(),
       expertise: z.array(zodEnumFromObject(expertiseTypes)).optional(),
       studioName: z.string().optional(),
-      city: z.string().optional(),
+      // city: z.string().optional(),
 
       // For BUSINESS
       businessType: z.enum(['Studio', 'Event Organizer', 'Both']).optional(),
@@ -230,21 +230,21 @@ const createProfileSchema = z.object({
           });
         }
 
-        if (!data.studioName) {
-          ctx.addIssue({
-            path: ['studioName'],
-            code: z.ZodIssueCode.custom,
-            message: 'Studio name is required.',
-          });
-        }
+        // if (!data.studioName) {
+        //   ctx.addIssue({
+        //     path: ['studioName'],
+        //     code: z.ZodIssueCode.custom,
+        //     message: 'Studio name is required.',
+        //   });
+        // }
 
-        if (!data.city) {
-          ctx.addIssue({
-            path: ['city'],
-            code: z.ZodIssueCode.custom,
-            message: 'City is required.',
-          });
-        }
+        // if (!data.city) {
+        //   ctx.addIssue({
+        //     path: ['city'],
+        //     code: z.ZodIssueCode.custom,
+        //     message: 'City is required.',
+        //   });
+        // }
 
         if (!data.mainLocation) {
           ctx.addIssue({
@@ -329,7 +329,7 @@ const changePasswordSchema = z.object({
       .string({
         required_error: 'Old password is required',
       })
-      .min(6, { message: 'Old password must be at least 6 characters long' })
+      .min(8, { message: 'Old password must be at least 8 characters long' })
       .max(20, { message: 'Old password cannot exceed 20 characters' })
       .regex(/[A-Z]/, {
         message: 'Old password must contain at least one uppercase letter',
@@ -346,7 +346,7 @@ const changePasswordSchema = z.object({
       .string({
         required_error: 'New password is required',
       })
-      .min(6, { message: 'New password must be at least 6 characters long' })
+      .min(8, { message: 'New password must be at least 8 characters long' })
       .max(20, { message: 'New password cannot exceed 20 characters' })
       .regex(/[A-Z]/, {
         message: 'New password must contain at least one uppercase letter',
@@ -361,8 +361,8 @@ const changePasswordSchema = z.object({
   }),
 });
 
-// 9. forgetPasswordSchema
-const forgetPasswordSchema = z.object({
+// 9. forgotPasswordSchema
+const forgotPasswordSchema = z.object({
   body: z.object({
     email: z
       .string({
@@ -372,8 +372,15 @@ const forgetPasswordSchema = z.object({
   }),
 });
 
-// 10. verifyOtpForForgetPasswordSchema
-const verifyOtpForForgetPasswordSchema = z.object({
+// 9. sendForgotPasswordOtpAgainSchema
+const sendForgotPasswordOtpAgainSchema = z.object({
+  body: z.object({
+    token: z.string({ required_error: 'Token is required' }),
+  }),
+});
+
+// 10. verifyOtpForForgotPasswordSchema
+const verifyOtpForForgotPasswordSchema = z.object({
   body: z.object({
     token: z.string({ required_error: 'Token is required' }),
     otp: z
@@ -392,7 +399,7 @@ const resetPasswordSchema = z.object({
       .string({
         required_error: 'New password is required',
       })
-      .min(6, { message: 'New password must be at least 6 characters long' })
+      .min(8, { message: 'New password must be at least 8 characters long' })
       .max(20, { message: 'New password cannot exceed 20 characters' })
       .regex(/[A-Z]/, {
         message: 'New password must contain at least one uppercase letter',
@@ -498,8 +505,9 @@ export const AuthValidation = {
   createProfileSchema,
   socialSigninSchema,
   changePasswordSchema,
-  forgetPasswordSchema,
-  verifyOtpForForgetPasswordSchema,
+  forgotPasswordSchema,
+  sendForgotPasswordOtpAgainSchema,
+  verifyOtpForForgotPasswordSchema,
   resetPasswordSchema,
   deactivateUserAccountSchema,
   // getAccessTokenSchema,

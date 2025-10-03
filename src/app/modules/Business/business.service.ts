@@ -230,7 +230,7 @@ const getBusinessArtists = async (
         fullName: '$artistAuth.fullName',
         email: '$artistAuth.email',
         phone: '$artistAuth.phone',
-        city: 1,
+        // city: 1,
         stringLocation: 1,
         avgRating: 1,
         portfolio: 1,

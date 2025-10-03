@@ -111,21 +111,26 @@ router.route('/change-password').patch(
   AuthController.changePassword
 );
 
-// 9. forgetPassword
+// 9. forgotPassword
 router
-  .route('/forget-password')
+  .route('/forgot-password')
   .post(
-    validateRequest(AuthValidation.forgetPasswordSchema),
-    AuthController.forgetPassword
+    validateRequest(AuthValidation.forgotPasswordSchema),
+    AuthController.forgotPassword
+  );
+router
+  .route('/send-forgot-password-otp-again')
+  .post(
+    validateRequest(AuthValidation.sendForgotPasswordOtpAgainSchema),
+    AuthController.sendForgotPasswordOtpAgain
   );
 
-// 10. verifyOtpForForgetPassword
+// 10. verifyOtpForForgotPassword
 router
-  .route('/verify-forget-password')
+  .route('/verify-forgot-password-otp')
   .post(
-    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
-    validateRequest(AuthValidation.verifyOtpForForgetPasswordSchema),
-    AuthController.verifyOtpForForgetPassword
+    validateRequest(AuthValidation.verifyOtpForForgotPasswordSchema),
+    AuthController.verifyOtpForForgotPassword
   );
 
 // 11. resetPassword

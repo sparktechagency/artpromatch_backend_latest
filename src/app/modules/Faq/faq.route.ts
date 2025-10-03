@@ -6,6 +6,7 @@ import { FaqValidation } from './faq.zod.validation';
 
 const router = Router();
 
+// createFaq
 router.post(
   '/create',
   auth(ROLE.ADMIN, ROLE.SUPER_ADMIN),
@@ -13,19 +14,17 @@ router.post(
   faqController.createFaq
 );
 
+// getAllFaqForAdmin
 router.get(
   '/',
   auth(ROLE.ADMIN, ROLE.SUPER_ADMIN),
   faqController.getAllFaqForAdmin
 );
 
-router.get(
-  '/users',
-  auth(ROLE.ADMIN, ROLE.SUPER_ADMIN),
-  faqController.getAllFaqForUser
-);
+// getAllFaqForUser
+router.get('/users', faqController.getAllFaqForUser);
 
-
+// updateFaq
 router.patch(
   '/update/:id',
   auth(ROLE.ADMIN, ROLE.SUPER_ADMIN),

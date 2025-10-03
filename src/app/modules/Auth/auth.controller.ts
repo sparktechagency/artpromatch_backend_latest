@@ -72,7 +72,7 @@ const checkProfileStatus = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'This profile is varified!',
+    message: 'This profile is verified!',
     data: result,
   });
 });
@@ -156,22 +156,34 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
-// 9. forgetPassword
-const forgetPassword = asyncHandler(async (req, res) => {
+// 9. forgotPassword
+const forgotPassword = asyncHandler(async (req, res) => {
   const email = req.body.email;
   const result = await AuthService.forgotPassword(email);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message:
-      'Your OTP has been successfully sent to your email. If you do not find the email in your inbox, please check your spam or junk folder!',
+      'OTP sent to your email. Please check your spam or junk folder too!',
     data: result,
   });
 });
 
-// 10. verifyOtpForForgetPassword
-const verifyOtpForForgetPassword = asyncHandler(async (req, res) => {
-  const result = await AuthService.verifyOtpForForgetPassword(req.body);
+// 9. sendForgotPasswordOtpAgain
+const sendForgotPasswordOtpAgain = asyncHandler(async (req, res) => {
+  const token = req.body.token;
+  const result = await AuthService.sendForgotPasswordOtpAgain(token);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'OTP sent again. Please check your spam or junk folder too!',
+    data: result,
+  });
+});
+
+// 10. verifyOtpForForgotPassword
+const verifyOtpForForgotPassword = asyncHandler(async (req, res) => {
+  const result = await AuthService.verifyOtpForForgotPassword(req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -182,11 +194,12 @@ const verifyOtpForForgetPassword = asyncHandler(async (req, res) => {
 
 // 11. resetPassword
 const resetPassword = asyncHandler(async (req, res) => {
-  const resetPasswordToken =
-    req.header('Authorization')?.replace('Bearer ', '') ||
-    req.cookies?.resetPasswordToken;
+  const resetPasswordToken = req
+    ?.header('Authorization')
+    ?.replace('Bearer ', '');
+
   const result = await AuthService.resetPasswordIntoDB(
-    resetPasswordToken,
+    resetPasswordToken!,
     req.body.newPassword
   );
 
@@ -296,8 +309,9 @@ export const AuthController = {
   socialSignin,
   updateProfilePhoto,
   changePassword,
-  forgetPassword,
-  verifyOtpForForgetPassword,
+  forgotPassword,
+  sendForgotPasswordOtpAgain,
+  verifyOtpForForgotPassword,
   resetPassword,
   fetchProfile,
   fetchClientConnectedAccount,

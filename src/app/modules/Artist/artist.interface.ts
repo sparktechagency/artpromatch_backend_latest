@@ -8,7 +8,7 @@ export interface IArtist extends Document {
   isConnBusiness: boolean;
   type: TArtistType;
   expertise: ExpertiseType[];
-  city: string;
+  // city: string;
   // image?: string;
   stripeAccountId: string;
   isStripeReady: boolean;
