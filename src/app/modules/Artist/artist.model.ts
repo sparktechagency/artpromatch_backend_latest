@@ -108,15 +108,15 @@ const artistSchema = new Schema<IArtist>(
 
     idCardFront: {
       type: String,
-      required: true,
+      default: null,
     },
     idCardBack: {
       type: String,
-      required: true,
+      default: null,
     },
     selfieWithId: {
       type: String,
-      required: true,
+      default: null,
     },
 
     boost: {

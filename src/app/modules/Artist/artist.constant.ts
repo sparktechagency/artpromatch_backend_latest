@@ -81,6 +81,7 @@ export type ExpertiseType =
 export const ARTIST_TYPE = {
   TATTOO_ARTIST: 'Tattoo Artist',
   PIERCER: 'Piercer',
+  BOTH: 'Both',
 } as const;
 
 export type ValueOf<T> = T[keyof T];

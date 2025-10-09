@@ -21,9 +21,9 @@ export interface IBusiness extends Document {
   // };
 
   // Documents for verification
-  registrationCertificate: string;
-  taxIdOrEquivalent: string;
-  studioLicense?: string;
+  registrationCertificate: string | null;
+  taxIdOrEquivalent: string | null;
+  studioLicense?: string | null;
 
   // Metadata
   taskCompleted: number;
