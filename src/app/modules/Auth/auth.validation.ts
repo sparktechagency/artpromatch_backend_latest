@@ -175,6 +175,8 @@ const createProfileSchema = z.object({
       artistType: zodEnumFromObject(ARTIST_TYPE).optional(),
       expertise: z.array(zodEnumFromObject(expertiseTypes)).optional(),
       studioName: z.string().optional(),
+      description: z.string().optional(),
+      hourlyRate: z.string().optional(),
       // city: z.string().optional(),
 
       // For BUSINESS

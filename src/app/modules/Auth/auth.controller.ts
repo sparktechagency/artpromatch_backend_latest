@@ -55,7 +55,7 @@ const signin = asyncHandler(async (req, res) => {
 const createProfile = asyncHandler(async (req, res) => {
   const body = req.body;
   const user = req.user;
-  const files = (req.files as TProfileFileFields) || {};
+  const files = (req?.files as TProfileFileFields) || {};
   const result = await AuthService.createProfileIntoDB(body, user, files);
 
   sendResponse(res, {

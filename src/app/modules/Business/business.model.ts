@@ -67,9 +67,9 @@ const businessSchema = new Schema<IBusiness>(
     // },
 
     // Documents for verification
-    registrationCertificate: { type: String, required: true },
-    taxIdOrEquivalent: { type: String, required: true },
-    studioLicense: { type: String },
+    registrationCertificate: { type: String, default: null },
+    taxIdOrEquivalent: { type: String, default: null },
+    studioLicense: { type: String, default: null },
 
     // Metadata
     description: { type: String },

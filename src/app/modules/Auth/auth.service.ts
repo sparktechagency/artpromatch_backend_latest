@@ -44,7 +44,8 @@ const createAuthIntoDB = async (payload: IAuth) => {
     // if Token/OTP expired and sending new otp
     if (!existingUser.otpExpiry || existingUser.otpExpiry < now) {
       const otp = generateOtp();
-      await sendOtpSms(payload.phoneNumber, otp);
+      // await sendOtpSms(payload.phoneNumber, otp);
+      await sendOtpEmail(payload.email, otp, payload.fullName || 'Guest');
 
       existingUser.otp = otp;
       existingUser.otpExpiry = new Date(
@@ -73,7 +74,8 @@ const createAuthIntoDB = async (payload: IAuth) => {
 
   //  OTP generating and sending if user is new
   const otp = generateOtp();
-  await sendOtpSms(payload.phoneNumber, otp);
+  // await sendOtpSms(payload.phoneNumber, otp);
+  await sendOtpEmail(payload.email, otp, payload.fullName || 'Guest');
 
   // Save new user as unverified
   const now = new Date();
@@ -318,6 +320,8 @@ const createProfileIntoDB = async (
 
     artistType,
     expertise,
+    description,
+    hourlyRate,
     // city,
 
     studioName,
@@ -329,17 +333,18 @@ const createProfileIntoDB = async (
   } = payload;
 
   // Extract file paths for ID verification images for artists
-  const idCardFront = files.idFrontPart?.[0]?.path.replace(/\\/g, '/') || '';
-  const idCardBack = files.idBackPart?.[0]?.path.replace(/\\/g, '/') || '';
-  const selfieWithId = files.selfieWithId?.[0]?.path.replace(/\\/g, '/') || '';
+  const idCardFront = files?.idFrontPart?.[0]?.path.replace(/\\/g, '/') || null;
+  const idCardBack = files?.idBackPart?.[0]?.path.replace(/\\/g, '/') || null;
+  const selfieWithId =
+    files?.selfieWithId?.[0]?.path.replace(/\\/g, '/') || null;
 
   // Business-specific file extractions
   const registrationCertificate =
-    files.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || '';
+    files?.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || null;
   const taxIdOrEquivalent =
-    files.taxIdOrEquivalent?.[0]?.path.replace(/\\/g, '/') || '';
+    files?.taxIdOrEquivalent?.[0]?.path.replace(/\\/g, '/') || null;
   const studioLicense =
-    files.studioLicense?.[0]?.path.replace(/\\/g, '/') || '';
+    files?.studioLicense?.[0]?.path.replace(/\\/g, '/') || null;
 
   // stringLocation
   // const stringLocation = getLocationName(mainLocation?.coordinates as number[]);
@@ -430,6 +435,8 @@ const createProfileIntoDB = async (
         auth: user._id,
         type: artistType,
         expertise,
+        description,
+        hourlyRate,
         // city,
         mainLocation,
         stringLocation,
