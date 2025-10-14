@@ -188,7 +188,7 @@ const cancelBooking = asyncHandler(async (req, res) => {
   });
 });
 
-// review
+// reviewAfterAServiceIsCompleted
 const reviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
   const result = await BookingService.reviewAfterAServiceIsCompletedIntoDB(
     req.body,
@@ -201,6 +201,20 @@ const reviewAfterAServiceIsCompleted = asyncHandler(async (req, res) => {
     data: result,
   });
 });
+
+// getBookingsWithReviewThatHaveReviewForClientHomePage
+const getBookingsWithReviewThatHaveReviewForClientHomePage = asyncHandler(
+  async (req, res) => {
+    const result =
+      await BookingService.getBookingsWithReviewThatHaveReviewForClientHomePage();
+
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      message: 'Reviews fetched successfully!',
+      data: result,
+    });
+  }
+);
 
 // getAvailability
 // const getAvailability = asyncHandler(async (req, res) => {
@@ -229,4 +243,5 @@ export const BookingController = {
   confirmBookingByArtist,
   completeBooking,
   resendBookingOtp,
+  getBookingsWithReviewThatHaveReviewForClientHomePage,
 };
