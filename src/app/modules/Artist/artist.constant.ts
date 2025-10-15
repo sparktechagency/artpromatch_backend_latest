@@ -4,7 +4,8 @@ export const expertiseTypes = {
   ABSTRACT: 'Abstract',
   AFRICAN: 'African',
   ANIME: 'Anime',
-  //B
+
+  // B
   BLACK_AND_GREY: 'Black & Grey',
   BLACKWORK: 'Blackwork',
   BRUTAL_BLACKWORK: 'Brutal Blackwork',
@@ -12,67 +13,85 @@ export const expertiseTypes = {
   BLACK_TRASH: 'Black Trash',
   BIOMECH: 'Biomech',
   BOTANICAL: 'Botanical',
-  //C
-  CHICANO: 'Chicano',
-  COVERUPS: 'Coverups',
-  COMIC: 'Comic',
+
+  // C
   CALLIGRAPHY: 'Calligraphy',
-  //D
+  CHICANO: 'Chicano',
+  COMIC: 'Comic',
+  COVERUPS: 'Coverups',
+
+  // D
   DOTWORK: 'Dotwork',
-  //F
+
+  // F
   FINE_LINE: 'Fine Line',
   FRECKLES: 'Freckles',
-  //G
+
+  // G
   GEOMETRIC: 'Geometric',
   GRAPHIC: 'Graphic',
-  //H
+
+  // H
   HEAVY_BLACKWORK: 'Heavy Blackwork',
-  //I
+
+  // I
   ILLUSTRATIVE: 'Illustrative',
-  IREZUMI: 'Irezumi',
   IGNORANT: 'Ignorant',
-  //J
+  IREZUMI: 'Irezumi',
+
+  // J
   JAPANESE_STYLE: 'Japanese Style',
-  //L
+
+  // L
   LETTERING: 'Lettering',
   LINEART: 'Lineart',
-  //M
-  MINIMALIST: 'Minimalist',
+
+  // M
+  MAORI: 'Maori',
   MICROBLADING: 'Microblading',
   MICROREALISM: 'Microrealism',
-  MAORI: 'Maori',
-  //N
-  NEO_TRADITIONAL: 'Neo Traditional',
-  NEW_SCHOOL: 'New School',
+  MINIMALIST: 'Minimalist',
+
+  // N
   NATIVE_AMERICAN: 'Native American',
+  NEO_TRADITIONAL: 'Neo Traditional',
   NEO_TRIBAL: 'Neo Tribal',
-  //0
-  ORNAMENTAL: 'Ornamental',
+  NEW_SCHOOL: 'New School',
+
+  // O
   OLD_SCHOOL: 'Old School',
-  //P
-  PACIFIC_ISLANDER: 'Pacific Islander/Polynesian',
+  ORNAMENTAL: 'Ornamental',
+
+  // P
+  PACIFIC_ISLANDER: 'Pacific Islander / Polynesian',
   PORTRAIT: 'Portrait',
-  //R
+
+  // R
   REALISM: 'Realism',
   REALISTIC_COLOR: 'Realistic Color',
-  REALISTIC_BLACK_AND_GREY: 'Black & Grey',
-  //S
-  STICK_AND_POKE: 'Stick and Poke',
+  REALISTIC_BLACK_AND_GREY: 'Realistic Black & Grey',
+
+  // S
   SCAR_COVERUP: 'Scar Coverup',
   SCRIPT: 'Script',
-  //T
-  TRIBAL: 'Tribal',
-  TRADITIONAL: 'Traditional',
+  STICK_AND_POKE: 'Stick and Poke',
+
+  // T
   TATAU: 'Tatau',
-  THAI: 'Thai',
   TATTOO_REMOVAL: 'Tattoo Removal',
-  TOOTH_GEMS: 'Tooth Gems',
   TEBORI: 'Tebori',
+  THAI: 'Thai',
+  TRADITIONAL: 'Traditional',
   TRASH_POLKA: 'Trash Polka',
-  //W
-  WHITE_ON_BLACK: 'White On Black',
-  WHITE_TATTOOS: 'White Tattoos',
+  TRIBAL: 'Tribal',
+
+  // W
   WATERCOLOR: 'Watercolor',
+  WHITE_ON_BLACK: 'White on Black',
+  WHITE_TATTOOS: 'White Tattoos',
+
+  // T
+  TOOTH_GEMS: 'Tooth Gems',
 } as const;
 
 export type ExpertiseType =

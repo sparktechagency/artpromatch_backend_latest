@@ -1016,16 +1016,18 @@ const completeSessionByArtist = async (
 // Artist marks completed into db
 const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
   const artist = await Artist.findOne({ auth: user.id });
+
   if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
+
   const booking = await Booking.findById(bookingId).populate<{
     client: IClient;
   }>('client artist status paymentStatus');
+
   if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
   const client = await Client.findById(booking.client).populate<{
     auth: IAuth;
   }>('auth');
-
-  console.log('client', client);
 
   if (!client) throw new AppError(httpStatus.NOT_FOUND, 'client not found');
 
@@ -1043,6 +1045,8 @@ const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
 
   // Generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  console.log({ otp });
   booking.otp = otp;
   booking.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -1308,6 +1312,26 @@ const completeBookingIntoDb = async (
   }
 };
 
+// getBookingsWithReviewThatHaveReviewForClientHomePage
+const getBookingsWithReviewThatHaveReviewForClientHomePage = async () => {
+  const bookings = await Booking.find({
+    review: { $exists: true, $ne: '' },
+  })
+    .select('artist client review rating serviceName demoImage completedAt')
+    .populate({
+      path: 'client',
+      select: 'auth stringLocation',
+      populate: {
+        path: 'auth',
+        select: 'fullName image',
+      },
+    })
+    .sort({ completedAt: -1 })
+    .lean();
+
+  return bookings;
+};
+
 export const BookingService = {
   createBookingIntoDB,
   repayBookingIntoDb,
@@ -1323,6 +1347,7 @@ export const BookingService = {
   reviewAfterAServiceIsCompletedIntoDB,
   createOrUpdateSessionIntoDB,
   confirmBookingByArtist,
+  getBookingsWithReviewThatHaveReviewForClientHomePage,
 };
 
 /*

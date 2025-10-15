@@ -87,6 +87,10 @@ router
     BookingController.createBooking
   );
 
+router
+  .route('/bookings-with-review')
+  .get(BookingController.getBookingsWithReviewThatHaveReviewForClientHomePage);
+
 // router
 //   .route('/get-availability')
 //   .post(
