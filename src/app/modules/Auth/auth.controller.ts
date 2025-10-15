@@ -296,6 +296,23 @@ const updateFcmToken = asyncHandler(async (req, res) => {
   });
 });
 
+// 19. getUserForConversation
+const getUserForConversation = asyncHandler(async (req, res) => {
+  const searchTerm = req.query.term as string;
+  const currentUserId = req.user._id.toString();
+
+  const result = await AuthService.getUserForConversationFromDB(
+    searchTerm,
+    currentUserId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'User fetched successfully!',
+    data: result,
+  });
+});
+
 export const AuthController = {
   createAuth,
   sendSignupOtpAgain,
@@ -320,4 +337,5 @@ export const AuthController = {
   getNewAccessToken,
   updateAuthData,
   updateFcmToken,
+  getUserForConversation,
 };

@@ -15,13 +15,13 @@ const new_message_IntoDb = async (
 ) => {
   const isReceiverExist = await Auth.findById(data.receiverId);
   if (!isReceiverExist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Receiver ID not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Receiver ID not found!');
   }
 
   if (user.id === data.receiverId) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'SenderId and ReceiverId cannot be the same'
+      'SenderId and ReceiverId cannot be the same!'
     );
   }
 
@@ -39,7 +39,7 @@ const new_message_IntoDb = async (
     isNewConversation = true;
   }
 
-  const participants = [user.id.toString(), data.receiverId.toString()];
+  const participants = [user._id.toString(), data.receiverId.toString()];
   for (const participantId of participants) {
     const socketId = onlineUsers.get(participantId);
     if (socketId) {

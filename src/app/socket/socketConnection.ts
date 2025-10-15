@@ -1,18 +1,18 @@
 /* eslint-disable no-console */
 import { Server as HTTPServer } from 'http';
-import { Server as chatServer, Socket } from 'socket.io';
+import { Server as ChatServer, Socket } from 'socket.io';
 import handleChatEvents from './handleChatEvents';
 import Auth from '../modules/Auth/auth.model';
 import Conversation from '../modules/Conversation/conversation.model';
 import { SOCKET_EVENTS } from './socket.constant';
 
-let io: chatServer;
+let io: ChatServer;
 
 const onlineUsers = new Map<string, string>();
 
 const connectSocket = (server: HTTPServer) => {
   if (!io) {
-    io = new chatServer(server, {
+    io = new ChatServer(server, {
       cors: {
         origin: '*',
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],

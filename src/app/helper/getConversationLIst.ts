@@ -15,24 +15,22 @@ export const getConversationList = async (
   query: ConversationQuery
 ) => {
   const userObjectId = new Types.ObjectId(userId);
-  const searchTerm = query.searchTerm as string;
-  const page = parseInt(query.page as string, 10) || 1;
-  const limit = parseInt(query.limit as string, 10) || 15;
-  const skip = (page - 1) * limit;
 
+  const searchTerm = query.searchTerm;
+
+  // Optional: filter by name
   let userFilter: Record<string, unknown> = {};
   if (searchTerm) {
     const matchingUsers = await Auth.find(
-      { name: { $regex: searchTerm, $options: 'i' } },
+      { fullName: { $regex: searchTerm, $options: 'i' } },
       '_id'
     );
 
     const matchingUserIds = matchingUsers.map((u: IAuth) => u._id);
-    if (matchingUserIds.length > 0) {
-      userFilter = { participants: { $in: matchingUserIds } };
-    } else {
-      userFilter = { _id: null };
-    }
+    userFilter =
+      matchingUserIds.length > 0
+        ? { participants: { $in: matchingUserIds } }
+        : { _id: null };
   }
 
   const onlineUserIds = Array.from(onlineUsers.keys()).map(
@@ -40,150 +38,137 @@ export const getConversationList = async (
   );
 
   const conversations = await Conversation.aggregate([
-    { $match: { participants: userObjectId, ...userFilter } },
+    { $match: { participants: { $in: [userObjectId], ...userFilter } } },
+    { $sort: { updatedAt: -1 } },
 
+    // Lookup participants (from Auth collection)
     {
-      $facet: {
-        metadata: [{ $count: 'total' }],
-        data: [
-          { $sort: { updatedAt: -1 } },
-          { $skip: skip },
-          { $limit: limit },
+      $lookup: {
+        from: 'auths',
+        localField: 'participants',
+        foreignField: '_id',
+        as: 'participantsData',
+      },
+    },
 
-          // Lookup participants
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'participants',
-              foreignField: '_id',
-              as: 'participantsData',
-            },
-          },
-          // Lookup last message
-          {
-            $lookup: {
-              from: 'messages',
-              localField: 'lastMessage',
-              foreignField: '_id',
-              as: 'lastMessageData',
-            },
-          },
-          {
-            $unwind: {
-              path: '$lastMessageData',
-              preserveNullAndEmptyArrays: true,
-            },
-          },
-          // Count unseen messages
-          {
-            $lookup: {
-              from: 'messages',
-              let: { convId: '$_id' },
-              pipeline: [
-                { $match: { $expr: { $eq: ['$conversationId', '$$convId'] } } },
-                { $match: { msgByUser: { $ne: userObjectId }, seen: false } },
-                { $count: 'unseenCount' },
-              ],
-              as: 'unseenData',
-            },
-          },
-          {
-            $addFields: {
-              unseenMsg: { $arrayElemAt: ['$unseenData.unseenCount', 0] },
-              otherUser: {
-                $arrayElemAt: [
-                  {
-                    $filter: {
-                      input: '$participantsData',
-                      cond: { $ne: ['$$this._id', userObjectId] },
-                    },
-                  },
-                  0,
-                ],
-              },
-            },
-          },
-          {
-            $project: {
-              conversationId: '$_id',
-              unseenMsg: { $ifNull: ['$unseenMsg', 0] },
-              userData: {
-                userId: '$otherUser._id',
-                name: '$otherUser.name',
-                profileImage: '$otherUser.photo',
-                online: {
-                  $in: ['$otherUser._id', { $literal: onlineUserIds }],
-                },
-              },
-              lastMsg: {
-                $cond: {
-                  if: {
-                    $and: [
-                      { $ne: ['$lastMessageData.text', null] },
-                      { $ne: ['$lastMessageData.text', ''] },
-                    ],
-                  },
-                  then: '$lastMessageData.text',
-                  else: {
-                    $cond: {
-                      if: {
-                        $and: [
-                          { $ne: ['$lastMessageData.audioUrl', null] },
-                          { $ne: ['$lastMessageData.audioUrl', ''] },
-                        ],
-                      },
-                      then: 'sent an audio file',
-                      else: {
-                        $cond: {
-                          if: {
-                            $gt: [
-                              {
-                                $size: {
-                                  $ifNull: ['$lastMessageData.imageUrl', []],
-                                },
-                              },
-                              0,
-                            ],
-                          },
-                          then: {
-                            $concat: [
-                              'sent ',
-                              {
-                                $toString: {
-                                  $size: {
-                                    $ifNull: ['$lastMessageData.imageUrl', []],
-                                  },
-                                },
-                              },
-                              ' image(s)',
-                            ],
-                          },
-                          else: '[unsupported message]',
-                        },
-                      },
-                    },
-                  },
-                },
-              },
+    // Lookup last message
+    {
+      $lookup: {
+        from: 'messages',
+        localField: 'lastMessage',
+        foreignField: '_id',
+        as: 'lastMessageData',
+      },
+    },
+    {
+      $unwind: {
+        path: '$lastMessageData',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
 
-              lastMsgCreatedAt: '$lastMessageData.createdAt',
-            },
-          },
+    // Count unseen messages
+    {
+      $lookup: {
+        from: 'messages',
+        let: { convId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$conversationId', '$$convId'] } } },
+          { $match: { msgByUser: { $ne: userObjectId }, seen: false } },
+          { $count: 'unseenCount' },
         ],
+        as: 'unseenData',
+      },
+    },
+
+    // Compute otherUser & unseenMsg
+    {
+      $addFields: {
+        unseenMsg: { $arrayElemAt: ['$unseenData.unseenCount', 0] },
+        otherUser: {
+          $arrayElemAt: [
+            {
+              $filter: {
+                input: '$participantsData',
+                cond: { $ne: ['$$this._id', userObjectId] },
+              },
+            },
+            0,
+          ],
+        },
+      },
+    },
+
+    // Final shape
+    {
+      $project: {
+        conversationId: '$_id',
+        unseenMsg: { $ifNull: ['$unseenMsg', 0] },
+        userData: {
+          userId: '$otherUser._id',
+          name: '$otherUser.fullName',
+          profileImage: '$otherUser.image',
+          online: {
+            $in: ['$otherUser._id', { $literal: onlineUserIds }],
+          },
+        },
+        lastMsg: {
+          $cond: {
+            if: {
+              $and: [
+                { $ne: ['$lastMessageData.text', null] },
+                { $ne: ['$lastMessageData.text', ''] },
+              ],
+            },
+            then: '$lastMessageData.text',
+            else: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: ['$lastMessageData.audioUrl', null] },
+                    { $ne: ['$lastMessageData.audioUrl', ''] },
+                  ],
+                },
+                then: 'sent an audio file',
+                else: {
+                  $cond: {
+                    if: {
+                      $gt: [
+                        {
+                          $size: {
+                            $ifNull: ['$lastMessageData.imageUrl', []],
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                    then: {
+                      $concat: [
+                        'sent ',
+                        {
+                          $toString: {
+                            $size: {
+                              $ifNull: ['$lastMessageData.imageUrl', []],
+                            },
+                          },
+                        },
+                        ' image(s)',
+                      ],
+                    },
+                    else: '[unsupported message]',
+                  },
+                },
+              },
+            },
+          },
+        },
+        lastMsgCreatedAt: '$lastMessageData.createdAt',
       },
     },
   ]);
 
-  const total = conversations[0].metadata[0]?.total || 0;
-  const totalPages = Math.ceil(total / limit);
-
   return {
-    meta: {
-      total,
-      page,
-      limit,
-      totalPages,
-    },
-    conversations: conversations[0].data,
+    total: conversations.length,
+    conversations,
   };
 };

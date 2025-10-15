@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import Auth from '../../modules/Auth/auth.model';
 import Conversation from '../../modules/Conversation/conversation.model';
 import Message from '../../modules/Message/message.model';
+import { Types } from 'mongoose';
 
 interface SendMessageData {
   receiverId: string;
@@ -21,11 +22,14 @@ export const handleSendMessage = async (
     });
   }
 
-  const receiver = await Auth.findById(data.receiverId).select('_id');
+  const receiver = await Auth.findById(
+    new Types.ObjectId(data.receiverId)
+  ).select('_id');
+
   if (!receiver) {
     return socket.emit('socket-error', {
       event: 'new-message',
-      message: 'Receiver ID not found',
+      message: 'Receiver ID not found!',
     });
   }
 
@@ -94,7 +98,9 @@ export const handleSendMessage = async (
       conversationId: conversation._id,
       lastMessage: updatedMsg,
     });
+
     io.to(data.receiverId.toString()).emit('new-message', updatedMsg);
+
     socket.emit('conversation-created', {
       conversationId: conversation._id,
       message: updatedMsg,

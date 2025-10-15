@@ -188,6 +188,16 @@ router
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     validateRequest(AuthValidation.updateFcmTokenSchema),
     AuthController.updateFcmToken
+);
+  
+
+// 18. updateAuthData
+router
+  .route('/message-user/search')
+  .get(
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
+    validateRequest(AuthValidation.getUserForConversationSchema),
+    AuthController.getUserForConversation
   );
 
 export const AuthRoutes = router;
