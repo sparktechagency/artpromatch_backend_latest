@@ -994,6 +994,9 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
   // const user = await Auth.findOne({ email });
   const user = await Auth.isUserExistsByEmail(email);
 
+  const otp = generateOtp();
+  const now = new Date();
+
   if (!user) {
     const newUser = await Auth.create({
       email,
@@ -1002,6 +1005,8 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       fullName,
       phoneNumber,
       address,
+      otp,
+      otpExpiry: now,
       isSocialLogin: true,
       isVerifiedByOTP: true,
     });
@@ -1178,6 +1183,13 @@ const changePasswordIntoDB = async (
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
+  }
+
+  if (user.isSocialLogin) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "Social logged-in users don't have password to change!"
+    );
   }
 
   const isCredentialsCorrect = await user.isPasswordMatched(
