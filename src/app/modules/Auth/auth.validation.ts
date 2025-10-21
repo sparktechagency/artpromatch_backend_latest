@@ -465,6 +465,18 @@ const updateFcmTokenSchema = z.object({
   }),
 });
 
+// getUserForConversationSchema
+const getUserForConversationSchema = z.object({
+  query: z.object({
+    term: z
+      .string({
+        required_error: 'Search Term is required!',
+        invalid_type_error: 'Search Term must be a string!',
+      })
+      .trim(),
+  }),
+});
+
 // // resendOtpSchema
 // const resendOtpSchema = z.object({
 //   body: z.object({
@@ -515,6 +527,7 @@ export const AuthValidation = {
   // getAccessTokenSchema,
   updateAuthDataSchema,
   updateFcmTokenSchema,
+  getUserForConversationSchema,
   // resendOtpSchema,
   // accessTokenSchema,
   // otpSchema,

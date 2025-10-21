@@ -994,6 +994,9 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
   // const user = await Auth.findOne({ email });
   const user = await Auth.isUserExistsByEmail(email);
 
+  const otp = generateOtp();
+  const now = new Date();
+
   if (!user) {
     const newUser = await Auth.create({
       email,
@@ -1002,6 +1005,8 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       fullName,
       phoneNumber,
       address,
+      otp,
+      otpExpiry: now,
       isSocialLogin: true,
       isVerifiedByOTP: true,
     });
@@ -1178,6 +1183,13 @@ const changePasswordIntoDB = async (
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
+  }
+
+  if (user.isSocialLogin) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "Social logged-in users don't have password to change!"
+    );
   }
 
   const isCredentialsCorrect = await user.isPasswordMatched(
@@ -1770,6 +1782,40 @@ const updateFcmTokenIntoDB = async (
   return null;
 };
 
+// 19. getUserForConversationFromDB
+const getUserForConversationFromDB = async (
+  searchTerm: string,
+  currentUserId: string // to exclude current user
+) => {
+  // 🧩 Validation
+  if (!searchTerm || searchTerm.trim().length < 1) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Search term is required');
+  }
+
+  // 🧩 Build query: case-insensitive partial match on name or email
+  const regex = new RegExp(searchTerm.trim(), 'i');
+
+  // 🧩 Find matching users
+  const users = await Auth.find({
+    $and: [
+      { _id: { $ne: currentUserId } }, // exclude self
+      {
+        $or: [{ name: regex }, { email: regex }],
+      },
+    ],
+  })
+    .select('_id fullName email image') // exclude sensitive fields
+    .limit(20)
+    .lean();
+
+  // 🧩 Optional: handle no results
+  if (!users || users.length === 0) {
+    return [];
+  }
+
+  return users;
+};
+
 export const AuthService = {
   createAuthIntoDB,
   sendSignupOtpAgain,
@@ -1794,4 +1840,5 @@ export const AuthService = {
   getNewAccessTokenFromServer,
   updateAuthDataIntoDB,
   updateFcmTokenIntoDB,
+  getUserForConversationFromDB,
 };
