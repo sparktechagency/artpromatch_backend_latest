@@ -28,6 +28,9 @@ const handleChatEvents = async (
     }
   });
 
+  const conversations = await getConversationList(currentUserId);
+  socket.emit('conversation-list', conversations);
+
   socket.on(SOCKET_EVENTS.MESSAGE_PAGE, (data) => {
     handleMessagePage(socket, currentUserId, data);
   });

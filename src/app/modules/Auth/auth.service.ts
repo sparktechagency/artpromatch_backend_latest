@@ -1800,7 +1800,7 @@ const getUserForConversationFromDB = async (
     $and: [
       { _id: { $ne: currentUserId } }, // exclude self
       {
-        $or: [{ name: regex }, { email: regex }],
+        $or: [{ fullName: regex }, { email: regex }],
       },
     ],
   })
