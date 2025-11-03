@@ -12,11 +12,11 @@ interface ConversationQuery {
 
 export const getConversationList = async (
   userId: string,
-  query: ConversationQuery
+  query?: ConversationQuery
 ) => {
   const userObjectId = new Types.ObjectId(userId);
 
-  const searchTerm = query.searchTerm;
+  const searchTerm = query?.searchTerm;
 
   // Optional: filter by name
   let userFilter: Record<string, unknown> = {};

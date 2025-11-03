@@ -1,6 +1,5 @@
 import { Socket } from 'socket.io';
 import { getSocketIO, onlineUsers } from '../socketConnection';
-
 import QueryBuilder from 'mongoose-query-builders';
 import { IAuth } from '../../modules/Auth/auth.interface';
 import Message from '../../modules/Message/message.model';
@@ -59,6 +58,7 @@ export const handleMessagePage = async (
     .paginate();
 
   const messages = await messageQuery.modelQuery;
+  
   const meta = await messageQuery.countTotal();
 
   const unseenMessages = messages.filter(
