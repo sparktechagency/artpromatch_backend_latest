@@ -11,12 +11,12 @@ const seedingAdmin = async () => {
 
     if (!admin) {
       await Auth.create({
-        fullName: 'Super Admin',
+        fullName: config.super_admin.fullName,
         role: ROLE.SUPER_ADMIN,
         email: config.super_admin.email,
         password: config.super_admin.password,
-        image: config.super_admin.profile_photo || defaultUserImage,
-        otp: '654321',
+        image: config.super_admin.image || defaultUserImage,
+        otp: config.super_admin.otp,
         otpExpiry: new Date(),
         isVerifiedByOTP: true,
       });

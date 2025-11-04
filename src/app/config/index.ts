@@ -11,6 +11,9 @@ export default {
   otp_expiry_minutes: process.env.OTP_EXPIRY_MINUTES,
   admin_commision: process.env.ADMIN_COMMISION,
   boost_charge: process.env.BOOST_CHARGE,
+
+  default_user_image: process.env.DEFAULT_USER_IMAGE,
+
   jwt: {
     access_secret: process.env.JWT_ACCESS_SECRET,
     access_expires_in: process.env.JWT_ACCESS_EXPIRES_IN,
@@ -33,9 +36,11 @@ export default {
   },
 
   super_admin: {
+    fullName: process.env.SUPER_ADMIN_FULLNAME,
     email: process.env.SUPER_ADMIN_EMAIL,
     password: process.env.SUPER_ADMIN_PASSWORD,
-    profile_photo: process.env.SUPER_ADMIN_PROFILE_PHOTO,
+    image: process.env.SUPER_ADMIN_IMAGE,
+    otp: process.env.SUPER_ADMIN_OTP,
   },
 
   stripe: {

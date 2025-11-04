@@ -46,8 +46,10 @@ export const handleSendMessage = async (
     isNewConversation = true;
   }
 
-  socket.join(conversation._id.toString());
-  socket.data.currentConversationId = conversation._id;
+  const conversationIdString = conversation._id.toString();
+
+  socket.join(conversationIdString);
+  socket.data.currentConversationId = conversationIdString;
 
   const messageData = {
     text: data.text,
@@ -63,7 +65,7 @@ export const handleSendMessage = async (
   );
 
   // auto-seen logic
-  const room = io.sockets.adapter.rooms.get(conversation._id.toString());
+  const room = io.sockets.adapter.rooms.get(conversationIdString);
 
   if (room && room.size > 1) {
     for (const socketId of room) {
@@ -71,7 +73,7 @@ export const handleSendMessage = async (
 
       if (
         s &&
-        s.data?.currentConversationId === conversation._id.toString() &&
+        s.data?.currentConversationId === conversationIdString &&
         s.id !== socket.id
       ) {
         await Message.updateOne(
@@ -79,10 +81,10 @@ export const handleSendMessage = async (
           { $set: { seen: true } }
         );
 
-        io.to(conversation._id.toString()).emit('messages-seen', {
-          conversationId: conversation._id,
+        io.to(conversationIdString).emit('messages-seen', {
+          conversationId: conversationIdString,
           seenBy: currentUserId,
-          messageIds: [saveMessage._id],
+          messageIds: [saveMessage._id.toString()],
         });
 
         break;
@@ -91,7 +93,7 @@ export const handleSendMessage = async (
   }
 
   const updatedMsg = await Message.findById(saveMessage._id);
-  io.to(conversation._id.toString()).emit('new-message', updatedMsg);
+  io.to(conversationIdString).emit('new-message', updatedMsg);
 
   if (isNewConversation) {
     io.to(data.receiverId.toString()).emit('conversation-created', {

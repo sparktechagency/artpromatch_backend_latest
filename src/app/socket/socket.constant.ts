@@ -2,6 +2,7 @@ import { TRole } from '../modules/Auth/auth.constant';
 
 export const SOCKET_EVENTS = {
   JOIN_CONVERSATION: 'join-conversation',
+  LEAVE_CONVERSATION: 'leave-conversation',
   GET_CONVERSATIONS: 'get-conversations',
   MESSAGE_PAGE: 'message-page',
   SEND_MESSAGE: 'send-message',
