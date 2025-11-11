@@ -26,7 +26,7 @@ import ClientPreferences from '../ClientPreferences/clientPreferences.model';
 import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
 import { AuthValidation, TProfilePayload } from './auth.validation';
-import sendOtpSms from '../../utils/sendOtpSms';
+// import sendOtpSms from '../../utils/sendOtpSms';
 // import { getLocationName } from './auth.utils';
 import Auth from './auth.model';
 
@@ -69,7 +69,7 @@ const createAuthIntoDB = async (payload: IAuth) => {
 
   // if user is already verified
   if (existingUser && existingUser.isVerifiedByOTP) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'User already exists!');
+    throw new AppError(httpStatus.FORBIDDEN, 'User already exists!');
   }
 
   //  OTP generating and sending if user is new
@@ -122,7 +122,8 @@ const sendSignupOtpAgain = async (userEmail: string) => {
     const otp = generateOtp();
 
     // send OTP via SMS
-    await sendOtpSms(user.phoneNumber, otp);
+    // await sendOtpSms(user.phoneNumber, otp);
+    await sendOtpEmail(user.email, otp, user.fullName || 'Guest');
 
     user.otp = otp;
     user.otpExpiry = new Date(now.getTime() + OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -142,7 +143,8 @@ const sendSignupOtpAgain = async (userEmail: string) => {
   }
 
   // if OTP is still valid
-  await sendOtpSms(user.phoneNumber, user.otp);
+  // await sendOtpSms(user.phoneNumber, user.otp);
+  await sendOtpEmail(user.email, user.otp, user.fullName || 'Guest');
   throw new AppError(
     httpStatus.BAD_REQUEST,
     'An OTP was already sent. Please wait until it expires before requesting a new one.'
@@ -223,7 +225,8 @@ const signinIntoDB = async (payload: {
 
   if (!user.isVerifiedByOTP) {
     const otp = generateOtp();
-    await sendOtpSms(user.phoneNumber, otp);
+    // await sendOtpSms(user.phoneNumber, otp);
+    await sendOtpEmail(user.email, otp, user.fullName || 'Guest');
 
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -1378,7 +1381,7 @@ const verifyOtpForForgotPassword = async (payload: {
 
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'OTP expired. A new OTP has been sent!'
+      'OTP expired. A new OTP has been sent again!'
     );
   }
 
@@ -1436,7 +1439,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
     const client = await Client.findOne({ auth: user._id }).populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile',
+        select: 'fullName image email phoneNumber isProfile stringLocation',
       },
     ]);
     // .lean();

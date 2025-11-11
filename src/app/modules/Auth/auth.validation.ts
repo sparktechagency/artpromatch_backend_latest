@@ -1,4 +1,4 @@
-import { favoriteTattoos, serviceTypes } from '../Client/client.constant';
+import { favoriteTattoos, lookingForTypes } from '../Client/client.constant';
 import { ARTIST_TYPE, expertiseTypes } from '../Artist/artist.constant';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { ROLE } from './auth.constant';
@@ -17,35 +17,35 @@ const createAuthSchema = z.object({
   body: z.object({
     fullName: z
       .string({
-        required_error: 'Full name is required',
+        required_error: 'Full name is required!',
       })
-      .min(3, { message: 'Full name must be at least 3 characters long' })
-      .max(30, { message: 'Full name cannot exceed 30 characters' })
+      .min(3, { message: 'Full name must be at least 3 characters long!' })
+      .max(30, { message: 'Full name cannot exceed 30 characters!' })
       .regex(/^[a-zA-Z\s]+$/, {
-        message: 'Full name can only contain letters and spaces',
+        message: 'Full name can only contain letters and spaces!',
       }),
 
     email: z
       .string({
-        required_error: 'Email is required',
+        required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format' }),
+      .email({ message: 'Invalid email format!' }),
 
     password: z
       .string({
-        required_error: 'Password is required',
+        required_error: 'Password is required!',
       })
-      .min(8, { message: 'Password must be at least 8 characters long' })
-      .max(20, { message: 'Password cannot exceed 20 characters' })
+      .min(8, { message: 'Password must be at least 8 characters long!' })
+      .max(20, { message: 'Password cannot exceed 20 characters!' })
       .regex(/[A-Z]/, {
-        message: 'Password must contain at least one uppercase letter',
+        message: 'Password must contain at least one uppercase letter!',
       })
       .regex(/[a-z]/, {
-        message: 'Password must contain at least one lowercase letter',
+        message: 'Password must contain at least one lowercase letter!',
       })
-      .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+      .regex(/[0-9]/, { message: 'Password must contain at least one number!' })
       .regex(/[@$!%*?&#]/, {
-        message: 'Password must contain at least one special character',
+        message: 'Password must contain at least one special character!',
       }),
 
     phoneNumber: z.string().refine(
@@ -54,13 +54,13 @@ const createAuthSchema = z.object({
         return parsed?.isValid();
       },
       {
-        message: 'Phone number must be a valid international format',
+        message: 'Phone number must be a valid international format!',
       }
     ),
 
     fcmToken: z.string({
-      required_error: 'Fcm Token is required',
-      invalid_type_error: 'Fcm Token must be string',
+      required_error: 'Fcm Token is required!',
+      invalid_type_error: 'Fcm Token must be string!',
     }),
   }),
 });
@@ -70,9 +70,9 @@ const sendSignupOtpAgainSchema = z.object({
   body: z.object({
     userEmail: z
       .string({
-        required_error: 'Email is required',
+        required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format' }),
+      .email({ message: 'Invalid email format!' }),
   }),
 });
 
@@ -81,15 +81,15 @@ const verifySignupOtpSchema = z.object({
   body: z.object({
     userEmail: z
       .string({
-        required_error: 'Email is required',
+        required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format' }),
+      .email({ message: 'Invalid email format!' }),
     otp: z
       .string({
-        required_error: 'Password is required',
+        required_error: 'Password is required!',
       })
-      .min(6, { message: 'Password must be at least 6 characters long' })
-      .max(6, { message: 'Password cannot exceed 6 characters' }),
+      .min(6, { message: 'Password must be at least 6 characters long!' })
+      .max(6, { message: 'Password cannot exceed 6 characters!' }),
   }),
 });
 
@@ -98,29 +98,30 @@ const signinSchema = z.object({
   body: z.object({
     email: z
       .string({
-        required_error: 'Email is required',
+        required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format' }),
+      .email({ message: 'Invalid email format!' }),
+
     password: z
       .string({
-        required_error: 'Password is required',
+        required_error: 'Password is required!',
       })
-      .min(8, { message: 'Password must be at least 8 characters long' })
-      .max(20, { message: 'Password cannot exceed 20 characters' })
+      .min(8, { message: 'Password must be at least 8 characters long!' })
+      .max(20, { message: 'Password cannot exceed 20 characters!' })
       .regex(/[A-Z]/, {
-        message: 'Password must contain at least one uppercase letter',
+        message: 'Password must contain at least one uppercase letter!',
       })
       .regex(/[a-z]/, {
-        message: 'Password must contain at least one lowercase letter',
+        message: 'Password must contain at least one lowercase letter!',
       })
-      .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+      .regex(/[0-9]/, { message: 'Password must contain at least one number!' })
       .regex(/[@$!%*?&#]/, {
-        message: 'Password must contain at least one special character',
+        message: 'Password must contain at least one special character!',
       }),
 
     fcmToken: z.string({
-      required_error: 'Fcm Token is required',
-      invalid_type_error: 'Fcm Token must be string',
+      required_error: 'Fcm Token is required!',
+      invalid_type_error: 'Fcm Token must be string!',
     }),
   }),
 });
@@ -130,8 +131,8 @@ const createProfileSchema = z.object({
   body: z
     .object({
       role: z.enum(['CLIENT', 'ARTIST', 'BUSINESS'], {
-        required_error: 'Role is required',
-        invalid_type_error: 'Role must be CLIENT, ARTIST or BUSINESS',
+        required_error: 'Role is required!',
+        invalid_type_error: 'Role must be CLIENT, ARTIST or BUSINESS!',
       }),
 
       stringLocation: z.string({
@@ -149,14 +150,14 @@ const createProfileSchema = z.object({
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               ([longitude, latitude]) => longitude >= -180 && longitude <= 180,
               {
-                message: 'Longitude must be between -180 and 180',
+                message: 'Longitude must be between -180 and 180!',
               }
             )
             .refine(
               // eslint-disable-next-line @typescript-eslint/no-unused-vars
               ([longitude, latitude]) => latitude >= -90 && latitude <= 90,
               {
-                message: 'Latitude must be between -90 and 90',
+                message: 'Latitude must be between -90 and 90!',
               }
             ),
         })
@@ -164,7 +165,7 @@ const createProfileSchema = z.object({
 
       // For CLIENT
       radius: z.number().min(0).optional(),
-      lookingFor: z.array(zodEnumFromObject(serviceTypes)).optional(),
+      lookingFor: z.array(zodEnumFromObject(lookingForTypes)).optional(),
       favoriteTattoos: z.array(zodEnumFromObject(favoriteTattoos)).optional(),
       notificationPreferences: z
         .union([z.literal('app'), z.literal('email'), z.literal('sms')])
@@ -183,7 +184,7 @@ const createProfileSchema = z.object({
       businessType: z.enum(['Studio', 'Event Organizer', 'Both']).optional(),
       servicesOffered: z.array(zodEnumFromObject(SERVICES_OFFERED)).optional(),
       contactNumber: z.string().optional(),
-      contactEmail: z.string().email('Invalid email address').optional(),
+      contactEmail: z.string().email('Invalid email address!').optional(),
       // Operating Hours (Weekly)
       operatingHours: z
         .record(
@@ -192,10 +193,10 @@ const createProfileSchema = z.object({
             z
               .object({
                 start: z.string().regex(/^\d{2}:\d{2}$/, {
-                  message: 'Invalid time format. Use HH:MM.',
+                  message: 'Invalid time format. Use HH:MM!',
                 }),
                 end: z.string().regex(/^\d{2}:\d{2}$/, {
-                  message: 'Invalid time format. Use HH:MM.',
+                  message: 'Invalid time format. Use HH:MM!',
                 }),
               })
               .refine(
@@ -205,7 +206,7 @@ const createProfileSchema = z.object({
                   return eh > sh || (eh === sh && em > sm);
                 },
                 {
-                  message: 'End time must be after start time.',
+                  message: 'End time must be after start time!',
                   path: ['end'],
                 }
               )
@@ -220,7 +221,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['artistType'],
             code: z.ZodIssueCode.custom,
-            message: 'Artist type is required.',
+            message: 'Artist type is required!',
           });
         }
 
@@ -228,7 +229,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['expertise'],
             code: z.ZodIssueCode.custom,
-            message: 'Please select at least one expertise.',
+            message: 'Please select at least one expertise!',
           });
         }
 
@@ -236,7 +237,7 @@ const createProfileSchema = z.object({
         //   ctx.addIssue({
         //     path: ['studioName'],
         //     code: z.ZodIssueCode.custom,
-        //     message: 'Studio name is required.',
+        //     message: 'Studio name is required!',
         //   });
         // }
 
@@ -244,7 +245,7 @@ const createProfileSchema = z.object({
         //   ctx.addIssue({
         //     path: ['city'],
         //     code: z.ZodIssueCode.custom,
-        //     message: 'City is required.',
+        //     message: 'City is required!',
         //   });
         // }
 
@@ -252,7 +253,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['mainLocation'],
             code: z.ZodIssueCode.custom,
-            message: 'Main Location is required.',
+            message: 'Main Location is required!',
           });
         }
       }
@@ -262,7 +263,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['studioName'],
             code: z.ZodIssueCode.custom,
-            message: 'Business name is required.',
+            message: 'Business name is required!',
           });
         }
 
@@ -270,7 +271,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['businessType'],
             code: z.ZodIssueCode.custom,
-            message: 'Please select business type.',
+            message: 'Please select business type!',
           });
         }
 
@@ -278,7 +279,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['servicesOffered'],
             code: z.ZodIssueCode.custom,
-            message: 'Select at least one service offered.',
+            message: 'Select at least one service offered!',
           });
         }
 
@@ -286,7 +287,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['mainLocation'],
             code: z.ZodIssueCode.custom,
-            message: 'Main Location is required.',
+            message: 'Main Location is required!',
           });
         }
 
@@ -294,7 +295,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['contactNumber'],
             code: z.ZodIssueCode.custom,
-            message: 'Phone number is required.',
+            message: 'Phone number is required!',
           });
         }
 
@@ -302,7 +303,7 @@ const createProfileSchema = z.object({
           ctx.addIssue({
             path: ['contactEmail'],
             code: z.ZodIssueCode.custom,
-            message: 'Email address is required.',
+            message: 'Email address is required!',
           });
         }
       }
@@ -314,10 +315,10 @@ const socialSigninSchema = z.object({
   body: z.object({
     email: z
       .string()
-      .email('Invalid email address')
-      .nonempty('Email is required'),
-    fcmToken: z.string().nonempty('FCM Token is required'),
-    image: z.string().url('Image URL must be a valid URL'),
+      .email('Invalid email address!')
+      .nonempty('Email is required!'),
+    fcmToken: z.string().nonempty('FCM Token is required!'),
+    image: z.string().url('Image URL must be a valid URL!'),
     fullName: z.string(),
     phoneNumber: z.string(),
     address: z.string(),
@@ -329,36 +330,36 @@ const changePasswordSchema = z.object({
   body: z.object({
     oldPassword: z
       .string({
-        required_error: 'Old password is required',
+        required_error: 'Old password is required!',
       })
-      .min(8, { message: 'Old password must be at least 8 characters long' })
-      .max(20, { message: 'Old password cannot exceed 20 characters' })
+      .min(8, { message: 'Old password must be at least 8 characters long!' })
+      .max(20, { message: 'Old password cannot exceed 20 characters!' })
       .regex(/[A-Z]/, {
-        message: 'Old password must contain at least one uppercase letter',
+        message: 'Old password must contain at least one uppercase letter!',
       })
       .regex(/[a-z]/, {
-        message: 'Old password must contain at least one lowercase letter',
+        message: 'Old password must contain at least one lowercase letter!',
       })
-      .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+      .regex(/[0-9]/, { message: 'Password must contain at least one number!' })
       .regex(/[@$!%*?&#]/, {
-        message: 'Old password must contain at least one special character',
+        message: 'Old password must contain at least one special character!',
       }),
 
     newPassword: z
       .string({
-        required_error: 'New password is required',
+        required_error: 'New password is required!',
       })
-      .min(8, { message: 'New password must be at least 8 characters long' })
-      .max(20, { message: 'New password cannot exceed 20 characters' })
+      .min(8, { message: 'New password must be at least 8 characters long!' })
+      .max(20, { message: 'New password cannot exceed 20 characters!' })
       .regex(/[A-Z]/, {
-        message: 'New password must contain at least one uppercase letter',
+        message: 'New password must contain at least one uppercase letter!',
       })
       .regex(/[a-z]/, {
-        message: 'New password must contain at least one lowercase letter',
+        message: 'New password must contain at least one lowercase letter!',
       })
-      .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+      .regex(/[0-9]/, { message: 'Password must contain at least one number!' })
       .regex(/[@$!%*?&#]/, {
-        message: 'New password must contain at least one special character',
+        message: 'New password must contain at least one special character!',
       }),
   }),
 });
@@ -368,29 +369,29 @@ const forgotPasswordSchema = z.object({
   body: z.object({
     email: z
       .string({
-        required_error: 'Email is required',
+        required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format' }),
+      .email({ message: 'Invalid email format!' }),
   }),
 });
 
 // 9. sendForgotPasswordOtpAgainSchema
 const sendForgotPasswordOtpAgainSchema = z.object({
   body: z.object({
-    token: z.string({ required_error: 'Token is required' }),
+    token: z.string({ required_error: 'Token is required!' }),
   }),
 });
 
 // 10. verifyOtpForForgotPasswordSchema
 const verifyOtpForForgotPasswordSchema = z.object({
   body: z.object({
-    token: z.string({ required_error: 'Token is required' }),
+    token: z.string({ required_error: 'Token is required!' }),
     otp: z
       .string({
-        required_error: 'OTP is required',
+        required_error: 'OTP is required!',
       })
-      .regex(/^\d+$/, { message: 'OTP must be a number' })
-      .length(6, { message: 'OTP must be exactly 6 digits' }),
+      .regex(/^\d+$/, { message: 'OTP must be a number!' })
+      .length(6, { message: 'OTP must be exactly 6 digits!' }),
   }),
 });
 
@@ -399,21 +400,21 @@ const resetPasswordSchema = z.object({
   body: z.object({
     newPassword: z
       .string({
-        required_error: 'New password is required',
+        required_error: 'New password is required!',
       })
-      .min(8, { message: 'New password must be at least 8 characters long' })
-      .max(20, { message: 'New password cannot exceed 20 characters' })
+      .min(8, { message: 'New password must be at least 8 characters long!' })
+      .max(20, { message: 'New password cannot exceed 20 characters!' })
       .regex(/[A-Z]/, {
-        message: 'New password must contain at least one uppercase letter',
+        message: 'New password must contain at least one uppercase letter!',
       })
       .regex(/[a-z]/, {
-        message: 'New password must contain at least one lowercase letter',
+        message: 'New password must contain at least one lowercase letter!',
       })
       .regex(/[0-9]/, {
-        message: 'New password must contain at least one number',
+        message: 'New password must contain at least one number!',
       })
       .regex(/[@$!%*?&#]/, {
-        message: 'New password must contain at least one special character',
+        message: 'New password must contain at least one special character!',
       }),
   }),
 });
@@ -422,11 +423,11 @@ const resetPasswordSchema = z.object({
 const deactivateUserAccountSchema = z.object({
   body: z
     .object({
-      email: z.string().email('Invalid email'),
+      email: z.string().email('Invalid email!'),
       password: z.string(),
       deactivationReason: z
         .string()
-        .min(3, 'Reason must be at least 3 characters'),
+        .min(3, 'Reason must be at least 3 characters!'),
     })
     .strict(),
 });
@@ -482,9 +483,9 @@ const getUserForConversationSchema = z.object({
 //   body: z.object({
 //     email: z
 //       .string({
-//         required_error: 'Email is required',
+//         required_error: 'Email is required!',
 //       })
-//       .email({ message: 'Invalid email format' }),
+//       .email({ message: 'Invalid email format!' }),
 //   }),
 // });
 
@@ -502,10 +503,10 @@ const getUserForConversationSchema = z.object({
 //   body: z.object({
 //     otp: z
 //       .string({
-//         required_error: 'OTP is required',
+//         required_error: 'OTP is required!',
 //       })
-//       .regex(/^\d+$/, { message: 'OTP must be a number' })
-//       .length(6, { message: 'OTP must be exactly 6 digits' }),
+//       .regex(/^\d+$/, { message: 'OTP must be a number!' })
+//       .length(6, { message: 'OTP must be exactly 6 digits!' }),
 //   }),
 // });
 

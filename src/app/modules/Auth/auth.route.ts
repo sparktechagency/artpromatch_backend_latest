@@ -39,6 +39,7 @@ router
 
 // 5. createProfile
 router.route('/create-Profile').post(
+  auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
   upload.fields([
     { name: 'idFrontPart', maxCount: 1 },
     { name: 'idBackPart', maxCount: 1 },
@@ -47,7 +48,6 @@ router.route('/create-Profile').post(
     { name: 'taxIdOrEquivalent', maxCount: 1 },
     { name: 'studioLicense', maxCount: 1 },
   ]),
-  auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
   validateRequestFromFormData(AuthValidation.createProfileSchema),
   AuthController.createProfile
 );

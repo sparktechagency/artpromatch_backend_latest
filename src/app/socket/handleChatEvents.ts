@@ -17,6 +17,14 @@ const handleChatEvents = async (
     console.log(`User ${currentUserId} joined room ${conversationId}`);
   });
 
+  socket.on(SOCKET_EVENTS.LEAVE_CONVERSATION, (conversationId?: string) => {
+    const targetConversationId = conversationId ?? socket.data.currentConversationId;
+
+    if (targetConversationId) {
+      socket.data.currentConversationId = null;
+    }
+  });
+
   socket.on(SOCKET_EVENTS.GET_CONVERSATIONS, async (query) => {
     try {
       const conversations = await getConversationList(currentUserId, query);

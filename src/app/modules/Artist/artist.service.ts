@@ -47,6 +47,7 @@ const getAllArtistsFromDB = async (
   query: Record<string, any>,
   userData: IAuth
 ) => {
+  // Step 1: Logged-in artist location check
   const loggedInArtist = await Artist.findOne({ auth: userData._id });
 
   if (!loggedInArtist || !loggedInArtist.currentLocation) {
@@ -69,31 +70,45 @@ const getAllArtistsFromDB = async (
   //   auth: { $ne: userData._id }, // exclude logged-in artist
   // }).countDocuments();
 
-  // searchFilter
+  // Step 2: Base search filter
   const searchFilter: Record<string, any> = {
     'currentLocation.coordinates.0': { $exists: true },
     'currentLocation.coordinates.1': { $exists: true },
     // auth: { $ne: userData._id }, // exclude logged-in artist
   };
 
-  // Add searchTerm filter (on stringLocation OR expertise)
-  if (query.searchTerm) {
+  // Step 3: Artist Type Filter
+  if (query.artistType && query.artistType !== 'All') {
+    searchFilter.type = {
+      $regex: query.artistType,
+      $options: 'i',
+    };
+  }
+
+  // Step 4: Tattoo Category Filter (Expertise)
+  if (query.tattooCategory && query.tattooCategory !== 'All') {
+    searchFilter.expertise = {
+      $elemMatch: {
+        $regex: query.tattooCategory,
+        $options: 'i',
+      },
+    };
+  }
+
+  // Step 5: SearchTerm Filter (stringLocation, expertise, fullName)
+  if (query.searchTerm && query.searchTerm.trim()) {
+    const regex = new RegExp(query.searchTerm, 'i');
     searchFilter.$or = [
-      {
-        stringLocation: {
-          $regex: query.searchTerm,
-          $options: 'i',
-        },
-      },
-      {
-        expertise: {
-          $elemMatch: { $regex: query.searchTerm, $options: 'i' },
-        },
-      },
+      { stringLocation: regex },
+      { expertise: { $elemMatch: { $regex: regex } } },
+      { type: regex },
     ];
   }
 
-  // Geo query with pagination, excluding logged-in artist
+  // Step 6: Get total count (for pagination)
+  const total = await Artist.countDocuments(searchFilter);
+
+  // Step 7: Geo aggregation
   const artists = await Artist.aggregate([
     {
       $geoNear: {
@@ -116,6 +131,7 @@ const getAllArtistsFromDB = async (
       $project: {
         expertise: 1,
         currentLocation: 1,
+        type: 1,
         stringLocation: 1,
         distance: 1,
         avgRating: 1,
@@ -134,13 +150,14 @@ const getAllArtistsFromDB = async (
     { $limit: limit },
   ]);
 
+  // Step 8: Meta
+  const totalPage = Math.ceil(total / limit);
+
   return {
     data: artists,
     meta: {
-      total: artists.length,
-      // total: artistsWithLocation,
-      totalPage: Math.ceil(artists?.length / limit),
-      // totalPage: Math.ceil(artistsWithLocation / limit),
+      total,
+      totalPage,
       limit,
       page,
     },

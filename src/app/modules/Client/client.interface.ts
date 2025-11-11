@@ -2,10 +2,10 @@ import { Document } from 'mongoose';
 import {
   ArtistType,
   DateFormat,
-  FavoritePiercing,
-  FavoriteTattoo,
+  TFavoritePiercing,
+  TFavoriteTattoo,
   HomeView,
-  ServiceType,
+  TLookingFor,
 } from './client.constant';
 import { Types } from 'mongoose';
 
@@ -15,10 +15,10 @@ export interface IClient extends Document {
   location: { type: 'Point'; coordinates: [number, number] };
   stringLocation: string;
   radius: number;
-  lookingFor: ServiceType[];
+  lookingFor: TLookingFor[];
   country: string;
-  favoriteTattoos: FavoriteTattoo[];
-  favoritePiercing: FavoritePiercing[];
+  favoriteTattoos: TFavoriteTattoo[];
+  favoritePiercing: TFavoritePiercing[];
   homeView: HomeView;
   preferredArtistType: ArtistType;
   language: string;

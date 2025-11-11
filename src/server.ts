@@ -25,7 +25,7 @@ async function bootstrap() {
 
     connectSocket(server);
   } catch (err: any) {
-    console.error('Failed to connect to database:', err);
+    console.error('🔴❌ Failed to connect to database:', err);
     process.exit(1);
   }
 }
@@ -33,10 +33,10 @@ async function bootstrap() {
 bootstrap();
 
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received');
+  console.log('🔴❌ SIGTERM received');
   if (server) {
     server.close((error) => {
-      console.error('Server closed due to SIGTERM', error);
+      console.error('🔴❌ Server closed due to SIGTERM', error);
       process.exit(0);
     });
   } else {
@@ -45,11 +45,10 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
-  console.log('SIGINT received');
+  console.log('🔴❌ SIGINT received');
   if (server) {
     server.close((error) => {
-      console.log('Server closed due to SIGINT');
-      console.error('Server closed due to SIGINT', error);
+      console.error('🔴❌ Server closed due to SIGINT', error);
       process.exit(0);
     });
   } else {
@@ -58,17 +57,15 @@ process.on('SIGINT', () => {
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  console.error('Uncaught Exception:', error);
+  console.error('🔴❌ Uncaught Exception:', error);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (error) => {
-  console.error('Unhandled Rejection:', error);
+  console.error('🔴❌ Unhandled Rejection:', error);
   if (server) {
     server.close((error) => {
-      console.error('Server closed due to unhandled rejection');
-      console.error('Server closed due to unhandled rejection', error);
+      console.error('🔴❌ Server closed due to unhandled rejection', error);
       process.exit(1);
     });
   } else {

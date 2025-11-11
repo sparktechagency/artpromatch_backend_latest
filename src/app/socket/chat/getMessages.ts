@@ -66,7 +66,7 @@ export const handleMessagePage = async (
   );
 
   if (unseenMessages.length > 0) {
-    const messageIds = unseenMessages.map((msg) => msg._id);
+    const messageIds = unseenMessages.map((msg) => msg._id.toString());
 
     await Message.updateMany(
       { _id: { $in: messageIds } },
@@ -83,7 +83,7 @@ export const handleMessagePage = async (
   }
 
   socket.emit('messages', {
-    conversationId,
+    conversationId: conversationId.toString(),
     userData: payload,
     messages: messages.reverse(),
     meta,

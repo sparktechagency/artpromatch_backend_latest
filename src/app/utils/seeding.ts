@@ -1,6 +1,19 @@
+/* eslint-disable no-console */
 import config from '../config';
 import { defaultUserImage, ROLE } from '../modules/Auth/auth.constant';
 import Auth from '../modules/Auth/auth.model';
+
+
+const adminData = {
+  fullName: config.super_admin.fullName,
+  role: ROLE.SUPER_ADMIN,
+  email: config.super_admin.email,
+  password: config.super_admin.password,
+  image: config.super_admin.image || defaultUserImage,
+  otp: config.super_admin.otp,
+  otpExpiry: new Date(),
+  isVerifiedByOTP: true,
+};
 
 const seedingAdmin = async () => {
   try {
@@ -10,20 +23,14 @@ const seedingAdmin = async () => {
     });
 
     if (!admin) {
-      await Auth.create({
-        fullName: 'Super Admin',
-        role: ROLE.SUPER_ADMIN,
-        email: config.super_admin.email,
-        password: config.super_admin.password,
-        image: config.super_admin.profile_photo || defaultUserImage,
-        otp: '654321',
-        otpExpiry: new Date(),
-        isVerifiedByOTP: true,
-      });
+      await Auth.create(adminData);
+      
+      console.log('🎉✅ Super admin seeded successfully!');
+    } else {
+      console.log('🟡⚠️ Super admin already exists!');
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.log('Error seeding super admin', error);
+    console.log('🔴❌ Error seeding super admin', error);
   }
 };
 
