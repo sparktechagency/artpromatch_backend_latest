@@ -1,6 +1,6 @@
 import { expertiseTypes } from '../Artist/artist.constant';
 
-export const serviceTypes = {
+export const lookingForTypes = {
   TATTOOS: 'Tattoos',
   PIERCINGS: 'Piercings',
   CUSTOM_DESIGNS: 'Custom Designs',
@@ -50,11 +50,12 @@ export const notificationChannel = {
 } as const;
 
 export type HomeView = (typeof homeViews)[keyof typeof homeViews];
-export type FavoriteTattoo =
+export type TFavoriteTattoo =
   (typeof favoriteTattoos)[keyof typeof favoriteTattoos];
-export type FavoritePiercing =
+export type TFavoritePiercing =
   (typeof favoritePiercings)[keyof typeof favoritePiercings];
-export type ServiceType = (typeof serviceTypes)[keyof typeof serviceTypes];
+export type TLookingFor =
+  (typeof lookingForTypes)[keyof typeof lookingForTypes];
 export type DateFormat = (typeof dateFormats)[keyof typeof dateFormats];
 export type ArtistType = (typeof artistTypes)[keyof typeof artistTypes];
 export type TNotificationChannel =

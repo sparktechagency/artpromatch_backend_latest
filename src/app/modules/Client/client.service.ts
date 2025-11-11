@@ -269,9 +269,8 @@ const getAllServicesFromDB = async (
   query: Record<string, unknown>
 ) => {
   if (user) {
-    // Step 1: Fetch Client
+    // Step 1: Find Client and check existence
     const client = await Client.findOne({ auth: user._id });
-
     if (!client) {
       throw new AppError(httpStatus.NOT_FOUND, 'Your Client ID not found!');
     }
@@ -279,24 +278,29 @@ const getAllServicesFromDB = async (
     const [longitude, latitude] = client.location.coordinates; // Client longitude and latitude
     const radius = client.radius; // Client's search radius (in kilometers)
 
-    // Step 2: Artist type filter
-    // Check if 'query.type' is provided. If not, fetch all types.
-    let artistTypeFilter = {};
-    if (typeof query?.type === 'string') {
-      // Case-insensitive match using regex if type is provided
-      artistTypeFilter = {
-        type: {
-          $regex: new RegExp(query?.type, 'i'), // 'i' for case-insensitive search
-        },
-      };
-    }
+    // Step 2: Extract filters
+    const artistType =
+      (query.artistType as string) || (query.type as string) || '';
+    const tattooCategory = (query.tattooCategory as string) || '';
+    const searchTerm = (query.searchTerm as string) || '';
 
     // Step 3: Pagination
-    const page = parseInt(query?.page as string) || 1;
-    const limit = parseInt(query?.limit as string) || 10;
+    const page = parseInt(query.page as string, 10) || 1;
+    const limit = parseInt(query.limit as string, 10) || 12;
     const skip = (page - 1) * limit;
 
-    // Step 4: Get artists within radius
+    // Step 4: Artist filter (type + category)
+    const artistFilter: Record<string, unknown> = {};
+
+    if (artistType && artistType !== 'All') {
+      artistFilter.type = { $regex: new RegExp(artistType, 'i') };
+    }
+
+    if (tattooCategory && tattooCategory !== 'All') {
+      artistFilter.expertise = { $in: [tattooCategory] };
+    }
+
+    // Step 5: Get nearby artists matching both filters
     const artists = await Artist.aggregate([
       {
         $geoNear: {
@@ -306,28 +310,21 @@ const getAllServicesFromDB = async (
           spherical: true,
         },
       },
-      { $match: artistTypeFilter },
+      { $match: artistFilter },
       { $project: { _id: 1, distance: 1 } },
-      // { $skip: skip },  // must load all artists
-      // { $limit: limit }, // must load all artists
     ]);
 
     const artistDistanceMap = new Map(
-      artists.map((artist) => [artist._id.toString(), artist.distance])
+      artists.map((a) => [a._id.toString(), a.distance])
     );
+    const artistIds = artists.map((a) => a._id);
 
-    const artistsIDs = artists.map((artist) => artist._id);
-
-    // Step 5: Build searchTerm filter
-    const searchTerm = (query?.searchTerm as string) || '';
-    let searchFilter: Record<string, unknown> = {};
-
+    // Step 6: Build search filter
+    const searchFilter: Record<string, unknown> = {};
     if (searchTerm) {
       const regex = new RegExp(searchTerm, 'i');
       const numVal = Number(searchTerm);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const orConditions: any[] = [
+      const orConditions: Record<string, unknown>[] = [
         { title: regex },
         { description: regex },
         { bodyLocation: regex },
@@ -343,12 +340,12 @@ const getAllServicesFromDB = async (
         );
       }
 
-      searchFilter = { $or: orConditions };
+      searchFilter.$or = orConditions;
     }
 
-    // Step 6: Fetch Services with searchFilter and pagination
+    // Step 7: Query services belonging to matched artists
     const services = await Service.find({
-      artist: { $in: artistsIDs },
+      artist: { $in: artistIds },
       ...searchFilter,
     })
       .populate({
@@ -363,7 +360,7 @@ const getAllServicesFromDB = async (
       .limit(limit)
       .lean(); // return plain JS objects for easier modification
 
-    // Step 7: Inject distance into artist object
+    // Step 8: Inject distance into artist objects
     const servicesWithDistance = services.map((service) => {
       const artistId = service.artist?._id?.toString();
       const distance = artistId ? artistDistanceMap.get(artistId) : null;
@@ -376,11 +373,12 @@ const getAllServicesFromDB = async (
       };
     });
 
-    // Step 8: Total count for pagination
+    // Step 9: Total count for pagination
     const total = await Service.countDocuments({
-      artist: { $in: artistsIDs },
+      artist: { $in: artistIds },
       ...searchFilter,
     });
+
     // const total = services.length || 0;
     const totalPage = Math.ceil(total / limit);
 
@@ -393,38 +391,37 @@ const getAllServicesFromDB = async (
         totalPage,
       },
     };
-  } else {
-    // if no user then QueryBuilder
-    const serviceQuery = new QueryBuilder(
-      Service.find().populate({
-        path: 'artist',
-        // select: 'type expertise city stringLocation hourlyRate description',
-        select: 'type expertise stringLocation hourlyRate description',
-        populate: {
-          path: 'auth',
-          select: 'fullName image',
-        },
-      }),
-      query
-    )
-      .search([
-        'title',
-        'description',
-        'price',
-        'bodyLocation',
-        'totalCompletedOrder',
-        'totalReviewCount',
-        'avgRating',
-      ])
-      .filter()
-      .sort()
-      .paginate();
-
-    const data = await serviceQuery.modelQuery;
-    const meta = await serviceQuery.countTotal();
-
-    return { data, meta };
   }
+
+  // Step 10: Public fallback (no user)
+  const serviceQuery = new QueryBuilder(
+    Service.find().populate({
+      path: 'artist',
+      select: 'type expertise stringLocation hourlyRate description',
+      populate: {
+        path: 'auth',
+        select: 'fullName image',
+      },
+    }),
+    query
+  )
+    .search([
+      'title',
+      'description',
+      'price',
+      'bodyLocation',
+      'totalCompletedOrder',
+      'totalReviewCount',
+      'avgRating',
+    ])
+    .filter()
+    .sort()
+    .paginate();
+
+  const data = await serviceQuery.modelQuery;
+  const meta = await serviceQuery.countTotal();
+
+  return { data, meta };
 };
 
 // updateClientRadiusIntoDB

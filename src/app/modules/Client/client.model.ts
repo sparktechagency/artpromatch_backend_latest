@@ -6,7 +6,7 @@ import {
   favoritePiercings,
   favoriteTattoos,
   homeViews,
-  serviceTypes,
+  lookingForTypes,
 } from './client.constant';
 
 const clientSchema = new Schema<IClient>(
@@ -42,7 +42,7 @@ const clientSchema = new Schema<IClient>(
 
     lookingFor: {
       type: [String],
-      enum: Object.values(serviceTypes),
+      enum: Object.values(lookingForTypes),
       default: [],
     },
 

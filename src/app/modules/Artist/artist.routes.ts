@@ -86,11 +86,11 @@ router
 
 // addArtistService
 router.route('/service/create').post(
+  auth(ROLE.ARTIST),
   upload.fields([
     { name: 'images', maxCount: 5 },
     { name: 'thumbnail', maxCount: 1 },
   ]),
-  auth(ROLE.ARTIST),
   validateRequestFromFormData(ArtistServiceValidation.createServiceSchema),
   ArtistController.addArtistService
 );
@@ -106,11 +106,11 @@ router
 
 // updateArtistService
 router.route('/service/update/:id').patch(
+  auth(ROLE.ARTIST),
   upload.fields([
     { name: 'images', maxCount: 5 },
     { name: 'thumbnail', maxCount: 1 },
   ]),
-  auth(ROLE.ARTIST),
   validateRequestFromFormData(ArtistServiceValidation.updateServiceSchema),
   ArtistController.updateArtistServiceById
 );
