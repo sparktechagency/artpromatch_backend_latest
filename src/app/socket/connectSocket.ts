@@ -5,6 +5,7 @@ import handleChatEvents from './handleChatEvents';
 import Auth from '../modules/Auth/auth.model';
 import Conversation from '../modules/Conversation/conversation.model';
 import { SOCKET_EVENTS } from './socket.constant';
+import mongoose from 'mongoose';
 
 let io: ChatServer;
 
@@ -29,13 +30,29 @@ const connectSocket = (server: HTTPServer) => {
 
     const userId = socket.handshake.query.id as string;
 
-    if (!userId) {
-      socket.emit('error', 'User ID is required');
+    if (!userId || typeof userId !== 'string') {
+      socket.emit('error', 'User ID is missing');
       socket.disconnect();
       return;
     }
 
-    const currentUser = await Auth.findById(userId);
+    if (!mongoose.isValidObjectId(userId)) {
+      socket.emit('error', 'Invalid User ID format');
+      socket.disconnect();
+      return;
+    }
+
+    // Safe: userId is now a valid ObjectId
+    let currentUser;
+    try {
+      currentUser = await Auth.findById(userId);
+    } catch (err) {
+      console.error('Auth lookup failed:', err);
+      socket.emit('error', 'Failed to load user');
+      socket.disconnect();
+      return;
+    }
+
     if (!currentUser) {
       socket.emit('error', 'User not found');
       socket.disconnect();
@@ -43,16 +60,17 @@ const connectSocket = (server: HTTPServer) => {
     }
 
     const currentUserId = currentUser._id.toString();
-
     socket.join(currentUserId);
-
     onlineUsers.set(currentUserId, socket.id);
 
+    // Conversations
     const userConversations = await Conversation.find({
       participants: currentUserId,
     }).select('_id');
 
-    userConversations.forEach((conv) => socket.join(conv._id.toString()));
+    userConversations.forEach((conv) => {
+      socket.join(conv._id.toString());
+    });
 
     handleChatEvents(io, socket, currentUserId);
 

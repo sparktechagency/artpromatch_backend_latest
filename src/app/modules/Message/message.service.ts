@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import { startSession } from 'mongoose';
-import { getSocketIO, onlineUsers } from '../../socket/socketConnection';
+import { getSocketIO, onlineUsers } from '../../socket/connectSocket';
 import { AppError } from '../../utils';
 import Auth from '../Auth/auth.model';
 import { NewMessagePayload } from './message.interface';
