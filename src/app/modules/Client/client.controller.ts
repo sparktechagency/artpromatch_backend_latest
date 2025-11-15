@@ -72,8 +72,8 @@ const getDiscoverArtists = asyncHandler(async (req, res) => {
   });
 });
 
-// getAllServices
-const getAllServices = asyncHandler(async (req, res) => {
+// getAllNormalServices
+const getAllNormalServices = asyncHandler(async (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '') || '';
 
   let decoded: Record<string, unknown> = {};
@@ -84,11 +84,29 @@ const getAllServices = asyncHandler(async (req, res) => {
   const { id } = decoded;
   const user = await Auth.findById(id);
 
-  const result = await ClientService.getAllServicesFromDB(user, req.query);
+  const result = await ClientService.getAllNormalServicesFromDB(
+    user,
+    req.query
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Discover artists retrieved successfully!',
+    message: 'Normal artists retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+// getAllGuestServices
+const getAllGuestServices = asyncHandler(async (req, res) => {
+  const result = await ClientService.getAllGuestServicesFromDB(
+    req.user,
+    req.query
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Guest artists retrieved successfully!',
     data: result.data,
     meta: result.meta,
   });
@@ -114,6 +132,7 @@ export const ClientController = {
   updateNotificationPreferences,
   updatePrivacySecuritySettings,
   getDiscoverArtists,
-  getAllServices,
+  getAllNormalServices,
+  getAllGuestServices,
   updateClientRadius,
 };

@@ -59,19 +59,17 @@ const moduleRoutes = [
     route: notificationRoutes,
   },
   {
-    path: '/guestspots',
+    path: '/guest-spot',
     route: GuestSpotRoutes,
   },
   {
     path: '/content',
     route: contentRoutes,
   },
-    {
+  {
     path: '/faq',
     route: faqRoutes,
   },
-
-
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

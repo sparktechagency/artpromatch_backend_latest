@@ -7,6 +7,41 @@ import { convertTimeToMinutes } from './guestSpot.utils';
 import { IOffDays } from '../Schedule/schedule.interface';
 import Artist from '../Artist/artist.model';
 
+// getAllGuestSpotsFromDB
+const getAllGuestSpotsFromDB = async (userData: IAuth) => {
+  const artist = await Artist.findOne({ auth: userData._id })
+    .select('_id currentLocation')
+    .lean();
+
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Your artist profile not found!');
+  }
+
+  const now = new Date();
+
+  // Step 2: get guest spots for this artist
+  const guestSpots = await GuestSpot.find({
+    artist: artist._id,
+    isActive: true,
+    // endDate: { $gte: now },
+  })
+    .sort({ startDate: 1 })
+    .lean();
+
+  // Add isActive flag based on location.until > now
+  const enrichedGuestSpots = guestSpots.map((spot) => {
+    const until = spot.location?.until;
+    const isActiveCalculated = until ? new Date(until) > now : false;
+
+    return {
+      ...spot,
+      isActive: isActiveCalculated,
+    };
+  });
+
+  return enrichedGuestSpots;
+};
+
 // createGuestSpotIntoDB
 const createGuestSpotIntoDB = async (
   userData: IAuth,
@@ -32,6 +67,22 @@ const createGuestSpotIntoDB = async (
   const { currentLocation, startDate, endDate, startTime, endTime, offDays } =
     payload;
 
+  const locationUntil = currentLocation.currentLocationUntil;
+
+  if (!locationUntil) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'currentLocationUntil is required and must cover the GuestSpot date range!'
+    );
+  }
+
+  if (startDate > locationUntil || endDate > locationUntil) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      'GuestSpot start and end dates must be within your current location active period!'
+    );
+  }
+
   const startTimeinMinute = convertTimeToMinutes(startTime);
   const endTimeinMinute = convertTimeToMinutes(endTime);
 
@@ -39,13 +90,9 @@ const createGuestSpotIntoDB = async (
   const existingBooking = await Booking.findOne({
     artist: artist._id,
     isInGuestSpot: false, // means main location
-    originalDate: { $gte: startDate, $lte: endDate },
-    // $or: [
-    //   {
-    startTimeinMinute: { $lt: endTimeinMinute },
-    endTimeinMinute: { $gt: startTimeinMinute },
-    //   },
-    // ],
+    'sessions.date': { $gte: startDate, $lte: endDate },
+    'sessions.startTimeInMin': { $lt: endTimeinMinute },
+    'sessions.endTimeInMin': { $gt: startTimeinMinute },
   });
 
   if (existingBooking) {
@@ -77,7 +124,7 @@ const createGuestSpotIntoDB = async (
     { auth: userData._id },
     {
       currentLocation: {
-        // type: 'Point',
+        type: 'Point',
         coordinates: currentLocation.coordinates,
         currentLocationUntil: currentLocation.currentLocationUntil,
       },
@@ -91,6 +138,10 @@ const createGuestSpotIntoDB = async (
   // Create new GuestSpot
   const newGuestSpot = await GuestSpot.create({
     artist: updatedArtist._id,
+    location: {
+      coordinates: currentLocation.coordinates,
+      until: currentLocation.currentLocationUntil,
+    },
     startDate,
     endDate,
     startTime,
@@ -109,15 +160,15 @@ const updateGuestSpotIntoDB = async (
   userData: IAuth,
   guestSpotId: string,
   payload: {
-    currentLocation: {
+    currentLocation?: {
       // type: 'Point';
       coordinates: [number, number];
       currentLocationUntil: Date | null;
     };
-    startDate: Date;
-    endDate: Date;
-    startTime: string;
-    endTime: string;
+    startDate?: Date;
+    endDate?: Date;
+    startTime?: string;
+    endTime?: string;
     offDays?: IOffDays;
   }
 ) => {
@@ -147,6 +198,27 @@ const updateGuestSpotIntoDB = async (
   const startDate = payload.startDate || existingSpot.startDate;
   const endDate = payload.endDate || existingSpot.endDate;
 
+  const effectiveCurrentLocationUntil =
+    payload.currentLocation?.currentLocationUntil ??
+    artist.currentLocation.currentLocationUntil;
+
+  if (!effectiveCurrentLocationUntil) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'currentLocationUntil is required and must cover the updated GuestSpot date range!'
+    );
+  }
+
+  if (
+    startDate > effectiveCurrentLocationUntil ||
+    endDate > effectiveCurrentLocationUntil
+  ) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      'Updated GuestSpot dates must be within your current location active period!'
+    );
+  }
+
   const startTimeinMinute = payload.startTime
     ? convertTimeToMinutes(payload.startTime)
     : existingSpot.startTimeinMinute;
@@ -159,9 +231,9 @@ const updateGuestSpotIntoDB = async (
   const bookingAtMain = await Booking.findOne({
     artist: artist._id,
     isInGuestSpot: false,
-    originalDate: { $gte: startDate, $lte: endDate },
-    startTimeinMinute: { $lt: endTimeinMinute },
-    endTimeinMinute: { $gt: startTimeinMinute },
+    'sessions.date': { $gte: startDate, $lte: endDate },
+    'sessions.startTimeInMin': { $lt: endTimeinMinute },
+    'sessions.endTimeInMin': { $gt: startTimeinMinute },
   });
 
   if (bookingAtMain) {
@@ -175,9 +247,9 @@ const updateGuestSpotIntoDB = async (
   const bookingAtGuestSpot = await Booking.findOne({
     artist: artist._id,
     isInGuestSpot: true,
-    originalDate: { $gte: startDate, $lte: endDate },
-    startTimeinMinute: { $lt: endTimeinMinute },
-    endTimeinMinute: { $gt: startTimeinMinute },
+    'sessions.date': { $gte: startDate, $lte: endDate },
+    'sessions.startTimeInMin': { $lt: endTimeinMinute },
+    'sessions.endTimeInMin': { $gt: startTimeinMinute },
   });
 
   if (bookingAtGuestSpot) {
@@ -202,20 +274,26 @@ const updateGuestSpotIntoDB = async (
     );
   }
 
-  const updatedArtist = await Artist.findOneAndUpdate(
-    { auth: userData._id },
-    {
-      currentLocation: {
-        // type: 'Point',
-        coordinates: payload.currentLocation.coordinates,
-        currentLocationUntil: payload.currentLocation.currentLocationUntil,
+  if (payload.currentLocation) {
+    const updatedArtistDoc = await Artist.findOneAndUpdate(
+      { auth: userData._id },
+      {
+        currentLocation: {
+          type: 'Point',
+          coordinates:
+            payload.currentLocation.coordinates ??
+            artist.currentLocation.coordinates,
+          currentLocationUntil:
+            payload.currentLocation.currentLocationUntil ??
+            artist.currentLocation.currentLocationUntil,
+        },
       },
-    },
-    { new: true }
-  );
+      { new: true }
+    );
 
-  if (!updatedArtist) {
-    throw new AppError(httpStatus.CONFLICT, 'Something happend wrong!');
+    if (!updatedArtistDoc) {
+      throw new AppError(httpStatus.CONFLICT, 'Something happend wrong!');
+    }
   }
 
   const updatedSpot = await GuestSpot.findByIdAndUpdate(guestSpotId, payload, {
@@ -226,6 +304,7 @@ const updateGuestSpotIntoDB = async (
 };
 
 export const GuestSpotService = {
+  getAllGuestSpotsFromDB,
   createGuestSpotIntoDB,
   updateGuestSpotIntoDB,
 };

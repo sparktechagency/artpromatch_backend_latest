@@ -1046,6 +1046,32 @@ export const expireBoosts = async () => {
   }
 };
 
+// expire guest locations (reset artists back to mainLocation when guest spot time is over)
+export const expireGuestLocations = async () => {
+  const now = new Date();
+
+  const artists = await Artist.find({
+    'currentLocation.currentLocationUntil': { $ne: null, $lte: now },
+  });
+
+  if (!artists.length) return;
+
+  for (const artist of artists) {
+    // reset currentLocation to mainLocation and clear expiry using direct update
+
+    await Artist.updateOne(
+      { _id: artist._id },
+      {
+        $set: {
+          'currentLocation.coordinates': artist.mainLocation.coordinates,
+          'currentLocation.currentLocationUntil': null,
+        },
+      }
+    );
+  }
+};
+
+// getArtistDashboardPage
 const getArtistDashboardPage = async (user: IAuth) => {
   const artist = await Artist.findOne({ auth: user.id }).select('_id');
   if (!artist) {

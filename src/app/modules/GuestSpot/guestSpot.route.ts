@@ -6,6 +6,15 @@ import { GuestSpotController } from './guestSpot.controller';
 
 const router = Router();
 
+// artistGetAllGuestSpot
+router
+  .route('/')
+  .get(
+    auth(ROLE.ARTIST),
+    GuestSpotController.getAllGuestSpots
+  );
+
+
 // createGuestSpot
 router
   .route('/')

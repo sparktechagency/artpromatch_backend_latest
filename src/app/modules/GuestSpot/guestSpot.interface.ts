@@ -4,6 +4,11 @@ import { IOffDays } from '../Schedule/schedule.interface';
 export interface IGuestSpot extends Document {
   artist: Types.ObjectId;
 
+  location: {
+    coordinates: [number, number];
+    until: Date | null;
+  };
+
   startDate: Date;
   endDate: Date;
 

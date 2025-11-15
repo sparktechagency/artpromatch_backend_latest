@@ -95,6 +95,7 @@ router.route('/service/create').post(
   ArtistController.addArtistService
 );
 
+// getArtistDashboardPage
 router
   .route('/dashboard')
   .get(auth(ROLE.ARTIST), ArtistController.getArtistDashboardPage);
@@ -134,6 +135,7 @@ router
     ArtistController.saveArtistAvailability
   );
 
+// getArtistSchedule
 router
   .route('/schedule')
   .get(auth(ROLE.ARTIST), ArtistController.getArtistSchedule);
@@ -141,6 +143,7 @@ router
 router
   .route('/boost-profile')
   .post(auth(ROLE.ARTIST), ArtistController.boostProfile);
+
 // getAvailabilityExcludingTimeOff
 // router
 //   .route('/availability/:id')
@@ -163,6 +166,7 @@ router
     ArtistController.createConnectedAccountAndOnboardingLinkForArtist
   );
 
+// deleteAccount
 router.route('/delete-account').post(ArtistController.deleteAccount);
 
 export const ArtistRoutes = router;

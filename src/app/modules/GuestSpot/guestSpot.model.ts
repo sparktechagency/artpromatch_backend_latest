@@ -10,6 +10,11 @@ const GuestSpotSchema = new Schema<IGuestSpot>(
       required: true,
     },
 
+    location: {
+      coordinates: { type: [Number], required: true },
+      until: { type: Date, default: null },
+    },
+
     startDate: {
       type: Date,
       required: true,
