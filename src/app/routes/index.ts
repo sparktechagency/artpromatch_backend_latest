@@ -12,7 +12,7 @@ import { notificationRoutes } from '../modules/Notification/notification.routes'
 import { RequestRoute } from '../modules/Request/request.route';
 import { contentRoutes } from '../modules/Content/content.route';
 import { faqRoutes } from '../modules/Faq/faq.route';
-
+import { PaymentHistoryRoutes } from '../modules/PaymentHistory/paymentHistory.routes';
 
 const router = Router();
 
@@ -43,6 +43,10 @@ const moduleRoutes = [
     route: BookingRoutes,
   },
   {
+    path: '/payment-history',
+    route: PaymentHistoryRoutes,
+  },
+  {
     path: '/folders',
     route: FolderRoutes,
   },
@@ -59,19 +63,17 @@ const moduleRoutes = [
     route: notificationRoutes,
   },
   {
-    path: '/guestspots',
+    path: '/guest-spot',
     route: GuestSpotRoutes,
   },
   {
     path: '/content',
     route: contentRoutes,
   },
-    {
+  {
     path: '/faq',
     route: faqRoutes,
   },
-
-
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

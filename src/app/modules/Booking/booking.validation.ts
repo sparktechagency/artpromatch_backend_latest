@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { AppError } from '../../utils';
+import httpStatus from 'http-status';
 
 // MongoDB ObjectId regex
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
@@ -19,7 +21,9 @@ const bookingSchema = z.object({
       )
       .transform((str) => {
         const date = new Date(str);
-        if (isNaN(date.getTime())) throw new Error('Invalid date string');
+        if (isNaN(date.getTime())) {
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+        }
         return date;
       }),
 
@@ -67,7 +71,9 @@ const createBookingSchema = z.object({
       )
       .transform((str) => {
         const date = new Date(str);
-        if (isNaN(date.getTime())) throw new Error('Invalid date string');
+        if (isNaN(date.getTime())) {
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+        }
         return date;
       }),
     preferredEndDate: z
@@ -78,7 +84,9 @@ const createBookingSchema = z.object({
       )
       .transform((str) => {
         const date = new Date(str);
-        if (isNaN(date.getTime())) throw new Error('Invalid date string');
+        if (isNaN(date.getTime())) {
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+        }
         return date;
       }),
   }),
@@ -104,7 +112,9 @@ const createSessionSchema = z.object({
       )
       .transform((str) => {
         const date = new Date(str);
-        if (isNaN(date.getTime())) throw new Error('Invalid date string');
+        if (isNaN(date.getTime())) {
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+        }
         return date;
       }),
 

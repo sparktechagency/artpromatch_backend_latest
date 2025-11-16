@@ -3,6 +3,33 @@ import { asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 import { GuestSpotService } from './guestSpot.service';
 
+// getAllGuestSpots
+const getAllGuestSpots = asyncHandler(async (req, res) => {
+  const result = await GuestSpotService.getAllGuestSpotsFromDB(req.user);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'GuestSpots fetched successfully!',
+    data: result,
+  });
+});
+
+// getSingleGuestSpot
+const getSingleGuestSpot = asyncHandler(async (req, res) => {
+  const { guestSpotId } = req.params;
+
+  const result = await GuestSpotService.getSingleGuestSpotFromDB(
+    req.user,
+    guestSpotId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'GuestSpot created successfully!',
+    data: result,
+  });
+});
+
 // createGuestSpot
 const createGuestSpot = asyncHandler(async (req, res) => {
   const result = await GuestSpotService.createGuestSpotIntoDB(
@@ -35,6 +62,8 @@ const updateGuestSpot = asyncHandler(async (req, res) => {
 });
 
 export const GuestSpotController = {
+  getAllGuestSpots,
+  getSingleGuestSpot,
   createGuestSpot,
   updateGuestSpot,
 };

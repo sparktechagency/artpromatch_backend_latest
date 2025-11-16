@@ -167,6 +167,7 @@ const createProfileSchema = z.object({
       radius: z.number().min(0).optional(),
       lookingFor: z.array(zodEnumFromObject(lookingForTypes)).optional(),
       favoriteTattoos: z.array(zodEnumFromObject(favoriteTattoos)).optional(),
+      // favoritePiercing: z.array(zodEnumFromObject(favoritePiercings)).optional(),
       notificationPreferences: z
         .union([z.literal('app'), z.literal('email'), z.literal('sms')])
         .array()
@@ -432,6 +433,16 @@ const deactivateUserAccountSchema = z.object({
     .strict(),
 });
 
+// 14. deleteUserAccountSchema
+const deleteUserAccountSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email('Invalid email!'),
+      password: z.string(),
+    })
+    .strict(),
+});
+
 // 16. getAccessTokenSchema
 // const getAccessTokenSchema = z.object({
 //   cookies: z.object({
@@ -525,6 +536,7 @@ export const AuthValidation = {
   verifyOtpForForgotPasswordSchema,
   resetPasswordSchema,
   deactivateUserAccountSchema,
+  deleteUserAccountSchema,
   // getAccessTokenSchema,
   updateAuthDataSchema,
   updateFcmTokenSchema,

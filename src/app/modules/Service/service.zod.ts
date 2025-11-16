@@ -1,12 +1,18 @@
 import { z } from 'zod';
 import { TattooBodyParts } from './service.interface';
+import { AppError } from '../../utils';
+import httpStatus from 'http-status';
 
+// parseDurationToMinutes
 export function parseDurationToMinutes(value: string): number {
   const trimmed = value.trim().toLowerCase();
   const regex = /^(\d+)\s*h(?:r)?(?:\s*(\d+)\s*m)?$|^(\d+)\s*m$/;
   const match = regex.exec(trimmed);
   if (!match)
-    throw new Error("Invalid duration format. Use like '2h 30m' or '45m'");
+    throw new AppError(
+      httpStatus.NOT_ACCEPTABLE,
+      "Invalid duration format. Use like '2h 30m' or '45m'"
+    );
 
   let hours = 0;
   let minutes = 0;

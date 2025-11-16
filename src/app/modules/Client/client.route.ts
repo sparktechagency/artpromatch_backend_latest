@@ -45,8 +45,13 @@ router
 // getDiscoverArtists
 router.route('/discover').get(auth(), ClientController.getDiscoverArtists);
 
+// getAllNormalServices
+router.route('/normal-services').get(ClientController.getAllNormalServices);
+
 // getAllServices
-router.route('/services').get(ClientController.getAllServices);
+router
+  .route('/guest-services')
+  .get(auth(), ClientController.getAllGuestServices);
 
 // updateClientRadius
 router

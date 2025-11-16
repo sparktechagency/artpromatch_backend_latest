@@ -5,7 +5,7 @@ import { Server } from 'http';
 import { connect } from 'mongoose';
 import app from './app';
 import config from './app/config';
-import { connectSocket } from './app/socket/socketConnection';
+import { connectSocket } from './app/socket/connectSocket';
 // import { Logger } from './app/utils';
 import seedingAdmin from './app/utils/seeding';
 

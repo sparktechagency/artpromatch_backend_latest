@@ -1439,7 +1439,8 @@ const fetchProfileFromDB = async (user: IAuth) => {
     const client = await Client.findOne({ auth: user._id }).populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile stringLocation',
+        select:
+          'fullName image email phoneNumber isProfile stringLocation isSocialLogin',
       },
     ]);
     // .lean();
@@ -1455,13 +1456,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
     const artist = await Artist.findOne({ auth: user._id }).populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile',
-      },
-      {
-        path: 'flashes.folder',
-      },
-      {
-        path: 'portfolio.folder',
+        select: 'fullName image email phoneNumber isProfile isSocialLogin',
       },
     ]);
 
@@ -1474,16 +1469,16 @@ const fetchProfileFromDB = async (user: IAuth) => {
     const business = await Business.findOne({ auth: user._id }).populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile',
+        select: 'fullName image email phoneNumber isProfile isSocialLogin',
       },
-      {
-        path: 'residentArtists',
-        select: 'auth',
-        populate: {
-          path: 'auth',
-          select: 'fullName image email phoneNumber isProfile',
-        },
-      },
+      // {
+      //   path: 'residentArtists',
+      //   select: 'auth',
+      //   populate: {
+      //     path: 'auth',
+      //     select: 'fullName image email phoneNumber isProfile',
+      //   },
+      // },
     ]);
 
     const preference = await BusinessPreferences.findOne({
@@ -1529,7 +1524,9 @@ const deactivateUserAccountFromDB = async (
 
   const currentUser = await Auth.findOne({ _id: user._id, email: email });
 
-  if (!currentUser) throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  if (!currentUser) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
 
   const isPasswordCorrect = currentUser.isPasswordMatched(password);
 
@@ -1553,15 +1550,34 @@ const deactivateUserAccountFromDB = async (
 };
 
 // 15. deleteSpecificUserAccount
-const deleteSpecificUserAccount = async (user: IAuth) => {
+const deleteSpecificUserAccount = async (
+  user: IAuth,
+  payload: {
+    email: string;
+    password: string;
+  }
+) => {
   const session = await startSession();
 
   try {
     session.startTransaction();
 
-    const currentUser = await Auth.findById(user._id).session(session);
-    if (!currentUser)
+    const { email, password } = payload;
+
+    const currentUser = await Auth.findOne({
+      _id: user._id,
+      email: email,
+    }).session(session);
+
+    if (!currentUser) {
       throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+    }
+
+    const isPasswordCorrect = currentUser.isPasswordMatched(password);
+
+    if (!isPasswordCorrect) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials');
+    }
 
     currentUser.isDeleted = true;
     currentUser.isDeactivated = false;
@@ -1570,9 +1586,11 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
     if (user.role === ROLE.ARTIST || ROLE.BUSINESS) {
       currentUser.isActive = false;
     }
+
     if (currentUser.deactivationReason) {
       currentUser.deactivationReason = '';
     }
+
     await currentUser.save({ session });
 
     if (user.role === ROLE.CLIENT) {
@@ -1582,15 +1600,23 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
 
       if (client) {
         const result = await Client.deleteOne({ _id: client._id }, { session });
+
         if (result.deletedCount === 0)
-          throw new Error('Client deletion failed!');
+          throw new AppError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Client deletion failed!'
+          );
 
         const prefResult = await ClientPreferences.deleteOne(
           { clientId: client._id },
           { session }
         );
+
         if (prefResult.deletedCount === 0)
-          throw new Error('Client deletion failed here!');
+          throw new AppError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Client deletion failed here!'
+          );
       }
     } else if (user.role === ROLE.ARTIST) {
       const artist = await Artist.findOne({ auth: user._id })
@@ -1599,14 +1625,24 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
 
       if (artist) {
         const result = await Artist.deleteOne({ _id: artist._id }, { session });
-        if (result.deletedCount === 0)
-          throw new Error('Artist deletion failed!');
+        if (result.deletedCount === 0) {
+          throw new AppError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Artist deletion failed!'
+          );
+        }
+
         const prefResult = await ArtistPreferences.deleteOne(
           { artistId: artist._id },
           { session }
         );
-        if (prefResult.deletedCount === 0)
-          throw new Error('Artist deletion failed here!');
+
+        if (prefResult.deletedCount === 0) {
+          throw new AppError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Artist deletion failed here!'
+          );
+        }
       }
     } else if (user.role === ROLE.BUSINESS) {
       const business = await Business.findOne({ auth: user._id })
@@ -1618,14 +1654,25 @@ const deleteSpecificUserAccount = async (user: IAuth) => {
           { businessId: business._id },
           { session }
         );
-        if (result.deletedCount === 0)
-          throw new Error('Business deletion failed!');
+
+        if (result.deletedCount === 0) {
+          throw new AppError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Business deletion failed!'
+          );
+        }
+
         const prefResult = await Business.deleteOne(
           { _id: business._id },
           { session }
         );
-        if (prefResult.deletedCount === 0)
-          throw new Error('Business deletion failed here!');
+
+        if (prefResult.deletedCount === 0) {
+          throw new AppError(
+            httpStatus.INTERNAL_SERVER_ERROR,
+            'Business deletion failed here!'
+          );
+        }
       }
     }
 

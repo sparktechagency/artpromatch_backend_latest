@@ -9,7 +9,10 @@ import morgan from 'morgan';
 import routes from './app/routes';
 import { AppError, globalErrorHandler, notFound } from './app/utils';
 import { stripeWebhookHandler } from './app/lib/stripe.webhookt';
-import { expireBoosts } from './app/modules/Artist/artist.service';
+import {
+  expireBoosts,
+  expireGuestLocations,
+} from './app/modules/Artist/artist.service';
 
 const app: Application = express();
 
@@ -54,9 +57,22 @@ app.get('/', (req: Request, res: Response, next: NextFunction) => {
   res.send({ message: 'Server is running like a Rabit!' });
 });
 
-cron.schedule('0 */2 * * *', async () => {
+// run boost expiry every 10 minutes
+cron.schedule('*/10 * * * *', async () => {
   try {
     await expireBoosts();
+  } catch (error: unknown) {
+    new AppError(
+      httpStatus.BAD_REQUEST,
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+});
+
+// run guest location expiry every 10 minutes
+cron.schedule('*/10 * * * *', async () => {
+  try {
+    await expireGuestLocations();
   } catch (error: unknown) {
     new AppError(
       httpStatus.BAD_REQUEST,

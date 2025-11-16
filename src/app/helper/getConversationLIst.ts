@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import Auth from '../modules/Auth/auth.model';
 import Conversation from '../modules/Conversation/conversation.model';
-import { onlineUsers } from '../socket/socketConnection';
+import { onlineUsers } from '../socket/connectSocket';
 import { IAuth } from '../modules/Auth/auth.interface';
 
 interface ConversationQuery {

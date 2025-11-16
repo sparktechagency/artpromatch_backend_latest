@@ -248,7 +248,10 @@ const deactivateUserAccount = asyncHandler(async (req, res) => {
 
 // 15. deleteSpecificAccount
 const deleteSpecificUserAccount = asyncHandler(async (req, res) => {
-  const result = await AuthService.deleteSpecificUserAccount(req.user);
+  const result = await AuthService.deleteSpecificUserAccount(
+    req.user,
+    req.body
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

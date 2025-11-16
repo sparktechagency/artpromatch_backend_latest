@@ -39,6 +39,7 @@ import Notification from '../Notification/notification.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
+import GuestSpot from '../GuestSpot/guestSpot.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -829,97 +830,91 @@ const getArtistMonthlySchedule = async (
 const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
   userData: JwtPayload
 ) => {
-  try {
-    // Step 1: Find Artist
-    const artist = await Artist.findOne(
-      { auth: userData._id },
-      { _id: 1, stripeAccountId: 1, isStripeReady: 1, auth: 1 }
-    ).populate('auth');
+  // Step 1: Find Artist
+  const artist = await Artist.findOne(
+    { auth: userData._id },
+    { _id: 1, stripeAccountId: 1, isStripeReady: 1, auth: 1 }
+  ).populate('auth');
 
-    if (!artist) {
-      throw new AppError(
-        httpStatus.NOT_FOUND,
-        'Artist not found or restricted.'
-      );
-    }
-
-    // Step 2: If Stripe account exists but not ready yet
-    if (artist.stripeAccountId && !artist.isStripeReady) {
-      const account = await stripe.accounts.retrieve(artist.stripeAccountId);
-
-      const isStripeFullyOk =
-        account?.capabilities?.card_payments === 'active' &&
-        account?.capabilities?.transfers === 'active';
-
-      if (isStripeFullyOk) {
-        // Mark artist as Stripe ready
-        artist.isStripeReady = true;
-        await artist.save();
-
-        return null; // Already ready, no need for onboarding link
-      }
-
-      // Generate new onboarding link for existing account
-      const onboardingData = await stripe.accountLinks.create({
-        account: artist.stripeAccountId,
-        refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${artist.stripeAccountId}`,
-        return_url: config.stripe.onboarding_return_url,
-        type: 'account_onboarding',
-      });
-
-      return onboardingData.url;
-    }
-
-    // Step 3: If no Stripe account, create a new one
-    if (!artist.stripeAccountId) {
-      const account = await stripe.accounts.create({
-        type: 'express',
-        email: (artist?.auth as any)?.email,
-        country: 'US',
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-        business_type: 'individual',
-        settings: {
-          payouts: { schedule: { interval: 'manual' } },
-        },
-      });
-
-      const onboardingData = await stripe.accountLinks.create({
-        account: account.id,
-        refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${account.id}`,
-        return_url: config.stripe.onboarding_return_url,
-        type: 'account_onboarding',
-      });
-
-      const updatedArtist = await Artist.findByIdAndUpdate(
-        artist._id,
-        { $set: { stripeAccountId: account.id, isStripeReady: false } },
-        { new: true }
-      );
-
-      if (!updatedArtist) {
-        await stripe.accounts.del(account.id); // cleanup
-
-        throw new AppError(
-          httpStatus.NOT_EXTENDED,
-          'Failed to save Stripe account ID into DB!'
-        );
-      }
-
-      return onboardingData.url;
-    }
-
-    return null; // Fallback
-  } catch (error) {
-    console.error('Stripe Onboarding Error:', error);
-    throw new AppError(
-      httpStatus.SERVICE_UNAVAILABLE,
-      'Stripe onboarding service unavailable'
-    );
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found or restricted.');
   }
+
+  if (artist.stripeAccountId && artist.isStripeReady) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Stripe already connected!');
+  }
+
+  // Step 2: If Stripe account exists but not ready yet
+  if (artist.stripeAccountId && !artist.isStripeReady) {
+    const account = await stripe.accounts.retrieve(artist.stripeAccountId);
+
+    const isStripeFullyOk =
+      account?.capabilities?.card_payments === 'active' &&
+      account?.capabilities?.transfers === 'active';
+
+    if (isStripeFullyOk) {
+      // Mark artist as Stripe ready
+      artist.isStripeReady = true;
+      await artist.save();
+
+      return null; // Already ready, no need for onboarding link
+    }
+
+    // Generate new onboarding link for existing account
+    const onboardingData = await stripe.accountLinks.create({
+      account: artist.stripeAccountId,
+      refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${artist.stripeAccountId}`,
+      return_url: config.stripe.onboarding_return_url,
+      type: 'account_onboarding',
+    });
+
+    return onboardingData.url;
+  }
+
+  // Step 3: If no Stripe account, create a new one
+  if (!artist.stripeAccountId) {
+    const account = await stripe.accounts.create({
+      type: 'express',
+      email: (artist?.auth as any)?.email,
+      country: 'US',
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      business_type: 'individual',
+      settings: {
+        payouts: { schedule: { interval: 'manual' } },
+      },
+    });
+
+    const onboardingData = await stripe.accountLinks.create({
+      account: account.id,
+      refresh_url: `${config.stripe.onboarding_refresh_url}?accountId=${account.id}`,
+      return_url: config.stripe.onboarding_return_url,
+      type: 'account_onboarding',
+    });
+
+    const updatedArtist = await Artist.findByIdAndUpdate(
+      artist._id,
+      { $set: { stripeAccountId: account.id, isStripeReady: false } },
+      { new: true }
+    );
+
+    if (!updatedArtist) {
+      await stripe.accounts.del(account.id); // cleanup
+
+      throw new AppError(
+        httpStatus.NOT_EXTENDED,
+        'Failed to save Stripe account ID into DB!'
+      );
+    }
+
+    return onboardingData.url;
+  }
+
+  return null; // Fallback
 };
+
 // create service
 const createService = async (
   user: IAuth,
@@ -927,8 +922,50 @@ const createService = async (
   files: TServiceImages
 ): Promise<IService> => {
   const artist = await Artist.findOne({ auth: user._id });
+
   if (!artist) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
+    try {
+      deleteSomeMulterFiles([
+        ...(files?.thumbnail || []),
+        ...(files?.images || []),
+      ]);
+    } catch (cleanupErr) {
+      console.error('Failed to cleanup uploaded files:', cleanupErr);
+    }
+
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  }
+
+  if (!artist.stripeAccountId) {
+    try {
+      deleteSomeMulterFiles([
+        ...(files?.thumbnail || []),
+        ...(files?.images || []),
+      ]);
+    } catch (cleanupErr) {
+      console.error('Failed to cleanup uploaded files:', cleanupErr);
+    }
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Stripe account not created yet!'
+    );
+  }
+
+  if (artist.stripeAccountId && !artist.isStripeReady) {
+    try {
+      deleteSomeMulterFiles([
+        ...(files?.thumbnail || []),
+        ...(files?.images || []),
+      ]);
+    } catch (cleanupErr) {
+      console.error('Failed to cleanup uploaded files:', cleanupErr);
+    }
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Stripe account exists but not ready to create service yet!'
+    );
   }
 
   const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
@@ -937,6 +974,17 @@ const createService = async (
 
   // Validate images length (2-5)
   if (images.length < 2 || images.length > 5) {
+    // Cleanup any uploaded files to avoid orphaned files on validation failure
+
+    try {
+      deleteSomeMulterFiles([
+        ...(files?.thumbnail || []),
+        ...(files?.images || []),
+      ]);
+    } catch (cleanupErr) {
+      console.error('Failed to cleanup uploaded files:', cleanupErr);
+    }
+
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'You must upload between 2 and 5 Service Images!'
@@ -954,6 +1002,7 @@ const createService = async (
   return service;
 };
 
+// boostProfileIntoDb
 const boostProfileIntoDb = async (user: IAuth) => {
   const session = await startSession();
   session.startTransaction();
@@ -962,22 +1011,21 @@ const boostProfileIntoDb = async (user: IAuth) => {
     const artist = await Artist.findOne({ auth: user.id }, '_id boost').session(
       session
     );
+
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
 
-    if (artist.boost.endTime && artist.boost.endTime > new Date())
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Artist already boost his profile'
-      );
+    if (artist.boost.endTime && artist.boost.endTime > new Date()) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Profile is already boosted');
+    }
 
     const boost = await ArtistBoost.create(
       [
         {
           artist: artist._id,
-          paymentStatus: 'pending',
-          charge: Number(config.boost_charge),
           startTime: new Date(),
           endTime: new Date(Date.now() + 12 * 60 * 60 * 1000),
+          paymentStatus: 'pending',
+          charge: Number(config.boost_charge),
         },
       ],
       { session }
@@ -1003,14 +1051,12 @@ const boostProfileIntoDb = async (user: IAuth) => {
           boostId: boost[0]?._id?.toString(),
           artistId: artist._id.toString(),
         },
-        success_url: `${process.env.CLIENT_URL}/boost/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL}/boost/cancel`,
+        success_url: `${config.client_url}/boost/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${config.client_url}/boost/cancel`,
       },
       { idempotencyKey: `boost_${boost[0].id.toString()}` }
     );
-    // save boost record in DB (pending)
-    boost[0].paymentStatus = 'succeeded';
-    await boost[0].save({ session });
+
     await session.commitTransaction();
     session.endSession();
 
@@ -1020,6 +1066,101 @@ const boostProfileIntoDb = async (user: IAuth) => {
     session.endSession();
     throw err;
   }
+};
+
+// confirm boost payment
+const confirmBoostPaymentIntoDb = async (sessionId: string) => {
+  const chSession = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ['payment_intent'],
+  });
+
+  const boostId = chSession.metadata?.boostId as string | undefined;
+
+  if (!boostId) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Boost ID not found in metadata!'
+    );
+  }
+
+  const boost = await ArtistBoost.findById(boostId);
+
+  if (!boost) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Boost record not found');
+  }
+
+  // If already succeeded, just return current state
+  // if (boost.paymentStatus === 'succeeded') {
+  //   return boost;
+  // }
+
+  const paymentIntent = chSession.payment_intent;
+
+  const paymentIntentId =
+    typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id ?? '';
+
+  if (!paymentIntentId) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Payment intent not found for this session!'
+    );
+  }
+
+  // Mark boost as succeeded & active
+  boost.paymentStatus = 'succeeded';
+  boost.paymentIntentId = paymentIntentId;
+  boost.isActive = true;
+  await boost.save();
+
+  // Update artist.boost flags
+  await Artist.findByIdAndUpdate(boost.artist, {
+    'boost.isActive': true,
+    'boost.startTime': boost.startTime,
+    'boost.endTime': boost.endTime,
+  });
+
+  return boost;
+};
+
+// getArtistProfileByHisIdFromDB
+const getArtistProfileByHisIdFromDB = async (artistId: string) => {
+  const artist = await Artist.findById(artistId).populate([
+    {
+      path: 'auth',
+      select: 'fullName image email phoneNumber isProfile isSocialLogin',
+    },
+  ]);
+
+  const preference = await ArtistPreferences.findOne({
+    artistId: artist?._id,
+  }).select('-artistId -updatedAt -createdAt');
+
+  // Get active services
+  const activeServices = await Service.find({
+    artist: artist?._id,
+    isDeleted: false,
+  })
+    .select(
+      'title thumbnail price avgRating totalReviewCount totalCompletedOrder bodyLocation sessionType'
+    )
+    .lean();
+
+  // Get active guest spots
+  const now = new Date();
+  const activeGuestSpots = await GuestSpot.find({
+    artist: artist?._id,
+    isActive: true,
+    $or: [{ endDate: { $gte: now } }, { 'location.until': { $gte: now } }],
+  })
+    .select('location startDate endDate startTime endTime offDays')
+    .lean();
+
+  return {
+    ...artist?.toObject(),
+    preference,
+    activeServices,
+    activeGuestSpots,
+  };
 };
 
 // expire boost
@@ -1046,6 +1187,32 @@ export const expireBoosts = async () => {
   }
 };
 
+// expire guest locations (reset artists back to mainLocation when guest spot time is over)
+export const expireGuestLocations = async () => {
+  const now = new Date();
+
+  const artists = await Artist.find({
+    'currentLocation.currentLocationUntil': { $ne: null, $lte: now },
+  });
+
+  if (!artists.length) return;
+
+  for (const artist of artists) {
+    // reset currentLocation to mainLocation and clear expiry using direct update
+
+    await Artist.updateOne(
+      { _id: artist._id },
+      {
+        $set: {
+          'currentLocation.coordinates': artist.mainLocation.coordinates,
+          'currentLocation.currentLocationUntil': null,
+        },
+      }
+    );
+  }
+};
+
+// getArtistDashboardPage
 const getArtistDashboardPage = async (user: IAuth) => {
   const artist = await Artist.findOne({ auth: user.id }).select('_id');
   if (!artist) {
@@ -1110,7 +1277,6 @@ const getArtistDashboardPage = async (user: IAuth) => {
     .limit(2)
     .lean();
 
-  console.log('notification', latestNotificationsRaw);
   const latestNotifications = latestNotificationsRaw.map((n) => ({
     _id: n._id,
     type: n.type,
@@ -1142,6 +1308,8 @@ export const ArtistService = {
   updateArtistPortfolioIntoDB,
   getArtistMonthlySchedule,
   boostProfileIntoDb,
+  confirmBoostPaymentIntoDb,
+  getArtistProfileByHisIdFromDB,
   getArtistDashboardPage,
   // addArtistServiceIntoDB,
   getServicesByArtistFromDB,
