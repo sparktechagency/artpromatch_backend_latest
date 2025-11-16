@@ -140,9 +140,20 @@ router
   .route('/schedule')
   .get(auth(ROLE.ARTIST), ArtistController.getArtistSchedule);
 
+// boostProfile
 router
   .route('/boost-profile')
   .post(auth(ROLE.ARTIST), ArtistController.boostProfile);
+
+// confirmBoostPayment
+router
+  .route('/boost-profile/:sessionId')
+  .patch(auth(ROLE.ARTIST), ArtistController.confirmBoostPayment);
+
+// getArtistProfileByHisId
+router
+  .route('/profile/:Id')
+  .get(auth(), ArtistController.getArtistProfileByHisId);
 
 // getAvailabilityExcludingTimeOff
 // router

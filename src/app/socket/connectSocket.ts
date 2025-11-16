@@ -6,6 +6,8 @@ import Auth from '../modules/Auth/auth.model';
 import Conversation from '../modules/Conversation/conversation.model';
 import { SOCKET_EVENTS } from './socket.constant';
 import mongoose from 'mongoose';
+import { AppError } from '../utils';
+import httpStatus from 'http-status';
 
 let io: ChatServer;
 
@@ -85,7 +87,10 @@ const connectSocket = (server: HTTPServer) => {
 
 const getSocketIO = () => {
   if (!io) {
-    throw new Error('Socket.io is not initialized!');
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Socket.io is not initialized!'
+    );
   }
   return io;
 };

@@ -1267,7 +1267,7 @@ const completeBookingIntoDb = async (
     if (!artist.stripeAccountId)
       throw new AppError(
         httpStatus.NOT_FOUND,
-        'Artist stripe account not found! please open you stripe account'
+        'Artist stripe account not found!'
       );
 
     const transfer = await stripe.transfers.create({
@@ -1360,14 +1360,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06
 export async function completeBookingAndPayArtist(bookingId: string) {
   // 1️⃣ Get booking
   const booking = await Booking.findById(bookingId);
-  if (!booking || !booking.paymentIntentId) throw new Error('Booking/payment not found');
+  if (!booking || !booking.paymentIntentId) throw new AppError(httpStatus.NOT_FOUND,'Booking/payment not found');
 
   // 2️⃣ Capture money in platform account
   const paymentIntent = await stripe.paymentIntents.capture(booking.paymentIntentId);
 
   // 3️⃣ Get artist Stripe account
   const artist = await Artist.findById(booking.artist);
-  if (!artist || !artist.stripeAccountId) throw new Error('Artist Stripe account not found');
+  if (!artist || !artist.stripeAccountId) throw new AppError(httpStatus.NOT_FOUND, 'Artist Stripe account not found');
 
   // 4️⃣ Calculate artist share (95%) and platform fee (5%)
   const platformFeePercent = 5;
@@ -1459,8 +1459,8 @@ const confirmBooking = async (req: Request, res: Response) => {
 
 const artistMarksComplete = async (bookingId: string, artistId: string) => {
   const booking = await Booking.findById(bookingId);
-  if (!booking) throw new Error('Booking not found');
-  if (booking.artist !== artistId) throw new Error('Not authorized');
+  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+  if (booking.artist !== artistId) throw new AppError(httpStatus.NOT_FOUND, 'Not authorized');
 
   // Mark artist intent
   booking.sessionCompletedByArtist = true;
@@ -1531,17 +1531,17 @@ export const refundBooking = async (bookingId: string) => {
 
 const artistVerifiesOtp = async (bookingId: string, artistId: string, otpInput: string) => {
   const booking = await Booking.findById(bookingId);
-  if (!booking) throw new Error('Booking not found');
-  if (booking.artist !== artistId) throw new Error('Not authorized');
+  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+  if (booking.artist !== artistId) throw new AppError(httpStatus.NOT_FOUND, 'Not authorized');
 
   if (!booking.sessionCompletedByArtist)
-    throw new Error('Artist has not marked session complete');
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist has not marked session complete');
 
   if (!booking.otp || booking.otp !== otpInput)
-    throw new Error('Invalid OTP');
+    throw new AppError(httpStatus.NOT_FOUND, 'Invalid OTP');
 
   if (booking.otpExpiresAt! < new Date())
-    throw new Error('OTP expired');
+    throw new AppError(httpStatus.NOT_FOUND, 'OTP expired');
 
   // OTP verified
   booking.otpVerified = true;

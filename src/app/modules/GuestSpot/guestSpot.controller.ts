@@ -13,6 +13,23 @@ const getAllGuestSpots = asyncHandler(async (req, res) => {
     data: result,
   });
 });
+
+// getSingleGuestSpot
+const getSingleGuestSpot = asyncHandler(async (req, res) => {
+  const { guestSpotId } = req.params;
+
+  const result = await GuestSpotService.getSingleGuestSpotFromDB(
+    req.user,
+    guestSpotId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'GuestSpot created successfully!',
+    data: result,
+  });
+});
+
 // createGuestSpot
 const createGuestSpot = asyncHandler(async (req, res) => {
   const result = await GuestSpotService.createGuestSpotIntoDB(
@@ -46,6 +63,7 @@ const updateGuestSpot = asyncHandler(async (req, res) => {
 
 export const GuestSpotController = {
   getAllGuestSpots,
+  getSingleGuestSpot,
   createGuestSpot,
   updateGuestSpot,
 };

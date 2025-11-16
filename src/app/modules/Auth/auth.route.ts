@@ -105,11 +105,13 @@ router
   .put(auth(), upload.single('file'), AuthController.updateProfilePhoto);
 
 // 8. changePassword
-router.route('/change-password').patch(
-  auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS, ROLE.ADMIN, ROLE.SUPER_ADMIN),
-  // validateRequest(AuthValidation.changePasswordSchema),
-  AuthController.changePassword
-);
+router
+  .route('/change-password')
+  .patch(
+    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS, ROLE.ADMIN, ROLE.SUPER_ADMIN),
+    validateRequest(AuthValidation.changePasswordSchema),
+    AuthController.changePassword
+  );
 
 // 9. forgotPassword
 router
@@ -166,6 +168,7 @@ router
   .route('/delete-account')
   .delete(
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
+    validateRequest(AuthValidation.deleteUserAccountSchema),
     AuthController.deleteSpecificUserAccount
   );
 
@@ -188,8 +191,7 @@ router
     auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     validateRequest(AuthValidation.updateFcmTokenSchema),
     AuthController.updateFcmToken
-);
-  
+  );
 
 // 18. updateAuthData
 router

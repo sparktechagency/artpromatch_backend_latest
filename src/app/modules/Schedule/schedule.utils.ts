@@ -1,4 +1,6 @@
+import { AppError } from '../../utils';
 import { IDaySchedule, IWeeklySchedule } from './schedule.interface';
+import httpStatus from 'http-status';
 
 // Convert HH:mm to total minutes
 export const toMinutes = (time: string) => {
@@ -83,7 +85,7 @@ function timeToMinutes(timeStr: string) {
   // normalize input like "8:00 am" -> ["8:00", "am"]
   const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
   if (!match) {
-    throw new Error(`Invalid time format: ${timeStr}`);
+    throw new AppError(httpStatus.NOT_FOUND, `Invalid time format: ${timeStr}`);
   }
 
   let hours = parseInt(match[1], 10);

@@ -128,9 +128,34 @@ const updateArtistFlashes = asyncHandler(async (req, res) => {
 // boost profile
 const boostProfile = asyncHandler(async (req, res) => {
   const result = await ArtistService.boostProfileIntoDb(req.user);
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'profile boost successfully!',
+    message: 'Complete the payment quickly!',
+    data: result,
+  });
+});
+
+// confirm boost payment
+const confirmBoostPayment = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const result = await ArtistService.confirmBoostPaymentIntoDb(sessionId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Profile boosted successfully!',
+    data: result,
+  });
+});
+
+// getArtistProfileByHisId
+const getArtistProfileByHisId = asyncHandler(async (req, res) => {
+  const { Id } = req.params;
+  const result = await ArtistService.getArtistProfileByHisIdFromDB(Id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Profile retrived successfully!',
     data: result,
   });
 });
@@ -328,6 +353,8 @@ export const ArtistController = {
   updateArtistPersonalInfo,
   updateArtistProfile,
   boostProfile,
+  confirmBoostPayment,
+  getArtistProfileByHisId,
   updateArtistPreferences,
   updateArtistNotificationPreferences,
   updateArtistPrivacySecuritySettings,

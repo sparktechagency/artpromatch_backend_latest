@@ -1,6 +1,8 @@
+import { AppError } from '../../utils';
 import GuestSpot from '../GuestSpot/guestSpot.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
+import httpStatus from 'http-status';
 
 export const minToTimeString = (min: number) => {
   const h = Math.floor(min / 60);
@@ -37,7 +39,10 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
     .toLowerCase() as keyof IWeeklySchedule;
 
   const scheduleDoc = await ArtistSchedule.findOne({ artistId }).lean();
-  if (!scheduleDoc) throw new Error('Artist schedule not found');
+
+  if (!scheduleDoc) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist schedule not found');
+  }
 
   // First check guest spot
   if (scheduleDoc.activeGuestSpot) {

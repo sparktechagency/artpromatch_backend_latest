@@ -7,13 +7,13 @@ import { GuestSpotController } from './guestSpot.controller';
 const router = Router();
 
 // artistGetAllGuestSpot
-router
-  .route('/')
-  .get(
-    auth(ROLE.ARTIST),
-    GuestSpotController.getAllGuestSpots
-  );
+router.route('/').get(auth(ROLE.ARTIST), GuestSpotController.getAllGuestSpots);
 
+
+// artistGetSingleGuestSpot
+router
+  .route('/:guestSpotId')
+  .get(auth(ROLE.ARTIST), GuestSpotController.getSingleGuestSpot);
 
 // createGuestSpot
 router
