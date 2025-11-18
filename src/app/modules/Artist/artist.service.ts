@@ -40,6 +40,7 @@ import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
 import GuestSpot from '../GuestSpot/guestSpot.model';
+import Folder from '../Folder/folder.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -1155,11 +1156,19 @@ const getArtistProfileByHisIdFromDB = async (artistId: string) => {
     .select('location startDate endDate startTime endTime offDays')
     .lean();
 
+  const activeFolders = await Folder.find({
+    owner: artist?.auth,
+    isPublished: true,
+  })
+    .select('name for images -_id')
+    .lean();
+
   return {
     ...artist?.toObject(),
     preference,
     activeServices,
     activeGuestSpots,
+    activeFolders,
   };
 };
 
@@ -1176,8 +1185,9 @@ export const expireBoosts = async () => {
   if (expiredBoosts.length === 0) return; // nothing to do
 
   for (const boost of expiredBoosts) {
-    boost.isActive = false;
-    await boost.save();
+    await ArtistBoost.findByIdAndUpdate(boost._id, {
+      isActive: false,
+    });
 
     // update the artist's boost info
     await Artist.findByIdAndUpdate(boost.artist, {
@@ -1195,7 +1205,7 @@ export const expireGuestLocations = async () => {
     'currentLocation.currentLocationUntil': { $ne: null, $lte: now },
   });
 
-  if (!artists.length) return;
+  if (artists.length === 0) return; // nothing to do
 
   for (const artist of artists) {
     // reset currentLocation to mainLocation and clear expiry using direct update

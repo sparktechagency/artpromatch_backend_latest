@@ -8,7 +8,8 @@ import { getConversationList } from '../helper/getConversationLIst';
 const handleChatEvents = async (
   io: IOServer,
   socket: Socket,
-  currentUserId: string
+  currentUserId: string,
+  onlineUsers: Map<string, string>
 ): Promise<void> => {
   // join conversation
   socket.on(SOCKET_EVENTS.JOIN_CONVERSATION, async (conversationId: string) => {
@@ -18,7 +19,8 @@ const handleChatEvents = async (
   });
 
   socket.on(SOCKET_EVENTS.LEAVE_CONVERSATION, (conversationId?: string) => {
-    const targetConversationId = conversationId ?? socket.data.currentConversationId;
+    const targetConversationId =
+      conversationId ?? socket.data.currentConversationId;
 
     if (targetConversationId) {
       socket.data.currentConversationId = null;
@@ -43,14 +45,26 @@ const handleChatEvents = async (
     handleMessagePage(socket, currentUserId, data);
   });
 
-  socket.on('typing', ({ conversationId, userId }) => {
-    socket.to(conversationId).emit('user-typing', { conversationId, userId });
+  socket.on(SOCKET_EVENTS.GET_USER_STATUS, (targetUserId?: string) => {
+    if (!targetUserId) return;
+    const normalizedId = targetUserId.toString();
+    const isOnline = onlineUsers.has(normalizedId);
+    socket.emit(SOCKET_EVENTS.USER_STATUS, {
+      userId: normalizedId,
+      online: isOnline,
+    });
   });
 
-  socket.on('stop-typing', ({ conversationId, userId }) => {
+  socket.on(SOCKET_EVENTS.TYPING, ({ conversationId, userId }) => {
     socket
       .to(conversationId)
-      .emit('user-stop-typing', { conversationId, userId });
+      .emit(SOCKET_EVENTS.USER_TYPING, { conversationId, userId });
+  });
+
+  socket.on(SOCKET_EVENTS.STOP_TYPING, ({ conversationId, userId }) => {
+    socket
+      .to(conversationId)
+      .emit(SOCKET_EVENTS.USER_STOP_TYPING, { conversationId, userId });
   });
 
   socket.on(SOCKET_EVENTS.SEND_MESSAGE, (data) =>

@@ -4,6 +4,8 @@ import QueryBuilder from 'mongoose-query-builders';
 import { IAuth } from '../../modules/Auth/auth.interface';
 import Message from '../../modules/Message/message.model';
 import Conversation from '../../modules/Conversation/conversation.model';
+import { SOCKET_EVENTS } from '../socket.constant';
+import getUnreadMessageCount from '../../utils/getUnreadMessageCount';
 
 export const handleMessagePage = async (
   socket: Socket,
@@ -75,14 +77,19 @@ export const handleMessagePage = async (
 
     const io = getSocketIO();
 
-    io.to(conversationId.toString()).emit('messages-seen', {
+    io.to(conversationId.toString()).emit(SOCKET_EVENTS.MESSAGES_SEEN, {
       conversationId,
       seenBy: currentUserId,
       messageIds,
     });
+
+    const currentUserUnread = await getUnreadMessageCount(currentUserId);
+    io.to(currentUserId).emit(SOCKET_EVENTS.UNREAD_MESSAGE_COUNT, {
+      unreadCount: currentUserUnread,
+    });
   }
 
-  socket.emit('messages', {
+  socket.emit(SOCKET_EVENTS.MESSAGES, {
     conversationId: conversationId.toString(),
     userData: payload,
     messages: messages.reverse(),

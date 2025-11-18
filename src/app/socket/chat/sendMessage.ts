@@ -3,6 +3,8 @@ import Auth from '../../modules/Auth/auth.model';
 import Conversation from '../../modules/Conversation/conversation.model';
 import Message from '../../modules/Message/message.model';
 import { Types } from 'mongoose';
+import { SOCKET_EVENTS } from '../../socket/socket.constant';
+import getUnreadMessageCount from '../../utils/getUnreadMessageCount';
 
 interface SendMessageData {
   receiverId: string;
@@ -94,6 +96,12 @@ export const handleSendMessage = async (
 
   const updatedMsg = await Message.findById(saveMessage._id);
   io.to(conversationIdString).emit('new-message', updatedMsg);
+
+  const receiverIdString = data.receiverId.toString();
+  const receiverUnread = await getUnreadMessageCount(receiverIdString);
+  io.to(receiverIdString).emit(SOCKET_EVENTS.UNREAD_MESSAGE_COUNT, {
+    unreadCount: receiverUnread,
+  });
 
   if (isNewConversation) {
     io.to(data.receiverId.toString()).emit('conversation-created', {

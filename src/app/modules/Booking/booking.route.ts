@@ -6,14 +6,7 @@ import { BookingValidation } from './booking.validation';
 
 const router = Router();
 
-// router
-//   .route('/create')
-//   .post(
-//     auth(ROLE.CLIENT),
-//     validateRequest(BookingValidation.bookingSchema),
-//     BookingController.createBooking
-//   );
-
+// reviewAfterAServiceIsCompleted
 router
   .route('/review')
   .post(
@@ -22,6 +15,7 @@ router
     BookingController.reviewAfterAServiceIsCompleted
   );
 
+// createBooking
 router
   .route('/create')
   .post(
@@ -35,18 +29,22 @@ router
   .route('/list')
   .get(auth(ROLE.CLIENT, ROLE.ARTIST), BookingController.getUserBookings);
 
+// confirmPaymentByClient
 router
   .route('/confirm-payment')
   .post(auth(ROLE.CLIENT), BookingController.confirmPaymentByClient);
 
+// confirmBookingByArtist
 router
   .route('/confirm/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.confirmBookingByArtist);
 
+// cancelBooking
 router
   .route('/cancel/:bookingId')
   .post(auth(ROLE.ARTIST, ROLE.CLIENT), BookingController.cancelBooking);
 
+// createSession
 router
   .route('/add-session/:bookingId')
   .post(
@@ -55,6 +53,7 @@ router
     BookingController.createSession
   );
 
+// completeSession
 router
   .route('/complete-session/:bookingId')
   .post(
@@ -63,30 +62,32 @@ router
     BookingController.completeSession
   );
 
+// artistMarksCompleted
 router
   .route('/mark-as-completed/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.artistMarksCompleted);
 
+// resendBookingOtp
 router
   .route('/resend-booking-otp/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.resendBookingOtp);
 
+// completeBooking
 router
   .route('/complete/:bookingId')
   .post(auth(ROLE.ARTIST), BookingController.completeBooking);
 
+// deleteSession
 router
   .route('/delete-session/:bookingId')
   .delete(auth(ROLE.ARTIST), BookingController.deleteSession);
 
-router
-  .route('/create')
-  .post(
-    auth(ROLE.CLIENT),
-    validateRequest(BookingValidation.createBookingSchema),
-    BookingController.createBooking
-  );
+// repayBooking
+// router
+//   .route('/repay/:bookingId')
+//   .post(auth(ROLE.CLIENT), BookingController.repayBooking);
 
+// getBookingsWithReviewThatHaveReviewForClientHomePage
 router
   .route('/bookings-with-review')
   .get(BookingController.getBookingsWithReviewThatHaveReviewForClientHomePage);

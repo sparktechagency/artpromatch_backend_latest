@@ -25,12 +25,12 @@ const folderSchema = new Schema<IFolder>(
 
     isPublished: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
   { timestamps: true, versionKey: false }
 );
 
-const Folder = model('Folder', folderSchema);
+const Folder = model<IFolder>('Folder', folderSchema);
 
 export default Folder;

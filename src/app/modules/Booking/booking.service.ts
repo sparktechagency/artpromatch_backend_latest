@@ -24,6 +24,7 @@ import {
   sendPushNotification,
 } from '../Notification/notification.utils';
 import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
+import { ROLE } from '../Auth/auth.constant';
 
 type TReviewData = {
   bookingId: string;
@@ -481,27 +482,28 @@ const createOrUpdateSessionIntoDB = async (
   const { sessionId, date, startTime, endTime } = payload;
 
   const booking = await Booking.findById(bookingId);
-  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+  if (!booking) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Booking not found!');
+  }
 
   if (['pending', 'failed'].includes(booking.paymentStatus)) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'payment are not found or failed'
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, 'Payment not found or failed!');
   }
 
   if (booking.status === 'cancelled') {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'Cannot modify session in a cancelled booking'
+      'Cannot modify session in a cancelled booking!'
     );
   }
 
   const startTimeInMin = parseTimeToMinutes(startTime);
   const endTimeInMin = parseTimeToMinutes(endTime);
   const duration = endTimeInMin - startTimeInMin;
+
   if (duration <= 0) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration!');
   }
 
   // EDIT mode
@@ -509,7 +511,10 @@ const createOrUpdateSessionIntoDB = async (
     const session = booking.sessions.find(
       (s) => s._id?.toString() === sessionId
     );
-    if (!session) throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
+
+    if (!session) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Session not found!');
+    }
 
     // update fields
     session.date = date;
@@ -1124,16 +1129,18 @@ const cancelBookingIntoDb = async (
     const booking = await Booking.findById(bookingId)
       .session(session)
       .populate('service artist payment');
-    if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+    if (!booking)
+      throw new AppError(httpStatus.NOT_FOUND, 'Booking not found!');
 
     if (booking.status === 'cancelled') {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Booking already cancelled');
+      throw new AppError(httpStatus.BAD_REQUEST, 'Booking already cancelled!');
     }
 
     if (!booking.payment.client.paymentIntentId) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'No payment intent found for this booking'
+        'No payment intent found for this booking!'
       );
     }
 
@@ -1142,27 +1149,32 @@ const cancelBookingIntoDb = async (
       const cancelPayment = await stripe.paymentIntents.cancel(
         booking.payment.client.paymentIntentId
       );
-      if (cancelPayment.status !== 'canceled')
-        throw new AppError(httpStatus.BAD_REQUEST, 'payment not canceled');
+
+      if (cancelPayment.status !== 'canceled') {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Payment not canceled!');
+      }
     } else if (booking.paymentStatus === 'captured') {
-      if (cancelBy === 'CLIENT') {
+      if (cancelBy === ROLE.CLIENT) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
-          'Client cannot cancel this booking! if you need cancel this book pleas contact artist'
+          'Client cannot cancel this booking! if you need cancel this book pleas contact artist!'
         );
       }
 
       const refundAmount = (booking.price - booking.stripeFee) * 100;
+
       if (refundAmount > 0) {
         const refund = await stripe.refunds.create({
           payment_intent: booking.payment.client.paymentIntentId,
           amount: refundAmount,
         });
+
         if (refund.status !== 'succeeded')
           throw new AppError(
             httpStatus.BAD_REQUEST,
-            'booking can not be cancelled'
+            'Booking can not be cancelled!'
           );
+
         booking.payment.client.refundId = refund.id;
       }
     } else {

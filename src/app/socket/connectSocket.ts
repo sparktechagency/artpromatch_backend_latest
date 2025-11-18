@@ -8,6 +8,7 @@ import { SOCKET_EVENTS } from './socket.constant';
 import mongoose from 'mongoose';
 import { AppError } from '../utils';
 import httpStatus from 'http-status';
+import getUnreadMessageCount from '../utils/getUnreadMessageCount';
 
 let io: ChatServer;
 
@@ -65,6 +66,16 @@ const connectSocket = (server: HTTPServer) => {
     socket.join(currentUserId);
     onlineUsers.set(currentUserId, socket.id);
 
+    const unreadCount = await getUnreadMessageCount(currentUserId);
+    io.to(currentUserId).emit(SOCKET_EVENTS.UNREAD_MESSAGE_COUNT, {
+      unreadCount,
+    });
+
+    io.emit(SOCKET_EVENTS.USER_STATUS, {
+      userId: currentUserId,
+      online: true,
+    });
+
     // Conversations
     const userConversations = await Conversation.find({
       participants: currentUserId,
@@ -74,11 +85,16 @@ const connectSocket = (server: HTTPServer) => {
       socket.join(conv._id.toString());
     });
 
-    handleChatEvents(io, socket, currentUserId);
+    handleChatEvents(io, socket, currentUserId, onlineUsers);
 
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
       console.log('Disconnected:', socket.id);
       onlineUsers.delete(currentUserId);
+
+      io.emit(SOCKET_EVENTS.USER_STATUS, {
+        userId: currentUserId,
+        online: false,
+      });
     });
   });
 
