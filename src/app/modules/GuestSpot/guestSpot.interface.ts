@@ -8,6 +8,7 @@ export interface IGuestSpot extends Document {
     coordinates: [number, number];
     until: Date | null;
   };
+  stringLocation: string;
 
   startDate: Date;
   endDate: Date;

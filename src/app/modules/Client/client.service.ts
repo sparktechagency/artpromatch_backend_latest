@@ -302,7 +302,7 @@ const getAllNormalServicesFromDB = async (
     }
 
     // Step 5: Get nearby artists matching both filters
-    const artists = await Artist.aggregate([
+    const nearbyArtists = await Artist.aggregate([
       {
         $geoNear: {
           near: { type: 'Point', coordinates: [longitude, latitude] },
@@ -314,11 +314,26 @@ const getAllNormalServicesFromDB = async (
       { $match: artistFilter },
       { $project: { _id: 1, distance: 1 } },
     ]);
+    // Step 5.1: Exclude artists with an active GuestSpot
+    const now = new Date();
+    const activeGuestSpots = await GuestSpot.find({
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    }).select('artist');
+
+    const blockedArtistIds = new Set(
+      activeGuestSpots.map((spot) => spot.artist.toString())
+    );
+
+    const availableArtists = nearbyArtists.filter(
+      (artist) => !blockedArtistIds.has(artist._id.toString())
+    );
 
     const artistDistanceMap = new Map(
-      artists.map((a) => [a._id.toString(), a.distance])
+      availableArtists.map((a) => [a._id.toString(), a.distance])
     );
-    const artistIds = artists.map((a) => a._id);
+    const artistIds = availableArtists.map((a) => a._id);
 
     // If no guest artists found within radius, return empty result
     if (!artistIds.length) {
@@ -497,6 +512,7 @@ const getAllGuestServicesFromDB = async (
 ) => {
   // Step 1: Find Client and check existence
   const client = await Client.findOne({ auth: user._id });
+
   if (!client) {
     throw new AppError(httpStatus.NOT_FOUND, 'Your Client ID not found!');
   }
@@ -510,7 +526,7 @@ const getAllGuestServicesFromDB = async (
     isActive: true,
     startDate: { $lte: now },
     endDate: { $gte: now },
-  }).select('artist');
+  }).select('artist stringLocation'); // Make sure to select the stringLocation
 
   const guestArtistIds = activeGuestSpots.map((spot) => spot.artist);
 
@@ -623,21 +639,34 @@ const getAllGuestServicesFromDB = async (
     .limit(limit)
     .lean(); // return plain JS objects for easier modification
 
-  // Step 8: Inject distance into artist objects
-  const servicesWithDistance = services.map((service) => {
-    const artistId = service.artist?._id?.toString();
-    const distance = artistId ? artistDistanceMap.get(artistId) : null;
-    return {
-      ...service,
-      artist: {
-        ...service.artist,
-        distance,
-      },
-    };
-  });
+  // Step 8: Inject distance and guest spot stringLocation into artist objects
+  const servicesWithDistanceAndLocation = await Promise.all(
+    services.map(async (service) => {
+      const artistId = service.artist?._id?.toString();
+      const distance = artistId ? artistDistanceMap.get(artistId) : null;
+
+      // Find the corresponding active guest spot for the artist
+      const guestSpot = activeGuestSpots.find(
+        (spot) => spot.artist.toString() === artistId
+      );
+      const guestLocation = guestSpot
+        ? guestSpot.stringLocation
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        : (service.artist as any)?.stringLocation;
+
+      return {
+        ...service,
+        artist: {
+          ...service.artist,
+          distance,
+          stringLocation: guestLocation, // Use the guest spot stringLocation
+        },
+      };
+    })
+  );
 
   // Step 8.1: Prioritize boosted artists, then sort by distance
-  const sortedServices = servicesWithDistance.sort((a, b) => {
+  const sortedServices = servicesWithDistanceAndLocation.sort((a, b) => {
     const aBoost =
       a?.artist && 'boost' in a.artist && a.artist.boost
         ? (a.artist.boost as { isActive?: boolean }).isActive === true
@@ -673,7 +702,6 @@ const getAllGuestServicesFromDB = async (
     ...searchFilter,
   });
 
-  // const total = services.length || 0;
   const totalPage = Math.ceil(total / limit);
 
   return {

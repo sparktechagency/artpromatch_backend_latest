@@ -83,6 +83,7 @@ const createGuestSpotIntoDB = async (
       coordinates: [number, number];
       currentLocationUntil: Date | null;
     };
+    stringLocation: string;
     startDate: Date;
     endDate: Date;
     startTime: string;
@@ -96,8 +97,15 @@ const createGuestSpotIntoDB = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Your artist profile not found!');
   }
 
-  const { currentLocation, startDate, endDate, startTime, endTime, offDays } =
-    payload;
+  const {
+    currentLocation,
+    stringLocation,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    offDays,
+  } = payload;
 
   const locationUntil = currentLocation.currentLocationUntil;
   const now = new Date();
@@ -194,6 +202,7 @@ const createGuestSpotIntoDB = async (
       coordinates: currentLocation.coordinates,
       until: locationUntil,
     },
+    stringLocation,
     startDate,
     endDate,
     startTime,
@@ -216,6 +225,7 @@ const updateGuestSpotIntoDB = async (
       coordinates: [number, number];
       currentLocationUntil: Date | null;
     };
+    stringLocation: string;
     startDate?: Date;
     endDate?: Date;
     startTime?: string;
@@ -246,6 +256,9 @@ const updateGuestSpotIntoDB = async (
       'You cannot update a past GuestSpot!'
     );
   }
+
+  // Resolve final stringLocation
+  const stringLocation = payload.stringLocation ?? existingSpot.stringLocation;
 
   // Resolve final dates
   const startDate = payload.startDate ?? existingSpot.startDate;
@@ -373,19 +386,24 @@ const updateGuestSpotIntoDB = async (
 
   // Build the safe update object (avoid unsafe overwriting)
   const updateData: Partial<IGuestSpot> = {
-    startDate,
-    endDate,
-    startTime: payload.startTime ?? existingSpot.startTime,
-    endTime: payload.endTime ?? existingSpot.endTime,
-    startTimeinMinute,
-    endTimeinMinute,
-    offDays: payload.offDays ?? existingSpot.offDays,
     location: {
       coordinates:
         payload.currentLocation?.coordinates ??
         existingSpot.location.coordinates,
       until: effectiveCurrentLocationUntil,
     },
+    stringLocation,
+
+    startDate,
+    endDate,
+
+    startTime: payload.startTime ?? existingSpot.startTime,
+    endTime: payload.endTime ?? existingSpot.endTime,
+
+    startTimeinMinute,
+    endTimeinMinute,
+
+    offDays: payload.offDays ?? existingSpot.offDays,
   };
 
   const updatedSpot = await GuestSpot.findByIdAndUpdate(

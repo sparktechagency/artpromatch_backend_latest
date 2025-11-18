@@ -15,6 +15,11 @@ const GuestSpotSchema = new Schema<IGuestSpot>(
       until: { type: Date, default: null },
     },
 
+    stringLocation: {
+      type: String,
+      required: true,
+    },
+
     startDate: {
       type: Date,
       required: true,

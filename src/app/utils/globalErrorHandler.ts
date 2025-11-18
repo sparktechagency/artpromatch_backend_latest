@@ -11,6 +11,7 @@ import {
 } from '../errors';
 import { IErrorSource } from '../types';
 import AppError from './AppError';
+import config from '../config';
 
 const globalErrorHandler = (
   err: any,
@@ -71,7 +72,7 @@ const globalErrorHandler = (
     statusCode: err?.status || statusCode,
     message,
     errorMessages: errors,
-    ...(process.env.NODE_ENV === 'development' && { stack: err?.stack }),
+    ...(config.NODE_ENV === 'development' && { stack: err?.stack }),
   });
 };
 

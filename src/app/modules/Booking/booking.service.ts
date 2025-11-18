@@ -154,8 +154,8 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
           bookingId: booking[0]._id.toString(),
           userId: artist?.auth?._id?.toString(),
         },
-        success_url: `${process.env.CLIENT_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL}/booking/cancel`,
+        success_url: `${config.client_url}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${config.client_url}/booking/cancel`,
       },
       { idempotencyKey: `booking_${booking[0]._id}` }
     );
@@ -263,8 +263,8 @@ const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
         bookingId: booking._id.toString(),
         fcmToken: artist.auth.fcmToken ?? '',
       },
-      success_url: `${process.env.CLIENT_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/booking/cancel`,
+      success_url: `${config.client_url}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${config.client_url}/booking/cancel`,
     },
     { idempotencyKey: `repay_${booking._id}` }
   );
@@ -290,7 +290,7 @@ const getUserBookings = async (
   const match: Record<string, any> = {};
   let infoField = '';
 
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
 
     if (!client) {
@@ -299,7 +299,7 @@ const getUserBookings = async (
 
     match.client = client._id;
     infoField = 'artistInfo';
-  } else if (user.role === 'ARTIST') {
+  } else if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
 
     if (!artist) {
@@ -375,7 +375,7 @@ const getUserBookings = async (
               service: '$serviceDetails',
               // client: '$clientDetails',
               client: {
-                // _id: '$clientDetails._id',
+                _id: '$clientAuth._id',
                 name: '$clientAuth.fullName',
                 email: '$clientAuth.email',
                 phone: '$clientAuth.phone',
@@ -1367,7 +1367,7 @@ import Stripe from 'stripe';
 import Booking from './models/booking.model';
 import Artist from './models/artist.model';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
+const stripe = new Stripe(config.stripe_secret_key, { apiVersion: '2024-06-20' });
 
 export async function completeBookingAndPayArtist(bookingId: string) {
   // 1️⃣ Get booking
@@ -1495,7 +1495,7 @@ import { Booking } from "../models/booking.model"; // adjust your import
 import AppError from "../utils/appError"; // your custom error
 import httpStatus from "http-status"; // for status codes
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2022-11-15" });
+const stripe = new Stripe(config.stripe_secret_key, { apiVersion: "2022-11-15" });
 
 export const refundBooking = async (bookingId: string) => {
   // 1️⃣ Find the booking
