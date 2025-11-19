@@ -9,7 +9,6 @@ const router = Router();
 // artistGetAllGuestSpot
 router.route('/').get(auth(ROLE.ARTIST), GuestSpotController.getAllGuestSpots);
 
-
 // artistGetSingleGuestSpot
 router
   .route('/:guestSpotId')

@@ -11,7 +11,7 @@ import { validateRequestFromFormData } from '../../middlewares/validateRequest';
 const router = Router();
 
 // getAllArtists
-router.route('/').get(auth(ROLE.ARTIST), ArtistController.getAllArtists);
+router.route('/').get(auth(ROLE.ARTIST, ROLE.BUSINESS), ArtistController.getAllArtists);
 
 // getOwnArtistData
 router.route('/own').get(auth(ROLE.ARTIST), ArtistController.getOwnArtistData);

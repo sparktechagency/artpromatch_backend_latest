@@ -16,6 +16,11 @@ const createGuestSpotSchema = z.object({
       }),
     }),
 
+    stringLocation: z.string({
+      invalid_type_error: 'Address must be a  string!',
+      required_error: 'Address is required!',
+    }),
+
     startDate: z.coerce.date({
       required_error: 'Start date is required!',
       invalid_type_error: 'Invalid start date format!',

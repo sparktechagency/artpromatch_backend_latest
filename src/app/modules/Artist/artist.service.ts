@@ -40,25 +40,40 @@ import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
 import GuestSpot from '../GuestSpot/guestSpot.model';
+import Folder from '../Folder/folder.model';
+import { ROLE } from '../Auth/auth.constant';
+import Business from '../Business/business.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
 // getAllArtistsFromDB
-const getAllArtistsFromDB = async (
-  query: Record<string, any>,
-  userData: IAuth
-) => {
+const getAllArtistsFromDB = async (query: Record<string, any>, user: IAuth) => {
   // Step 1: Logged-in artist location check
-  const loggedInArtist = await Artist.findOne({ auth: userData._id });
+  let [lon, lat] = [0, 0];
 
-  if (!loggedInArtist || !loggedInArtist.currentLocation) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'Logged in artist location not found!'
-    );
+  if (user.role === ROLE.ARTIST) {
+    const loggedInArtist = await Artist.findOne({ auth: user._id });
+
+    if (!loggedInArtist || !loggedInArtist.currentLocation) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Logged in artist location not found!'
+      );
+    }
+
+    [lon, lat] = loggedInArtist.currentLocation.coordinates;
+  } else if (user.role === ROLE.BUSINESS) {
+    const loggedInArtist = await Business.findOne({ auth: user._id });
+
+    if (!loggedInArtist || !loggedInArtist.location) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Logged in business location not found!'
+      );
+    }
+
+    [lon, lat] = loggedInArtist.location.coordinates;
   }
-
-  const [lon, lat] = loggedInArtist.currentLocation.coordinates;
 
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
@@ -1155,11 +1170,19 @@ const getArtistProfileByHisIdFromDB = async (artistId: string) => {
     .select('location startDate endDate startTime endTime offDays')
     .lean();
 
+  const activeFolders = await Folder.find({
+    owner: artist?.auth,
+    isPublished: true,
+  })
+    .select('name for images -_id')
+    .lean();
+
   return {
     ...artist?.toObject(),
     preference,
     activeServices,
     activeGuestSpots,
+    activeFolders,
   };
 };
 
@@ -1176,8 +1199,9 @@ export const expireBoosts = async () => {
   if (expiredBoosts.length === 0) return; // nothing to do
 
   for (const boost of expiredBoosts) {
-    boost.isActive = false;
-    await boost.save();
+    await ArtistBoost.findByIdAndUpdate(boost._id, {
+      isActive: false,
+    });
 
     // update the artist's boost info
     await Artist.findByIdAndUpdate(boost.artist, {
@@ -1195,7 +1219,7 @@ export const expireGuestLocations = async () => {
     'currentLocation.currentLocationUntil': { $ne: null, $lte: now },
   });
 
-  if (!artists.length) return;
+  if (artists.length === 0) return; // nothing to do
 
   for (const artist of artists) {
     // reset currentLocation to mainLocation and clear expiry using direct update

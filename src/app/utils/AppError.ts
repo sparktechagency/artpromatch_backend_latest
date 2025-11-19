@@ -1,3 +1,5 @@
+import config from "../config";
+
 class AppError extends Error {
   public data: null;
   public success: boolean;
@@ -20,7 +22,7 @@ class AppError extends Error {
     //   Error.captureStackTrace(this, this.constructor);
     // }
 
-    if (process.env.NODE_ENV === "development") {
+    if (config.NODE_ENV === "development") {
       Error.captureStackTrace(this, this.constructor);
     }
   }

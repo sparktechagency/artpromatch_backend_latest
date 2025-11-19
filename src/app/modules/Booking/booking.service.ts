@@ -24,6 +24,7 @@ import {
   sendPushNotification,
 } from '../Notification/notification.utils';
 import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
+import { ROLE } from '../Auth/auth.constant';
 
 type TReviewData = {
   bookingId: string;
@@ -153,8 +154,8 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
           bookingId: booking[0]._id.toString(),
           userId: artist?.auth?._id?.toString(),
         },
-        success_url: `${process.env.CLIENT_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.CLIENT_URL}/booking/cancel`,
+        success_url: `${config.client_url}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${config.client_url}/booking/cancel`,
       },
       { idempotencyKey: `booking_${booking[0]._id}` }
     );
@@ -262,8 +263,8 @@ const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
         bookingId: booking._id.toString(),
         fcmToken: artist.auth.fcmToken ?? '',
       },
-      success_url: `${process.env.CLIENT_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/booking/cancel`,
+      success_url: `${config.client_url}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${config.client_url}/booking/cancel`,
     },
     { idempotencyKey: `repay_${booking._id}` }
   );
@@ -289,7 +290,7 @@ const getUserBookings = async (
   const match: Record<string, any> = {};
   let infoField = '';
 
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
 
     if (!client) {
@@ -298,7 +299,7 @@ const getUserBookings = async (
 
     match.client = client._id;
     infoField = 'artistInfo';
-  } else if (user.role === 'ARTIST') {
+  } else if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
 
     if (!artist) {
@@ -374,7 +375,7 @@ const getUserBookings = async (
               service: '$serviceDetails',
               // client: '$clientDetails',
               client: {
-                // _id: '$clientDetails._id',
+                _id: '$clientAuth._id',
                 name: '$clientAuth.fullName',
                 email: '$clientAuth.email',
                 phone: '$clientAuth.phone',
@@ -481,27 +482,28 @@ const createOrUpdateSessionIntoDB = async (
   const { sessionId, date, startTime, endTime } = payload;
 
   const booking = await Booking.findById(bookingId);
-  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+  if (!booking) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Booking not found!');
+  }
 
   if (['pending', 'failed'].includes(booking.paymentStatus)) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'payment are not found or failed'
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, 'Payment not found or failed!');
   }
 
   if (booking.status === 'cancelled') {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'Cannot modify session in a cancelled booking'
+      'Cannot modify session in a cancelled booking!'
     );
   }
 
   const startTimeInMin = parseTimeToMinutes(startTime);
   const endTimeInMin = parseTimeToMinutes(endTime);
   const duration = endTimeInMin - startTimeInMin;
+
   if (duration <= 0) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration!');
   }
 
   // EDIT mode
@@ -509,7 +511,10 @@ const createOrUpdateSessionIntoDB = async (
     const session = booking.sessions.find(
       (s) => s._id?.toString() === sessionId
     );
-    if (!session) throw new AppError(httpStatus.NOT_FOUND, 'Session not found');
+
+    if (!session) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Session not found!');
+    }
 
     // update fields
     session.date = date;
@@ -1124,16 +1129,18 @@ const cancelBookingIntoDb = async (
     const booking = await Booking.findById(bookingId)
       .session(session)
       .populate('service artist payment');
-    if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+
+    if (!booking)
+      throw new AppError(httpStatus.NOT_FOUND, 'Booking not found!');
 
     if (booking.status === 'cancelled') {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Booking already cancelled');
+      throw new AppError(httpStatus.BAD_REQUEST, 'Booking already cancelled!');
     }
 
     if (!booking.payment.client.paymentIntentId) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'No payment intent found for this booking'
+        'No payment intent found for this booking!'
       );
     }
 
@@ -1142,27 +1149,32 @@ const cancelBookingIntoDb = async (
       const cancelPayment = await stripe.paymentIntents.cancel(
         booking.payment.client.paymentIntentId
       );
-      if (cancelPayment.status !== 'canceled')
-        throw new AppError(httpStatus.BAD_REQUEST, 'payment not canceled');
+
+      if (cancelPayment.status !== 'canceled') {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Payment not canceled!');
+      }
     } else if (booking.paymentStatus === 'captured') {
-      if (cancelBy === 'CLIENT') {
+      if (cancelBy === ROLE.CLIENT) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
-          'Client cannot cancel this booking! if you need cancel this book pleas contact artist'
+          'Client cannot cancel this booking! if you need cancel this book pleas contact artist!'
         );
       }
 
       const refundAmount = (booking.price - booking.stripeFee) * 100;
+
       if (refundAmount > 0) {
         const refund = await stripe.refunds.create({
           payment_intent: booking.payment.client.paymentIntentId,
           amount: refundAmount,
         });
+
         if (refund.status !== 'succeeded')
           throw new AppError(
             httpStatus.BAD_REQUEST,
-            'booking can not be cancelled'
+            'Booking can not be cancelled!'
           );
+
         booking.payment.client.refundId = refund.id;
       }
     } else {
@@ -1355,7 +1367,7 @@ import Stripe from 'stripe';
 import Booking from './models/booking.model';
 import Artist from './models/artist.model';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
+const stripe = new Stripe(config.stripe_secret_key, { apiVersion: '2024-06-20' });
 
 export async function completeBookingAndPayArtist(bookingId: string) {
   // 1️⃣ Get booking
@@ -1483,7 +1495,7 @@ import { Booking } from "../models/booking.model"; // adjust your import
 import AppError from "../utils/appError"; // your custom error
 import httpStatus from "http-status"; // for status codes
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2022-11-15" });
+const stripe = new Stripe(config.stripe_secret_key, { apiVersion: "2022-11-15" });
 
 export const refundBooking = async (bookingId: string) => {
   // 1️⃣ Find the booking

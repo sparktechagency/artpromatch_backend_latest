@@ -175,8 +175,7 @@ const confirmBookingByArtist = asyncHandler(async (req, res) => {
 const cancelBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const role = req.user.role;
-  if (!['ARTIST', 'CLIENT'].includes(role))
-    throw new AppError(httpStatus.NOT_FOUND, 'this is not valid role');
+
   const result = await BookingService.cancelBookingIntoDb(
     bookingId,
     role as 'ARTIST' | 'CLIENT'

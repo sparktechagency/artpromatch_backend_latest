@@ -1,4 +1,5 @@
 // import { Logger } from './logger';
+import config from '../config';
 import AppError from './AppError';
 import asyncHandler from './asyncHandler';
 import { deleteFile } from './deleteFile';
@@ -10,8 +11,8 @@ import sendOtpEmail from './sendOtpEmail';
 // JWT configuration
 const options = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+  secure: config.NODE_ENV === 'production',
+  sameSite: config.NODE_ENV === 'production' ? 'none' : 'strict',
   maxAge: 365 * 24 * 60 * 60 * 1000,
 };
 
