@@ -1,4 +1,5 @@
 export const expertiseTypes = {
+  // Tattoos
   //A
   AMERICAN_TRADITIONAL: 'American Traditional',
   ABSTRACT: 'Abstract',
@@ -92,6 +93,18 @@ export const expertiseTypes = {
 
   // T
   TOOTH_GEMS: 'Tooth Gems',
+
+  // Piercings
+  EAR_LOBE: 'Ear Lobe',
+  LIP: 'Lip (Labret, Monroe)',
+  TRIPLE_HELIX: 'Triple Helix',
+  INDUSTRIAL: 'Industrial',
+  SEPTUM: 'Septum',
+  NOSE_NOSTRIL: 'Nose Nostril',
+  TONGUE: 'Tongue',
+  NASALLANG: 'Nasallang',
+  TRAGUSS: 'Traguss',
+  CONCH: 'Conch',
 } as const;
 
 export type ExpertiseType =
