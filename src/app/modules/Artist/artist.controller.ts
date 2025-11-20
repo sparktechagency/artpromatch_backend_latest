@@ -237,7 +237,7 @@ const getArtistDashboardPage = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Service deleted successfully!',
+    message: 'Dashboard fetched successfully!',
     data: result,
   });
 });

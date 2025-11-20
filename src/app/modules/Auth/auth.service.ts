@@ -412,7 +412,7 @@ const createProfileIntoDB = async (
         stringLocation: stringLocation,
         email: user.email,
         image: user.image || defaultUserImage,
-        role: user.role,
+        role: role,
         isProfile: true,
         isActive: user?.isActive,
       };
@@ -478,7 +478,7 @@ const createProfileIntoDB = async (
         stringLocation: stringLocation,
         email: user.email,
         image: user.image || defaultUserImage,
-        role: user.role,
+        role: role,
         isProfile: true,
         isActive: false,
       };
@@ -548,7 +548,7 @@ const createProfileIntoDB = async (
         stringLocation: stringLocation,
         email: user.email,
         image: user.image || defaultUserImage,
-        role: user.role,
+        role: role,
         isProfile: true,
         isActive: false,
       };
