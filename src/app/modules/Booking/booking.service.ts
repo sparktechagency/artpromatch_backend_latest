@@ -184,6 +184,7 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
 // confirm payment
 const confirmPaymentByClient = async (query: { sessionId: string }) => {
   const sessionId = query.sessionId as string;
+
   const chSession = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ['payment_intent'],
   });
@@ -192,8 +193,10 @@ const confirmPaymentByClient = async (query: { sessionId: string }) => {
     { checkoutSessionId: chSession.id },
     'payment status paymentStatus'
   );
-  if (!booking)
+
+  if (!booking) {
     throw new AppError(httpStatus.NOT_FOUND, 'Session id not found!');
+  }
 
   if (chSession.payment_intent) {
     booking.payment.client.paymentIntentId =
