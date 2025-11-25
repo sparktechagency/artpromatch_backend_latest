@@ -49,7 +49,7 @@ const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
   session.startTransaction();
 
   try {
-    const client = await Client.findOne({ auth: user.id }, '_id').session(
+    const client = await Client.findOne({ auth: user._id }, '_id').session(
       session
     );
 
@@ -1137,15 +1137,20 @@ const cancelBookingIntoDb = async (
       throw new AppError(httpStatus.BAD_REQUEST, 'Booking already cancelled!');
     }
 
-    if (!booking.payment.client.paymentIntentId) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'No payment intent found for this booking!'
-      );
-    }
-
     // --- Stripe Refund ---
-    if (booking.paymentStatus === 'authorized') {
+    if (
+      booking.paymentStatus === 'pending' ||
+      booking.paymentStatus === 'failed'
+    ) {
+      // No Stripe action needed for unpaid or failed payments
+    } else if (booking.paymentStatus === 'authorized') {
+      if (!booking.payment.client.paymentIntentId) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'No payment intent found for this booking!'
+        );
+      }
+
       const cancelPayment = await stripe.paymentIntents.cancel(
         booking.payment.client.paymentIntentId
       );
@@ -1157,13 +1162,20 @@ const cancelBookingIntoDb = async (
       if (cancelBy === ROLE.CLIENT) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
-          'Client cannot cancel this booking! if you need cancel this book pleas contact artist!'
+          "Client can't cancel this booking! If you need to cancel this booking please contact artist!"
         );
       }
 
       const refundAmount = (booking.price - booking.stripeFee) * 100;
 
       if (refundAmount > 0) {
+        if (!booking.payment.client.paymentIntentId) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'No payment intent found for this booking!'
+          );
+        }
+
         const refund = await stripe.refunds.create({
           payment_intent: booking.payment.client.paymentIntentId,
           amount: refundAmount,
@@ -1185,7 +1197,16 @@ const cancelBookingIntoDb = async (
     }
 
     // --- DB Updates ---
-    booking.paymentStatus = 'refunded';
+    // Only mark as refunded if there was an actual payment captured/authorized
+    if (
+      booking.paymentStatus === 'authorized' ||
+      booking.paymentStatus === 'captured'
+    ) {
+      booking.paymentStatus = 'refunded';
+    } else {
+      booking.paymentStatus = 'failed';
+    }
+
     booking.cancelledAt = new Date();
     booking.cancelBy = cancelBy;
     booking.status = 'cancelled';
