@@ -3,18 +3,23 @@ import { AppError, asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 import { RequestService } from './request.service';
 
+// createRequest
 const createRequest = asyncHandler(async (req, res) => {
   const { artistId } = req.body;
   const result = await RequestService.createRequestIntoDB(req.user, artistId);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'Request send successfully!',
+    message: 'Request sent successfully!',
     data: result,
   });
 });
 
-const fetchMyRequests = asyncHandler(async (req, res) => {
-  const result = await RequestService.fetchMyRequest(req.user, req.query);
+// fetchAllMyRequests
+const fetchAllMyRequests = asyncHandler(async (req, res) => {
+  const result = await RequestService.fetchAllMyRequestsFromDB(
+    req.user,
+    req.query
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -24,18 +29,22 @@ const fetchMyRequests = asyncHandler(async (req, res) => {
   });
 });
 
-const statusChangedByArtist = asyncHandler(async (req, res) => {
-  const { status } = req.body;
-  if (!['accepted', 'rejected'].includes(status))
+// artistAcceptRequest
+const artistAcceptRequest = asyncHandler(async (req, res) => {
+  const { requestId } = req.params;
+
+  if (!requestId) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'status is required accepted or rejected'
+      'Request id not found in params!'
     );
-  const result = await RequestService.statusChangedByArtistIntoDb(
+  }
+
+  const result = await RequestService.artistAcceptRequestIntoDb(
     req.user,
-    req.params.id,
-    status
+    requestId
   );
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Requests accepted successfully!',
@@ -43,14 +52,45 @@ const statusChangedByArtist = asyncHandler(async (req, res) => {
   });
 });
 
-const addToJoinStudio = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  if (!id)
+// artistRejectRequest
+const artistRejectRequest = asyncHandler(async (req, res) => {
+  const { requestId } = req.params;
+
+  if (!requestId) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'request id not found in params'
+      'Request id not found in params!'
     );
-  const result = await RequestService.addToJoinStudioIntoDb(req.user, id);
+  }
+
+  const result = await RequestService.artistRejectRequestIntoDb(
+    req.user,
+    requestId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Requests rejected successfully!',
+    data: result,
+  });
+});
+
+// addToJoinStudio
+const addToJoinStudio = asyncHandler(async (req, res) => {
+  const { requestId } = req.params;
+
+  if (!requestId) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Request id not found in params!'
+    );
+  }
+
+  const result = await RequestService.addToJoinStudioIntoDb(
+    req.user,
+    requestId
+  );
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Join Artist successfully!',
@@ -58,20 +98,22 @@ const addToJoinStudio = asyncHandler(async (req, res) => {
   });
 });
 
-const removeRequest = asyncHandler(async (req, res) => {
-  const result = await RequestService.removeRequest(req.params.id);
+// removeRequest
+// const removeRequest = asyncHandler(async (req, res) => {
+//   const result = await RequestService.removeRequestFromDB(req.params.id);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Requests removed successfully!',
-    data: result,
-  });
-});
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     message: 'Requests removed successfully!',
+//     data: result,
+//   });
+// });
 
 export const RequestController = {
   createRequest,
-  fetchMyRequests,
-  statusChangedByArtist,
+  fetchAllMyRequests,
+  artistAcceptRequest,
+  artistRejectRequest,
   addToJoinStudio,
-  removeRequest,
+  // removeRequest,
 };

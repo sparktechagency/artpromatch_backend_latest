@@ -10,21 +10,38 @@ import { IAuth } from '../Auth/auth.interface';
 import { REQUEST_STATUS } from './request.constant';
 import RequestModel from './request.model';
 
+// createRequestIntoDB
 const createRequestIntoDB = async (user: IAuth, artistId: string) => {
-  // Artist send the request to business studios
+  // business send the request to artist to work with in his business studios
   const business = await Business.findOne(
     { auth: user._id },
     '_id  totalArtistSpots studioName'
   );
 
+  if (!business) {
+    throw new AppError(httpStatus.NOT_FOUND, 'No business found!');
+  }
+
   const artist = await Artist.findById(artistId).populate<{ auth: IAuth }>(
     'auth'
   );
-  if (!artist)
-    throw new AppError(httpStatus.NOT_FOUND, 'no authorize artist found!');
 
-  if (!business) {
-    throw new AppError(httpStatus.NOT_FOUND, 'no authorize business found!');
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'No artist found!');
+  }
+
+  if (artist.isConnBusiness) {
+    if (artist.business?.toString() === business._id.toString()) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'This artist is already connected to your business!'
+      );
+    }
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This artist is already connected to another business!'
+    );
   }
 
   const isExistRequest = await RequestModel.findOne({
@@ -34,8 +51,9 @@ const createRequestIntoDB = async (user: IAuth, artistId: string) => {
   });
 
   if (isExistRequest) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Request already sent');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Request already sent!');
   }
+
   const requestPayload = {
     artistId: artistId,
     businessId: business._id,
@@ -45,11 +63,14 @@ const createRequestIntoDB = async (user: IAuth, artistId: string) => {
   const result = await RequestModel.create(requestPayload);
 
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Failed To create Request');
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed To create Request!'
+    );
   }
 
   const notificationPayload = {
-    title: 'join studio request',
+    title: 'Ioin studio request',
     message: `${business.studioName} request you to join their business studio`,
     receiver: artistId,
     type: NOTIFICATION_TYPE.JOIN_STUDIO_REQUEST,
@@ -65,25 +86,21 @@ const createRequestIntoDB = async (user: IAuth, artistId: string) => {
   };
 };
 
-// fetch my request
-
-const fetchMyRequest = async (
-  user: IAuth,
+// fetchAllMyRequestsFromDB
+const fetchAllMyRequestsFromDB = async (
+  userData: IAuth,
   query: Record<string, any> = {}
-): Promise<{
-  meta: { page: number; limit: number; total: number; totalPage: number };
-  data: any[];
-}> => {
+) => {
   const page = Number(query.page) > 0 ? Number(query.page) : 1;
   const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
   const skip = (page - 1) * limit;
 
-  const isArtist = user.role === ROLE.ARTIST;
+  const isArtist = userData.role === ROLE.ARTIST;
 
   // find logged in user's ref (artistId or businessId)
   const myId = isArtist
-    ? (await Artist.findOne({ auth: user._id }).select('_id'))?._id
-    : (await Business.findOne({ auth: user._id }).select('_id'))?._id;
+    ? (await Artist.findOne({ auth: userData._id }).select('_id'))?._id
+    : (await Business.findOne({ auth: userData._id }).select('_id'))?._id;
 
   if (!myId) {
     return {
@@ -173,20 +190,27 @@ const fetchMyRequest = async (
             _id: 1,
             status: 1,
             businessName: '$businessInfo.studioName',
+            businessAuthId: '$businessAuth._id',
+            image: '$businessInfo.image',
             // city: '$businessInfo.city',
             stringLocation: '$businessInfo.stringLocation',
             email: '$businessAuth.email',
             phone: '$businessAuth.phoneNumber',
+            createdAt: 1,
           }
         : {
             _id: 1,
             status: 1,
-            fullName: '$artistAuth.fullName',
+            artistName: '$artistAuth.fullName',
+            artistAuthId: '$artistAuth._id',
+            artistId: '$artistInfo._id',
+            image: '$artistAuth.image',
             // city: '$artistInfo.city',
             stringLocation: '$artistInfo.stringLocation',
             type: '$artistInfo.type',
             email: '$artistAuth.email',
             phone: '$artistAuth.phoneNumber',
+            createdAt: 1,
           },
     },
 
@@ -205,11 +229,8 @@ const fetchMyRequest = async (
   };
 };
 
-const statusChangedByArtistIntoDb = async (
-  user: IAuth,
-  requestId: string,
-  status: string
-) => {
+// artistAcceptRequestIntoDb
+const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
   const artist = await Artist.findOne(
     { auth: user._id },
     'business isConnBusiness'
@@ -219,11 +240,12 @@ const statusChangedByArtistIntoDb = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
-  if (artist.business && artist.isConnBusiness)
+  if (artist.business && artist.isConnBusiness) {
     throw new AppError(
       httpStatus.NOT_FOUND,
-      'you already joined another studio!'
+      'You already joined another business-studio!'
     );
+  }
 
   const request = await RequestModel.findOne({
     _id: requestId,
@@ -244,13 +266,81 @@ const statusChangedByArtistIntoDb = async (
 
   const result = await RequestModel.findByIdAndUpdate(
     requestId,
-    { $set: { status } },
+    { $set: { status: 'accepted' } },
     { new: true }
   );
-  if (!result) throw new AppError(httpStatus.BAD_REQUEST, 'status not updated');
+
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Request not accepted!');
+  }
+
+  artist.business = business._id;
+  artist.isConnBusiness = true;
+  artist.stringLocation = business.stringLocation;
+  artist.mainLocation.coordinates = business.location.coordinates;
+  artist.currentLocation.coordinates = business.location.coordinates;
+  await artist.save();
+
+  // business.totalArtistSpots++;
+  // business.filledArtistSpots++;
+  // await business.save();
+
   return result;
 };
 
+// artistRejectRequestIntoDb
+const artistRejectRequestIntoDb = async (user: IAuth, requestId: string) => {
+  const artist = await Artist.findOne(
+    { auth: user._id },
+    'business isConnBusiness'
+  );
+
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  }
+
+  const request = await RequestModel.findOne({
+    _id: requestId,
+    artistId: artist._id,
+  });
+
+  if (!request) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Request not found!');
+  }
+
+  const business = await Business.findById(request.businessId).select(
+    'totalArtistSpots filledArtistSpots'
+  );
+
+  if (!business) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
+  }
+
+  if (
+    artist.isConnBusiness &&
+    artist.business &&
+    artist.business.toString() === business._id.toString()
+  ) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'You already joined another business-studio!'
+    );
+  }
+
+  const result = await RequestModel.findByIdAndUpdate(
+    requestId,
+    { $set: { status: 'rejected' } },
+    { new: true }
+  );
+
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Request not accepted!');
+  }
+
+  return result;
+};
+
+// addToJoinStudioIntoDb
 const addToJoinStudioIntoDb = async (user: IAuth, requestId: string) => {
   const request = await RequestModel.findOne({
     _id: requestId,
@@ -296,14 +386,16 @@ const addToJoinStudioIntoDb = async (user: IAuth, requestId: string) => {
   return request;
 };
 
-const removeRequest = async (requestId: string) => {
-  return await RequestModel.findByIdAndDelete(requestId);
-};
+// removeRequestFromDB
+// const removeRequestFromDB = async (requestId: string) => {
+//   return await RequestModel.findByIdAndDelete(requestId);
+// };
 
 export const RequestService = {
   createRequestIntoDB,
-  fetchMyRequest,
+  fetchAllMyRequestsFromDB,
+  artistAcceptRequestIntoDb,
+  artistRejectRequestIntoDb,
   addToJoinStudioIntoDb,
-  statusChangedByArtistIntoDb,
-  removeRequest,
+  // removeRequestFromDB,
 };
