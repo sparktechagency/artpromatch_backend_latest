@@ -241,14 +241,6 @@ const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
-  // Check if the artist is already connected to a business
-  if (artist.business && artist.isConnBusiness) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'You are already connected to a business!'
-    );
-  }
-
   // Find the request by ID and ensure it belongs to this artist
   const request = await RequestModel.findOne({
     _id: requestId,
@@ -260,12 +252,25 @@ const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
   }
 
   // Find the business linked to the request
-  const business = await Business.findById(request.businessId).select(
-    'totalArtistSpots filledArtistSpots'
-  );
+  const business = await Business.findById(request.businessId);
 
   if (!business) {
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
+  }
+
+  // Check if the artist is already connected to a business
+  if (artist.business && artist.isConnBusiness) {
+    if (artist.business?.toString() === business._id.toString()) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'You are already connected to this business!'
+      );
+    }
+
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You are already connected to another business!'
+    );
   }
 
   // Update the request status to 'accepted'
@@ -297,6 +302,7 @@ const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
 
 // artistRejectRequestIntoDb
 const artistRejectRequestIntoDb = async (user: IAuth, requestId: string) => {
+  // Check if artist exists
   const artist = await Artist.findOne(
     { auth: user._id },
     'business isConnBusiness'
@@ -306,6 +312,7 @@ const artistRejectRequestIntoDb = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
+  // Find the request by ID and ensure it belongs to this artist
   const request = await RequestModel.findOne({
     _id: requestId,
     artistId: artist._id,
@@ -315,25 +322,26 @@ const artistRejectRequestIntoDb = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Request not found!');
   }
 
-  const business = await Business.findById(request.businessId).select(
-    'totalArtistSpots filledArtistSpots'
-  );
+  // Find the business linked to the request
+  const business = await Business.findById(request.businessId);
 
   if (!business) {
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
+  // Check if the artist is already connected to the same business and rejecting their own request
   if (
     artist.isConnBusiness &&
     artist.business &&
-    artist.business.toString() === business._id.toString()
+    artist.business?.toString() === business?._id?.toString()
   ) {
     throw new AppError(
-      httpStatus.NOT_FOUND,
-      'You already joined another business-studio!'
+      httpStatus.BAD_REQUEST,
+      'You cannot reject a request from a business you are already connected to!'
     );
   }
 
+  // Update the request status to 'rejected'
   const result = await RequestModel.findByIdAndUpdate(
     requestId,
     { $set: { status: 'rejected' } },
@@ -341,7 +349,7 @@ const artistRejectRequestIntoDb = async (user: IAuth, requestId: string) => {
   );
 
   if (!result) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Request not accepted!');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to reject the request!');
   }
 
   return result;
