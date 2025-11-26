@@ -231,6 +231,7 @@ const fetchAllMyRequestsFromDB = async (
 
 // artistAcceptRequestIntoDb
 const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
+  // Check if artist exists
   const artist = await Artist.findOne(
     { auth: user._id },
     'business isConnBusiness'
@@ -240,13 +241,15 @@ const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
+  // Check if the artist is already connected to a business
   if (artist.business && artist.isConnBusiness) {
     throw new AppError(
-      httpStatus.NOT_FOUND,
-      'You already joined another business-studio!'
+      httpStatus.BAD_REQUEST,
+      'You are already connected to a business!'
     );
   }
 
+  // Find the request by ID and ensure it belongs to this artist
   const request = await RequestModel.findOne({
     _id: requestId,
     artistId: artist._id,
@@ -256,6 +259,7 @@ const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Request not found!');
   }
 
+  // Find the business linked to the request
   const business = await Business.findById(request.businessId).select(
     'totalArtistSpots filledArtistSpots'
   );
@@ -264,6 +268,7 @@ const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
+  // Update the request status to 'accepted'
   const result = await RequestModel.findByIdAndUpdate(
     requestId,
     { $set: { status: 'accepted' } },
@@ -271,14 +276,16 @@ const artistAcceptRequestIntoDb = async (user: IAuth, requestId: string) => {
   );
 
   if (!result) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Request not accepted!');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to accept the request!');
   }
 
+  // Connect the artist to the business
   artist.business = business._id;
   artist.isConnBusiness = true;
   artist.stringLocation = business.stringLocation;
   artist.mainLocation.coordinates = business.location.coordinates;
   artist.currentLocation.coordinates = business.location.coordinates;
+
   await artist.save();
 
   // business.totalArtistSpots++;
