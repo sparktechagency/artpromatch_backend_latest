@@ -425,7 +425,7 @@ export const getUserBookingDetails = async (user: IAuth, bookingId: string) => {
   }
 
   // Step 2: Ensure user is either the client or artist of this booking
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
     if (!client) {
       throw new AppError(httpStatus.NOT_FOUND, 'Client profile not found');
@@ -436,7 +436,7 @@ export const getUserBookingDetails = async (user: IAuth, bookingId: string) => {
         'Not authorized to view this booking'
       );
     }
-  } else if (user.role === 'ARTIST') {
+  } else if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
     if (!artist) {
       throw new AppError(httpStatus.NOT_FOUND, 'Artist profile not found');

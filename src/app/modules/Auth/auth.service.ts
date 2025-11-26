@@ -256,17 +256,17 @@ const signinIntoDB = async (payload: {
 
   let stringLocation: string = 'Not Set Yet';
 
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
     stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'ARTIST') {
+  if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
     stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'BUSINESS') {
+  if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user._id });
     stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
   }
@@ -609,7 +609,7 @@ const checkProfileStatusIntoDB = async (user: IAuth) => {
       httpStatus.BAD_REQUEST,
       'This profile is not checked yet, wait for the admin approval!'
     );
-  } else if (user.role === 'CLIENT') {
+  } else if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user?._id });
 
     if (!client) {
@@ -619,7 +619,7 @@ const checkProfileStatusIntoDB = async (user: IAuth) => {
       );
     }
     stringLocation = client.stringLocation;
-  } else if (user.role === 'ARTIST') {
+  } else if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user?._id });
 
     if (!artist) {
@@ -629,7 +629,7 @@ const checkProfileStatusIntoDB = async (user: IAuth) => {
       );
     }
     stringLocation = artist.stringLocation;
-  } else if (user.role === 'BUSINESS') {
+  } else if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user?._id });
 
     if (!business) {
@@ -1053,17 +1053,17 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
   } else {
     let stringLocation: string = 'Not Set Yet';
 
-    if (user.role === 'CLIENT') {
+    if (user.role === ROLE.CLIENT) {
       const client = await Client.findOne({ auth: user._id });
       stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
     }
 
-    if (user.role === 'ARTIST') {
+    if (user.role === ROLE.ARTIST) {
       const artist = await Artist.findOne({ auth: user._id });
       stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
     }
 
-    if (user.role === 'BUSINESS') {
+    if (user.role === ROLE.BUSINESS) {
       const business = await Business.findOne({ auth: user._id });
       stringLocation =
         business?.stringLocation || '123 Main St, Springfield, IL';
@@ -1113,16 +1113,6 @@ const updateProfilePhotoIntoDB = async (
     throw new AppError(httpStatus.BAD_REQUEST, 'File is required!');
   }
 
-  // Delete the previous image if exists
-  if (user?.image) {
-    try {
-      await fs.promises.unlink(user.image);
-    } catch (error: unknown) {
-      // eslint-disable-next-line no-console
-      console.error('Error deleting old file:', error);
-    }
-  }
-
   const userNewData = await Auth.findByIdAndUpdate(
     user._id,
     { image: file.path.replace(/\\/g, '/') },
@@ -1138,19 +1128,29 @@ const updateProfilePhotoIntoDB = async (
     );
   }
 
+  // Delete the previous image if exists
+  if (userNewData && user?.image && user?.image !== defaultUserImage) {
+    try {
+      await fs.promises.unlink(user.image);
+    } catch (error: unknown) {
+      // eslint-disable-next-line no-console
+      console.error('Error deleting old file:', error);
+    }
+  }
+
   let stringLocation: string = 'Not Set Yet';
 
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
     stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'ARTIST') {
+  if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
     stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'BUSINESS') {
+  if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user._id });
     stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
   }
@@ -1213,17 +1213,17 @@ const changePasswordIntoDB = async (
 
   let stringLocation: string = 'Not Set Yet';
 
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
     stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'ARTIST') {
+  if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
     stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'BUSINESS') {
+  if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user._id });
     stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
   }
@@ -1719,17 +1719,17 @@ const getNewAccessTokenFromServer = async (refreshToken: string) => {
 
   let stringLocation: string = 'Not Set Yet';
 
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
     stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'ARTIST') {
+  if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
     stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'BUSINESS') {
+  if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user._id });
     stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
   }
@@ -1773,17 +1773,17 @@ const updateAuthDataIntoDB = async (
 
   let stringLocation: string = 'Not Set Yet';
 
-  if (user.role === 'CLIENT') {
+  if (user.role === ROLE.CLIENT) {
     const client = await Client.findOne({ auth: user._id });
     stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'ARTIST') {
+  if (user.role === ROLE.ARTIST) {
     const artist = await Artist.findOne({ auth: user._id });
     stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
   }
 
-  if (user.role === 'BUSINESS') {
+  if (user.role === ROLE.BUSINESS) {
     const business = await Business.findOne({ auth: user._id });
     stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
   }
