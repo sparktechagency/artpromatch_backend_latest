@@ -6,25 +6,31 @@ import { requestValidation } from './request.validation';
 
 const router = Router();
 
+// createRequest
 router
   .route('/send')
   .post(
-    auth(ROLE.BUSINESS, ROLE.ARTIST),
+    auth(ROLE.BUSINESS),
     validateRequest(requestValidation.createRequestSchema),
     RequestController.createRequest
   );
 
+// fetchAllMyRequests
 router
   .route('/')
-  .get(auth(ROLE.BUSINESS, ROLE.ARTIST), RequestController.fetchMyRequests);
+  .get(auth(ROLE.BUSINESS, ROLE.ARTIST), RequestController.fetchAllMyRequests);
 
-router.route('/').get(auth(ROLE.ARTIST), RequestController.fetchMyRequests);
-
+// artistAcceptRequest
 router
-  .route('/:id')
-  .put(auth(ROLE.ARTIST), RequestController.statusChangedByArtist)
-  .put(auth(ROLE.BUSINESS), RequestController.addToJoinStudio);
+  .route('/accept/:requestId')
+  .put(auth(ROLE.ARTIST), RequestController.artistAcceptRequest);
 
+// artistRejectRequest
+router
+  .route('/reject/:requestId')
+  .put(auth(ROLE.ARTIST), RequestController.artistRejectRequest);
+
+// addToJoinStudio
 router
   .route('/studio/:id')
   .put(auth(ROLE.BUSINESS), RequestController.addToJoinStudio);

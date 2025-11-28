@@ -12,6 +12,7 @@ import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
 import Client from '../Client/client.model';
 import SecretReview from '../SecretReview/secretReview.model';
+import { ROLE } from '../Auth/auth.constant';
 
 // getAllArtistsFoldersFromDB
 const getAllArtistsFoldersFromDB = async () => {
@@ -323,9 +324,9 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
 };
 
 const fetchDasboardPageData = async () => {
-  const totalClients = await Auth.countDocuments({ role: 'CLIENT' });
-  const totalArtists = await Auth.countDocuments({ role: 'ARTIST' });
-  const totalBusinesses = await Auth.countDocuments({ role: 'BUSINESS' });
+  const totalClients = await Auth.countDocuments({ role: ROLE.CLIENT });
+  const totalArtists = await Auth.countDocuments({ role: ROLE.ARTIST });
+  const totalBusinesses = await Auth.countDocuments({ role: ROLE.BUSINESS });
   const adminCommision = Number(config.admin_commision) / 100;
   const adminBookingIncomeAgg = await Booking.aggregate([
     {
@@ -353,7 +354,7 @@ const fetchDasboardPageData = async () => {
     },
   ]);
 
-  const totalAdminIncome =
+  const totalAdminEarnings =
     (adminBookingIncomeAgg[0]?.total || 0) +
     (adminBoostIncomeAgg[0]?.total || 0);
 
@@ -420,9 +421,9 @@ const fetchDasboardPageData = async () => {
   return {
     stats: {
       totalClients,
-      artists: totalArtists,
-      businesses: totalBusinesses,
-      earnings: totalAdminIncome,
+      totalArtists,
+      totalBusinesses,
+      totalEarnings: totalAdminEarnings,
     },
     newUsers,
     topArtists,

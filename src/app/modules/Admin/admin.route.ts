@@ -25,22 +25,19 @@ router
 
 router
   .route('/dashboard')
-  .get(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN, ROLE.ARTIST),
-    AdminController.fetchDashboardPage
-  );
+  .get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN), AdminController.fetchDashboardPage);
 
 router
   .route('/dashboard/yearly-revenue')
   .get(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN, ROLE.ARTIST),
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
     AdminController.getYearlyRevenueStats
   );
 
 router
   .route('/dashboard/yearly-appoiontment')
   .get(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN, ROLE.ARTIST),
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
     AdminController.getYearlyAppointmentStats
   );
 

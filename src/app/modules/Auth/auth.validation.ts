@@ -459,6 +459,11 @@ const updateAuthDataSchema = z.object({
       required_error: 'Full Name is required!',
       invalid_type_error: 'Full Name must be string!',
     }),
+
+    stringLocation: z.string({
+      required_error: 'Address is required!',
+      invalid_type_error: 'Address must be string!',
+    }),
   }),
 });
 

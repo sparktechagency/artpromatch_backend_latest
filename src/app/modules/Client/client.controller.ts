@@ -112,6 +112,21 @@ const getAllGuestServices = asyncHandler(async (req, res) => {
   });
 });
 
+// getAllServicesForBusiness
+const getAllServicesForBusiness = asyncHandler(async (req, res) => {
+  const result = await ClientService.getAllServicesForBusinessFromDB(
+    req.user,
+    req.query
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Guest artists retrieved successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
 // updateClientRadius
 const updateClientRadius = asyncHandler(async (req, res) => {
   const result = await ClientService.updateClientRadiusIntoDB(
@@ -134,5 +149,6 @@ export const ClientController = {
   getDiscoverArtists,
   getAllNormalServices,
   getAllGuestServices,
+  getAllServicesForBusiness,
   updateClientRadius,
 };
