@@ -179,7 +179,7 @@ router.route('/access-token').get(AuthController.getNewAccessToken);
 router
   .route('/update-auth-data')
   .patch(
-    auth(ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN, ROLE.CLIENT, ROLE.ARTIST, ROLE.BUSINESS),
     validateRequest(AuthValidation.updateAuthDataSchema),
     AuthController.updateAuthData
   );

@@ -354,7 +354,7 @@ const fetchDasboardPageData = async () => {
     },
   ]);
 
-  const totalAdminIncome =
+  const totalAdminEarnings =
     (adminBookingIncomeAgg[0]?.total || 0) +
     (adminBoostIncomeAgg[0]?.total || 0);
 
@@ -421,9 +421,9 @@ const fetchDasboardPageData = async () => {
   return {
     stats: {
       totalClients,
-      artists: totalArtists,
-      businesses: totalBusinesses,
-      earnings: totalAdminIncome,
+      totalArtists,
+      totalBusinesses,
+      totalEarnings: totalAdminEarnings,
     },
     newUsers,
     topArtists,

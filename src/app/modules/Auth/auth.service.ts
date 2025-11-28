@@ -248,7 +248,7 @@ const signinIntoDB = async (payload: {
   const isPasswordCorrect = await user.isPasswordMatched(payload.password);
 
   if (!isPasswordCorrect) {
-    throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid credentials!');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials!');
   }
 
   user.fcmToken = payload.fcmToken;
@@ -1756,7 +1756,7 @@ const getNewAccessTokenFromServer = async (refreshToken: string) => {
 
 // 17. updateAuthDataIntoDB
 const updateAuthDataIntoDB = async (
-  payload: { fullName: string },
+  payload: { fullName: string; stringLocation: string },
   userData: IAuth
 ) => {
   const user = await Auth.findByIdAndUpdate(
@@ -1771,20 +1771,38 @@ const updateAuthDataIntoDB = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
 
-  let stringLocation: string = 'Not Set Yet';
+  let stringLocation: string = '';
 
   if (user.role === ROLE.CLIENT) {
-    const client = await Client.findOne({ auth: user._id });
+    const client = await Client.findOneAndUpdate(
+      { auth: user._id },
+      {
+        stringLocation: payload.stringLocation,
+      },
+      { new: true }
+    );
     stringLocation = client?.stringLocation || '123 Main St, Springfield, IL';
   }
 
   if (user.role === ROLE.ARTIST) {
-    const artist = await Artist.findOne({ auth: user._id });
+    const artist = await Artist.findOneAndUpdate(
+      { auth: user._id },
+      {
+        stringLocation: payload.stringLocation,
+      },
+      { new: true }
+    );
     stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
   }
 
   if (user.role === ROLE.BUSINESS) {
-    const business = await Business.findOne({ auth: user._id });
+    const business = await Business.findOneAndUpdate(
+      { auth: user._id },
+      {
+        stringLocation: payload.stringLocation,
+      },
+      { new: true }
+    );
     stringLocation = business?.stringLocation || '123 Main St, Springfield, IL';
   }
 
@@ -1793,7 +1811,7 @@ const updateAuthDataIntoDB = async (
     id: user._id.toString(),
     fullName: user.fullName,
     phoneNumber: user.phoneNumber,
-    stringLocation: stringLocation,
+    stringLocation: payload.stringLocation || stringLocation,
     email: user.email,
     image: user.image || defaultUserImage,
     role: user.role,
