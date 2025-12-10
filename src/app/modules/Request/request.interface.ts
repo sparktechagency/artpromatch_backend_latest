@@ -1,6 +1,5 @@
 import { Document, ObjectId } from 'mongoose';
 import { RequestStatus } from './request.constant';
-import {  } from 'mongoose';
 
 export interface IRequest extends Document {
   _id: ObjectId;
