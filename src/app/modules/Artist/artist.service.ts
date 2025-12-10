@@ -28,21 +28,21 @@ import {
 import { JwtPayload } from 'jsonwebtoken';
 import Stripe from 'stripe';
 import config from '../../config';
+import { ROLE } from '../Auth/auth.constant';
 import Booking from '../Booking/booking.model';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
+import Business from '../Business/business.model';
+import Folder from '../Folder/folder.model';
 import {
   deleteSingleImage,
   deleteSomeImages,
   deleteSomeMulterFiles,
 } from '../Folder/folder.utils';
-import Notification from '../Notification/notification.model';
+import GuestSpot from '../GuestSpot/guestSpot.model';
+import Notification from '../notificationModule/notification.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
-import GuestSpot from '../GuestSpot/guestSpot.model';
-import Folder from '../Folder/folder.model';
-import { ROLE } from '../Auth/auth.constant';
-import Business from '../Business/business.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 

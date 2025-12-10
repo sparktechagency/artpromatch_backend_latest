@@ -3,10 +3,10 @@ import httpStatus from 'http-status';
 import { AppError } from '../../utils';
 import Artist from '../Artist/artist.model';
 import { ROLE } from '../Auth/auth.constant';
-import Business from '../Business/business.model';
-import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
-import { sendNotificationBySocket } from '../Notification/notification.utils';
 import { IAuth } from '../Auth/auth.interface';
+import Business from '../Business/business.model';
+import { NOTIFICATION_TYPE } from '../notificationModule/notification.constant';
+import { sendNotificationBySocket } from '../notificationModule/notification.utils';
 import { REQUEST_STATUS } from './request.constant';
 import RequestModel from './request.model';
 

@@ -2,29 +2,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import { startSession, Types } from 'mongoose';
-import { AppError } from '../../utils';
-import { IArtist } from '../Artist/artist.interface';
-import { IAuth } from '../Auth/auth.interface';
-import SecretReview from '../SecretReview/secretReview.model';
-import { IService } from '../Service/service.interface';
-import Booking from './booking.model';
 import Stripe from 'stripe';
 import config from '../../config';
+import { AppError } from '../../utils';
 import sendOtpEmailForBookingCompletion from '../../utils/sendOtpEmailForBookingCompletion';
+import { IArtist } from '../Artist/artist.interface';
 import Artist from '../Artist/artist.model';
+import { IAuth } from '../Auth/auth.interface';
 import { IClient } from '../Client/client.interface';
 import Client from '../Client/client.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
+import SecretReview from '../SecretReview/secretReview.model';
+import { IService } from '../Service/service.interface';
 import Service from '../Service/service.model';
+import Booking from './booking.model';
 import { parseTimeToMinutes } from './booking.utils';
 import { TBookingData } from './booking.validation';
+
+import { ROLE } from '../Auth/auth.constant';
+import { NOTIFICATION_TYPE } from '../notificationModule/notification.constant';
 import {
   sendNotificationByEmail,
   sendNotificationBySocket,
   sendPushNotification,
-} from '../Notification/notification.utils';
-import { NOTIFICATION_TYPE } from '../Notification/notification.constant';
-import { ROLE } from '../Auth/auth.constant';
+} from '../notificationModule/notification.utils';
 
 type TReviewData = {
   bookingId: string;

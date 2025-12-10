@@ -1,5 +1,5 @@
-import { INotification } from '../modules/Notification/notification.interface';
-import Notification from '../modules/Notification/notification.model';
+import { INotification } from '../modules/notificationModule/notification.interface';
+import Notification from '../modules/notificationModule/notification.model';
 import { getSocketIO } from '../socket/connectSocket';
 import getUserNotificationCount from './getUnseenNotificationCount';
 

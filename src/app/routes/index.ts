@@ -5,14 +5,14 @@ import { AuthRoutes } from '../modules/Auth/auth.route';
 import { BookingRoutes } from '../modules/Booking/booking.route';
 import { BusinessRoutes } from '../modules/Business/business.routes';
 import { ClientRoutes } from '../modules/Client/client.route';
+import { contentRoutes } from '../modules/Content/content.route';
+import { faqRoutes } from '../modules/Faq/faq.route';
 import { FolderRoutes } from '../modules/Folder/folder.route';
 import { GuestSpotRoutes } from '../modules/GuestSpot/guestSpot.route';
 import { messageRoutes } from '../modules/Message/message.route';
-import { notificationRoutes } from '../modules/Notification/notification.routes';
-import { RequestRoute } from '../modules/Request/request.route';
-import { contentRoutes } from '../modules/Content/content.route';
-import { faqRoutes } from '../modules/Faq/faq.route';
+import { notificationRoutes } from '../modules/notificationModule/notification.routes';
 import { PaymentHistoryRoutes } from '../modules/PaymentHistory/paymentHistory.routes';
+import { RequestRoute } from '../modules/Request/request.route';
 
 const router = Router();
 

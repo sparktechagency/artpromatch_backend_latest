@@ -6,17 +6,17 @@ import config from '../config';
 // import logger from '../config/logger';
 import ArtistPreferences from '../modules/ArtistPreferences/artistPreferences.model';
 // import { IAuth } from '../modules/Auth/auth.interface';
+import Artist from '../modules/Artist/artist.model';
 import Auth from '../modules/Auth/auth.model';
 import { PAYMENT_STATUS } from '../modules/Booking/booking.constant';
 import Booking from '../modules/Booking/booking.model';
-import Artist from '../modules/Artist/artist.model';
 import { ArtistBoost } from '../modules/BoostProfile/boost.profile.model';
-import { NOTIFICATION_TYPE } from '../modules/Notification/notification.constant';
+import { NOTIFICATION_TYPE } from '../modules/notificationModule/notification.constant';
 import {
   sendNotificationByEmail,
   sendNotificationBySocket,
   sendPushNotification,
-} from '../modules/Notification/notification.utils';
+} from '../modules/notificationModule/notification.utils';
 import { AppError, asyncHandler } from '../utils';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
