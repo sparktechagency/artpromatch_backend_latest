@@ -53,7 +53,13 @@ const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => 
   if (!service) {
     throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
   }
-
+  
+  const client = await Client.findOne({auth: user._id})
+    .select('_id')
+    
+  if(!client){
+    throw new AppError(httpStatus.BAD_REQUEST, "client not found")
+  }
   const servicePrice = Math.round(service.price * 100);
   const platformFeeAmount = Math.round(Number(config.admin_commision) * 0.1);
 
@@ -65,7 +71,7 @@ const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => 
 
   const metaPayload = {
     serviceId: service._id.toString(),
-    clientId: user._id.toString(),
+    clientId: client._id.toString(),
     preferredStartDate: preferredStartDateToString,
     preferredEndDate: preferredEndDateToString,
   };
@@ -261,7 +267,7 @@ const getUserBookings = async (
       },
     },
   ]);
-
+   console.log(result)
   const total = result.meta[0]?.total || 0;
 
   return {
