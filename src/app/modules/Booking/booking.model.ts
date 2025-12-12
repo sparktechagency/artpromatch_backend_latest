@@ -81,8 +81,8 @@ const bookingSchema = new Schema<IBooking>(
 
     // Client preferred date range
     preferredDate: {
-      startDate: { type: Date, required: true },
-      endDate: { type: Date, required: true },
+      startDate: { type: String},
+      endDate: { type: String},
     },
 
     demoImage: {
