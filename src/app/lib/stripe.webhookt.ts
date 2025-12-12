@@ -7,9 +7,10 @@ import config from '../config';
 // import { IAuth } from '../modules/Auth/auth.interface';
 import Artist from '../modules/Artist/artist.model';
 import { IAuth } from '../modules/Auth/auth.interface';
-import Auth from '../modules/Auth/auth.model';
+import { PAYMENT_STATUS } from '../modules/Booking/booking.constant';
 import Booking from '../modules/Booking/booking.model';
 import { ArtistBoost } from '../modules/BoostProfile/boost.profile.model';
+import Client from '../modules/Client/client.model';
 import Service from '../modules/Service/service.model';
 import { AppError, asyncHandler } from '../utils';
 
@@ -34,21 +35,21 @@ export const stripeWebhookHandler = asyncHandler(
       }
       throw new AppError(httpStatus.BAD_REQUEST, 'Invalid webhook signature');
     }
-    const pi = event.data.object as Stripe.PaymentIntent;
+
     switch (event.type) {
       // case 'checkout.session.completed': {
       //   const session = event.data.object as Stripe.Checkout.Session;
       //   const bookingId = session.metadata?.bookingId;
-      //   const userId = session.metadata?.userId ?? '';
+      //   const clientId = session.metadata?.clientId ?? '';
       //   const paymentIntentId = session.payment_intent as string;
 
-      //   console.log('checkout session completed',bookingId,userId);
+      //   console.log('checkout session completed',bookingId,clientId);
 
       //   const booking = await Booking.findById(bookingId).select(
       //     'artistInfo clientInfo client artist serviceName'
       //   );
       //   if (!booking)
-      //     logger.warn('booking not found', { userId, bookingId });
+      //     logger.warn('booking not found', { clientId, bookingId });
       //   await Booking.updateOne(
       //     { _id: bookingId },
       //     {
@@ -65,8 +66,8 @@ export const stripeWebhookHandler = asyncHandler(
       //     'notificationChannels'
       //   );
 
-      //   const user = await Auth.findOne({ _id: userId }, 'fcmToken');
-      //    logger.warn('User not found', { userId, bookingId });
+      //   const user = await Auth.findOne({ _id: clientId }, 'fcmToken');
+      //    logger.warn('User not found', { clientId, bookingId });
 
       //   if (artist?.notificationChannels.includes('app')) {
       //     sendNotificationBySocket({
@@ -142,61 +143,104 @@ export const stripeWebhookHandler = asyncHandler(
       }
 
       case 'payment_intent.amount_capturable_updated': {
-        const userId = pi.metadata.clientId;
-        const serviceId = pi.metadata.serviceId;
+        const pi = event.data.object as Stripe.PaymentIntent;
+        console.log('pi', pi);
 
-        // Check for duplicate pending booking (optional)
+        // Safely access metadata
+        const metadata = pi.metadata || {};
+        const clientId = metadata.clientId as string | undefined;
+        const serviceId = metadata.serviceId as string | undefined;
 
-        const service = await Service.findById(serviceId).select(
-          '_id artist title description bodyLocation price'
-        );
-
-        if (!service) {
-          throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+        if (!clientId || !serviceId) {
+          console.warn(
+            'Missing clientId or serviceId in PaymentIntent metadata',
+            {
+              piId: pi.id,
+              metadata,
+            }
+          );
+          break;
         }
 
-        const artist = await Service.findById(service.artist)
-          .select('auth')
-          .populate<{ auth: IAuth }>('auth', 'fullName email phone');
+        try {
+          // Check for duplicate pending booking
+          const existingBooking = await Booking.findOne({
+            client: clientId,
+            service: serviceId,
+            paymentStatus: { $in: ['authorized', 'captured'] },
+          });
+          if (existingBooking) {
+            console.log('Booking already exists, skipping creation', {
+              clientId,
+              serviceId,
+            });
+            break;
+          }
 
-        const user = await Auth.findById(userId);
+          const service = await Service.findById(serviceId).select(
+            '_id artist title description bodyLocation price'
+          );
 
-        const existingBooking = await Booking.findOne({
-          client: userId,
-          service: serviceId,
-          paymentStatus: { $in: ['authorized', 'captured'] },
-        });
-        if (existingBooking) return res.json({ received: true });
+          if (!service) {
+            console.warn('Service not found', { serviceId });
+            break;
+          }
 
-        const bookingPayload = {
-          artist: service.artist,
-          client: userId,
-          service: service._id,
-          clientInfo: {
-            fullName: user?.fullName,
-            email: user?.email,
-            phone: user?.phoneNumber,
-          },
-          artistInfo: {
-            fullName: artist?.auth.fullName,
-            email: artist?.auth.email,
-            phone: artist?.auth.phoneNumber,
-          },
-          preferredDate: {
-            startDate: pi.metadata.preferredStartDate,
-            endDate: pi.metadata.preferredEndDate,
-          },
-          serviceName: service.title,
-          bodyPart: service.bodyLocation,
-          price: service.price,
-          paymentStatus: 'pending',
-        };
+          const artist = await Artist.findById(service.artist)
+            .select('auth')
+            .populate<{ auth: IAuth }>('auth', 'fullName email phoneNumber');
 
-        // Create booking in DB with status 'authorized'
-        const booking = await Booking.create(bookingPayload);
+          console.log('artist', artist);
 
-        // Notify artist / app
-        console.log('Booking authorized and created:', booking._id);
+          const client = await Client.findById(clientId)
+            .select('auth')
+            .populate<{ auth: IAuth }>('auth', 'fullName email phoneNumber');
+
+          const bookingPayload = {
+            artist: service.artist,
+            client: client?._id,
+            service: service._id,
+            clientInfo: {
+              fullName: client?.auth?.fullName,
+              email: client?.auth?.email,
+              phone: client?.auth?.phoneNumber,
+            },
+            artistInfo: {
+              fullName: artist?.auth.fullName,
+              email: artist?.auth.email,
+              phone: artist?.auth.phoneNumber,
+            },
+            payment: {
+              client: {
+                chargeId: pi.latest_charge,
+                paymentIntentId: pi.id
+              },
+            },
+            preferredDate: {
+              startDate: metadata.preferredStartDate,
+              endDate: metadata.preferredEndDate,
+            },
+            serviceName: service.title,
+            bodyPart: service.bodyLocation,
+            price: service.price,
+            paymentStatus: PAYMENT_STATUS.AUTHORIZED,
+          };
+
+          if (pi.status !== 'requires_capture') {
+            console.warn('payment failed');
+            break;
+          }
+
+          const booking = await Booking.create(bookingPayload);
+          console.log('Booking authorized and created:', booking);
+        } catch (err) {
+          console.error(
+            'Error processing payment_intent.amount_capturable_updated',
+            err
+          );
+          // Optional: swallow error to always return 200
+          break;
+        }
       }
 
       // payment failed
@@ -268,7 +312,7 @@ export const stripeWebhookHandler = asyncHandler(
             break;
           }
           const bookingId = session.metadata?.bookingId;
-          const userId = session.metadata?.userId ?? '';
+          const clientId = session.metadata?.clientId ?? '';
 
           if (!bookingId) {
             console.warn('Checkout session missing bookingId in metadata', {
@@ -280,7 +324,7 @@ export const stripeWebhookHandler = asyncHandler(
 
           console.info('Checkout session completed', {
             bookingId,
-            userId,
+            clientId,
             sessionId: session.id,
             event: event.type,
           });
@@ -308,10 +352,10 @@ export const stripeWebhookHandler = asyncHandler(
             { artistId: booking.artist },
             'notificationChannels'
           );
-          const user = await Auth.findById(userId, 'fcmToken');
+          const user = await Auth.findById(clientId, 'fcmToken');
 
           if (!user) {
-            console.warn('User not found for booking', { bookingId, userId });
+            console.warn('User not found for booking', { bookingId, clientId });
           }
 
           // Notifications
@@ -320,7 +364,7 @@ export const stripeWebhookHandler = asyncHandler(
               await sendNotificationBySocket({
                 title: 'New Booking Request',
                 message: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
-                receiver: userId ?? '',
+                receiver: clientId ?? '',
                 type: NOTIFICATION_TYPE.BOOKING_REQUEST,
               });
               console.info('App notification sent', {
@@ -369,12 +413,12 @@ export const stripeWebhookHandler = asyncHandler(
                 content: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
                 time: formattedDate,
               });
-              console.info('Push notification sent', { bookingId, userId });
+              console.info('Push notification sent', { bookingId, clientId });
             } catch (err) {
               console.error('Failed to send push notification', {
                 error: err,
                 bookingId,
-                userId,
+                clientId,
               });
             }
           }
