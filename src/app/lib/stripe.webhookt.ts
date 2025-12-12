@@ -148,7 +148,7 @@ export const stripeWebhookHandler = asyncHandler(
         // Check for duplicate pending booking (optional)
 
         const service = await Service.findById(serviceId).select(
-          'artist title description bodyLocation price'
+          '_id artist title description bodyLocation price'
         );
 
         if (!service) {
