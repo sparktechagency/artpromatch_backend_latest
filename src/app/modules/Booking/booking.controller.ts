@@ -5,11 +5,11 @@ import { BookingService } from './booking.service';
 
 // create booking
 const createBooking = asyncHandler(async (req, res) => {
-  const result = await BookingService.createBookingIntoDB(req.user, req.body);
+  const result = await BookingService.createPaymentIntentIntoDB(req.user, req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'Booking Created Successfully, pay now!',
+    message: 'Payment Initiate Successfully, pay now!',
     data: result,
   });
 });
@@ -19,16 +19,6 @@ const confirmPaymentByClient = asyncHandler(async (req, res) => {
   const query = req.query as { sessionId: string };
   const result = await BookingService.confirmPaymentByClient(query);
 
-  sendResponse(res, {
-    statusCode: httpStatus.CREATED,
-    message: 'Payment successfull!',
-    data: result,
-  });
-});
-
-// repay booking
-const repayBooking = asyncHandler(async (req, res) => {
-  const result = await BookingService.repayBookingIntoDb(req.user, req.body);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Payment successfull!',
@@ -236,7 +226,6 @@ export const BookingController = {
   deleteSession,
   cancelBooking,
   getUserBookings,
-  repayBooking,
   createBooking,
   createSession,
   confirmBookingByArtist,

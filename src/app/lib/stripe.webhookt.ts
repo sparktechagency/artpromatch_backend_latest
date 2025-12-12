@@ -4,19 +4,13 @@ import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import config from '../config';
 // import logger from '../config/logger';
-import ArtistPreferences from '../modules/ArtistPreferences/artistPreferences.model';
 // import { IAuth } from '../modules/Auth/auth.interface';
 import Artist from '../modules/Artist/artist.model';
+import { IAuth } from '../modules/Auth/auth.interface';
 import Auth from '../modules/Auth/auth.model';
-import { PAYMENT_STATUS } from '../modules/Booking/booking.constant';
 import Booking from '../modules/Booking/booking.model';
 import { ArtistBoost } from '../modules/BoostProfile/boost.profile.model';
-import { NOTIFICATION_TYPE } from '../modules/notificationModule/notification.constant';
-import {
-  sendNotificationByEmail,
-  sendNotificationBySocket,
-  sendPushNotification,
-} from '../modules/notificationModule/notification.utils';
+import Service from '../modules/Service/service.model';
 import { AppError, asyncHandler } from '../utils';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
@@ -40,7 +34,7 @@ export const stripeWebhookHandler = asyncHandler(
       }
       throw new AppError(httpStatus.BAD_REQUEST, 'Invalid webhook signature');
     }
-
+    const pi = event.data.object as Stripe.PaymentIntent;
     switch (event.type) {
       // case 'checkout.session.completed': {
       //   const session = event.data.object as Stripe.Checkout.Session;
@@ -115,6 +109,133 @@ export const stripeWebhookHandler = asyncHandler(
       // }
 
       case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const paymentIntentId =
+          typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : session.payment_intent?.id;
+        const artistId = session.metadata?.artistId ?? '';
+
+        const boostId = session.metadata?.boostId;
+
+        if (boostId) {
+          console.log(boostId);
+          await ArtistBoost.findOneAndUpdate(
+            { _id: boostId },
+            {
+              paymentStatus: 'succeeded',
+              isActive: true,
+              paymentIntentId: paymentIntentId,
+            },
+            { new: true }
+          );
+
+          // also update artist.boost
+          await Artist.findByIdAndUpdate(artistId, {
+            boost: {
+              lastBoostAt: new Date(),
+              endTime: new Date(Date.now() + 12 * 60 * 60 * 1000),
+              isActive: true,
+            },
+          });
+        }
+      }
+
+      case 'payment_intent.amount_capturable_updated': {
+        const userId = pi.metadata.clientId;
+        const serviceId = pi.metadata.serviceId;
+
+        // Check for duplicate pending booking (optional)
+
+        const service = await Service.findById(serviceId).select(
+          'artist title description bodyLocation price'
+        );
+
+        if (!service) {
+          throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+        }
+
+        const artist = await Service.findById(service.artist)
+          .select('auth')
+          .populate<{ auth: IAuth }>('auth', 'fullName email phone');
+
+        const user = await Auth.findById(userId);
+
+        const existingBooking = await Booking.findOne({
+          client: userId,
+          service: serviceId,
+          paymentStatus: { $in: ['authorized', 'captured'] },
+        });
+        if (existingBooking) return res.json({ received: true });
+
+        const bookingPayload = {
+          artist: service.artist,
+          client: userId,
+          service: service._id,
+          clientInfo: {
+            fullName: user?.fullName,
+            email: user?.email,
+            phone: user?.phoneNumber,
+          },
+          artistInfo: {
+            fullName: artist?.auth.fullName,
+            email: artist?.auth.email,
+            phone: artist?.auth.phoneNumber,
+          },
+          preferredDate: {
+            startDate: pi.metadata.preferredStartDate,
+            endDate: pi.metadata.preferredEndDate,
+          },
+          serviceName: service.title,
+          bodyPart: service.bodyLocation,
+          price: service.price,
+          paymentStatus: 'pending',
+        };
+
+        // Create booking in DB with status 'authorized'
+        const booking = await Booking.create(bookingPayload);
+
+        // Notify artist / app
+        console.log('Booking authorized and created:', booking._id);
+      }
+
+      // payment failed
+      case 'payment_intent.payment_failed': {
+        const intent = event.data.object as Stripe.PaymentIntent;
+
+        const bookingId = intent.metadata.bookingId;
+        await Booking.findByIdAndUpdate(bookingId, {
+          status: 'pending',
+          paymentStatus: 'failed',
+        });
+
+        break;
+      }
+
+      // charge refund
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+
+        // Update booking to refunded
+        await Booking.updateOne(
+          { paymentIntentId: charge.payment_intent as string },
+          { $set: { status: 'cancelled', paymentStatus: 'refunded' } }
+        );
+
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.status(200).json({ received: true });
+  }
+);
+
+/*
+
+  case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const paymentIntentId =
           typeof session.payment_intent === 'string'
@@ -271,36 +392,5 @@ export const stripeWebhookHandler = asyncHandler(
         break;
       }
 
-      // payment failed
-      case 'payment_intent.payment_failed': {
-        const intent = event.data.object as Stripe.PaymentIntent;
 
-        const bookingId = intent.metadata.bookingId;
-        await Booking.findByIdAndUpdate(bookingId, {
-          status: 'pending',
-          paymentStatus: 'failed',
-        });
-
-        break;
-      }
-
-      // charge refund
-      case 'charge.refunded': {
-        const charge = event.data.object as Stripe.Charge;
-
-        // Update booking to refunded
-        await Booking.updateOne(
-          { paymentIntentId: charge.payment_intent as string },
-          { $set: { status: 'cancelled', paymentStatus: 'refunded' } }
-        );
-
-        break;
-      }
-
-      default:
-        console.log(`Unhandled event type ${event.type}`);
-    }
-
-    res.status(200).json({ received: true });
-  }
-);
+*/

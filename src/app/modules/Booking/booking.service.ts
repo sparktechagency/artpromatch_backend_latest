@@ -45,141 +45,44 @@ const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
 
 // create booking
 
-const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
-  const session = await startSession();
-  session.startTransaction();
+const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => {
+  const service = await Service.findById(payload.serviceId)
+    .select('artist title description bodyLocation price')
+    .populate<{ artist: IArtist }>('artist', '_id stripeAccountId');
 
-  try {
-    const client = await Client.findOne({ auth: user._id }, '_id').session(
-      session
-    );
-
-    if (!client) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
-    }
-
-    const service = await Service.findById(payload.serviceId)
-      .select('artist title description bodyLocation price')
-      .session(session);
-
-    if (!service) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
-    }
-
-    const artist = await Artist.findById(service.artist)
-      .populate<{ auth: IAuth }>('auth', 'email phoneNumber fullName fcmToken')
-      .session(session);
-
-    if (!artist) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-    }
-
-    const existingArtistBooking = await Booking.findOne({
-      artist: artist._id,
-      service: service._id,
-      status: 'pending',
-    }).session(session);
-
-    if (existingArtistBooking) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'You have already booked this service!'
-      );
-    }
-
-    const existingClientPending = await Booking.findOne({
-      client: client._id,
-      status: 'pending',
-    }).session(session);
-
-    if (existingClientPending) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'You already have a pending booking request, you cannot create another until current booking is completed or cancelled!'
-      );
-    }
-
-    const bookingPayload = {
-      artist: artist._id,
-      client: client._id,
-      service: service._id,
-      clientInfo: {
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phoneNumber,
-      },
-      artistInfo: {
-        fullName: artist.auth.fullName,
-        email: artist.auth.email,
-        phone: artist.auth.phoneNumber,
-      },
-      preferredDate: {
-        startDate: payload.preferredStartDate,
-        endDate: payload.preferredEndDate,
-      },
-      serviceName: service.title,
-      bodyPart: service.bodyLocation,
-      price: service.price,
-      paymentStatus: 'pending',
-    };
-
-    const booking = await Booking.create([bookingPayload], { session });
-
-    if (!booking || !booking[0]) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create booking!');
-    }
-
-    // Create Stripe Checkout Session using bookingId
-    const checkoutSession: any = await stripe.checkout.sessions.create(
-      {
-        payment_method_types: ['card'],
-        mode: 'payment',
-        payment_intent_data: {
-          capture_method: 'manual',
-        },
-        line_items: [
-          {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: service.title,
-                description: service.description,
-              },
-              unit_amount: Math.round(service.price * 100),
-            },
-            quantity: 1,
-          },
-        ],
-        expand: ['payment_intent'],
-        metadata: {
-          bookingId: booking[0]._id.toString(),
-          userId: artist?.auth?._id?.toString(),
-        },
-        success_url: `${config.client_url}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${config.client_url}/booking/cancel`,
-      },
-      { idempotencyKey: `booking_${booking[0]._id}` }
-    );
-
-    // Update booking with PaymentIntent
-    booking[0].checkoutSessionId = checkoutSession.id;
-    await booking[0].save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return {
-      bookingId: booking[0]._id,
-      checkoutUrl: checkoutSession.url,
-    };
-  } catch (err: any) {
-    await session.abortTransaction();
-    session.endSession();
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      err.message || 'Booking creation failed'
-    );
+  if (!service) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
   }
+
+  const servicePrice = Math.round(service.price * 100);
+  const platformFeeAmount = Math.round(Number(config.admin_commision) * 0.1);
+
+  const start = new Date(payload.preferredStartDate);
+  const end = new Date(payload.preferredEndDate);
+
+  const preferredStartDateToString = start.toLocaleDateString('en-US');
+  const preferredEndDateToString = end.toLocaleDateString('en-US');
+
+  const metaPayload = {
+    serviceId: service._id.toString(),
+    clientId: user._id.toString(),
+    preferredStartDate: preferredStartDateToString,
+    preferredEndDate: preferredEndDateToString,
+  };
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: servicePrice,
+    currency: 'usd',
+    capture_method: 'manual',
+    automatic_payment_methods: { enabled: true }, 
+    application_fee_amount: platformFeeAmount, 
+    transfer_data: { destination: service.artist.stripeAccountId },
+    metadata: metaPayload,
+  });
+
+  return {
+    clientSecret: paymentIntent.client_secret,
+  };
 };
 
 // confirm payment
@@ -216,70 +119,6 @@ const confirmPaymentByClient = async (query: { sessionId: string }) => {
   // };
 
   return null;
-};
-
-// repay booking
-const repayBookingIntoDb = async (user: IAuth, bookingId: string) => {
-  const booking = await Booking.findById(bookingId)
-    .populate<{ artist: IArtist }>('artist', 'auth')
-    .populate<{ service: IService }>('service', 'title description price');
-
-  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
-
-  const client = await Client.findOne({ auth: user.id }, '_id');
-  if (!client) throw new AppError(httpStatus.NOT_FOUND, 'client not found');
-
-  if (
-    !['pending', 'failed'].includes(booking.paymentStatus) ||
-    (booking.paymentStatus === 'pending' &&
-      booking.payment.client.paymentIntentId)
-  ) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'This booking cannot be repaid');
-  }
-
-  const artist = await Artist.findById(booking.artist).populate<{
-    auth: IAuth;
-  }>('auth', 'fcmToken');
-  if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
-
-  const checkoutSession: any = await stripe.checkout.sessions.create(
-    {
-      payment_method_types: ['card'],
-      mode: 'payment',
-
-      payment_intent_data: {
-        capture_method: 'manual',
-      },
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: booking.service.title,
-              description: booking.service.description,
-            },
-            unit_amount: Math.round(booking.service.price * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        bookingId: booking._id.toString(),
-        fcmToken: artist.auth.fcmToken ?? '',
-      },
-      success_url: `${config.client_url}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${config.client_url}/booking/cancel`,
-    },
-    { idempotencyKey: `repay_${booking._id}` }
-  );
-
-  booking.checkoutSessionId = checkoutSession as string;
-  await booking.save();
-
-  return {
-    bookingId: booking._id,
-    checkoutUrl: checkoutSession.url,
-  };
 };
 
 // get user bookings
@@ -1370,8 +1209,7 @@ const getBookingsWithReviewThatHaveReviewForClientHomePage = async () => {
 };
 
 export const BookingService = {
-  createBookingIntoDB,
-  repayBookingIntoDb,
+  createPaymentIntentIntoDB,
   resendBookingOtp,
   cancelBookingIntoDb,
   getArtistDailySchedule,
@@ -1616,4 +1454,143 @@ const artistVerifiesOtp = async (bookingId: string, artistId: string, otpInput: 
 --------------------
 
 
+*/
+
+/*
+const createBookingIntoDB = async (user: IAuth, payload: TBookingData) => {
+  const session = await startSession();
+  session.startTransaction();
+
+  try {
+    const client = await Client.findOne({ auth: user._id }, '_id').session(
+      session
+    );
+
+    if (!client) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Client not found!');
+    }
+
+    const service = await Service.findById(payload.serviceId)
+      .select('artist title description bodyLocation price')
+      .session(session);
+
+    if (!service) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+    }
+
+    const artist = await Artist.findById(service.artist)
+      .populate<{ auth: IAuth }>('auth', 'email phoneNumber fullName fcmToken')
+      .session(session);
+
+    if (!artist) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+    }
+
+    const existingArtistBooking = await Booking.findOne({
+      artist: artist._id,
+      service: service._id,
+      status: 'pending',
+    }).session(session);
+
+    if (existingArtistBooking) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'You have already booked this service!'
+      );
+    }
+
+    const existingClientPending = await Booking.findOne({
+      client: client._id,
+      status: 'pending',
+    }).session(session);
+
+    if (existingClientPending) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'You already have a pending booking request, you cannot create another until current booking is completed or cancelled!'
+      );
+    }
+
+    const bookingPayload = {
+      artist: artist._id,
+      client: client._id,
+      service: service._id,
+      clientInfo: {
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phoneNumber,
+      },
+      artistInfo: {
+        fullName: artist.auth.fullName,
+        email: artist.auth.email,
+        phone: artist.auth.phoneNumber,
+      },
+      preferredDate: {
+        startDate: payload.preferredStartDate,
+        endDate: payload.preferredEndDate,
+      },
+      serviceName: service.title,
+      bodyPart: service.bodyLocation,
+      price: service.price,
+      paymentStatus: 'pending',
+    };
+
+    const booking = await Booking.create([bookingPayload], { session });
+
+    if (!booking || !booking[0]) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create booking!');
+    }
+
+    // Create Stripe Checkout Session using bookingId
+    const checkoutSession: any = await stripe.checkout.sessions.create(
+      {
+        payment_method_types: ['card'],
+        mode: 'payment',
+        payment_intent_data: {
+          capture_method: 'manual',
+        },
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: service.title,
+                description: service.description,
+              },
+              unit_amount: Math.round(service.price * 100),
+            },
+            quantity: 1,
+          },
+        ],
+        expand: ['payment_intent'],
+        metadata: {
+          bookingId: booking[0]._id.toString(),
+          userId: artist?.auth?._id?.toString(),
+        },
+        success_url: `${config.client_url}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${config.client_url}/booking/cancel`,
+      },
+      { idempotencyKey: `booking_${booking[0]._id}` }
+    );
+
+    // Update booking with PaymentIntent
+    booking[0].checkoutSessionId = checkoutSession.id;
+    await booking[0].save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return {
+      bookingId: booking[0]._id,
+      checkoutUrl: checkoutSession.url,
+    };
+  } catch (err: any) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      err.message || 'Booking creation failed'
+    );
+  }
+};
 */

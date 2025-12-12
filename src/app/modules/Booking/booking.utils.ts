@@ -96,3 +96,5 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
     offDays: scheduleDoc.offDays || null,
   };
 };
+
+
