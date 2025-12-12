@@ -5,13 +5,70 @@ import { auth } from '../../middlewares';
 
 const router = Router();
 
-// getAllArtistsFolders
+// 1. fetchDashboardPage
+router
+  .route('/dashboard')
+  .get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN), AdminController.fetchDashboardPage);
+
+// 2. getYearlyAppointmentStats
+router
+  .route('/dashboard/yearly-appoiontment')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.getYearlyAppointmentStats
+  );
+
+// 3. getYearlyRevenueStats
+router
+  .route('/dashboard/yearly-revenue')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.getYearlyRevenueStats
+  );
+
+// 4. getAllArtistsFolders
 router
   .route('/folders')
   .get(
     auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
     AdminController.getAllArtistsFolders
   );
+
+// 5. verifyArtistByAdmin
+router
+  .route('/verify-artist/:artistId')
+  .patch(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.verifyArtistByAdmin
+  );
+
+// 6. verifyBusinessByAdmin
+router
+  .route('/verify-business/:businessId')
+  .patch(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.verifyBusinessByAdmin
+  );
+
+// 7. getAllBookingsForAdmin
+router
+  .route('/get-all-bookings')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.getAllBookingsForAdmin
+  );
+
+// 8. fetchAllArtists
+router.route('/fetch-artists').get(AdminController.fetchAllArtists);
+
+// 9. fetchAllBusinesses
+router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
+
+// 10. fetchAllClients
+router.route('/fetch-clients').get(AdminController.fetchAllClients);
+
+// 11. fetchAllSecretReviews
+router.route('/secret-reviews').get(AdminController.fetchAllSecretReviews);
 
 // // changeStatusOnFolder
 // router
@@ -20,59 +77,5 @@ router
 //     auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
 //     AdminController.changeStatusOnFolder
 //   );
-
-// verifyArtistByAdmin
-
-router
-  .route('/dashboard')
-  .get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN), AdminController.fetchDashboardPage);
-
-router
-  .route('/dashboard/yearly-revenue')
-  .get(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.getYearlyRevenueStats
-  );
-
-router
-  .route('/dashboard/yearly-appoiontment')
-  .get(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.getYearlyAppointmentStats
-  );
-
-router
-  .route('/verify-artist/:artistId')
-  .patch(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.verifyArtistByAdmin
-  );
-
-// verifyBusinessByAdmin
-router
-  .route('/verify-business/:businessId')
-  .patch(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.verifyBusinessByAdmin
-  );
-
-router
-  .route('/get-all-bookings')
-  .get(
-    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
-    AdminController.getAllBookingsForAdmin
-  );
-
-// fetchAllArtists
-router.route('/fetch-artists').get(AdminController.fetchAllArtists);
-
-// fetchAllBusinesses
-router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
-
-// fetchAllClients
-router.route('/fetch-clients').get(AdminController.fetchAllClients);
-
-// fetchAllSecretReviews
-router.route('/secret-reviews').get(AdminController.fetchAllSecretReviews);
 
 export const AdminRoutes = router;
