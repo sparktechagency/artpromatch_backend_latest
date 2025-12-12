@@ -47,7 +47,7 @@ const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
 
 const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => {
   const service = await Service.findById(payload.serviceId)
-    .select('artist title description bodyLocation price')
+    .select('_id artist title description bodyLocation price')
     .populate<{ artist: IArtist }>('artist', '_id stripeAccountId');
 
   if (!service) {
