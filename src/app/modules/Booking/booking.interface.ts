@@ -41,8 +41,8 @@ export interface IBooking extends Document {
   service: Types.ObjectId;
 
   preferredDate?: {
-    startDate: Date;
-    endDate: Date;
+    startDate: string;
+    endDate: string;
   };
 
   demoImage: string;
