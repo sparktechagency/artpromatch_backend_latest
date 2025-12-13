@@ -328,6 +328,28 @@ const getUserBookings = async (
     },
     { $unwind: { path: '$clientAuth', preserveNullAndEmptyArrays: true } },
 
+    // Populate artist
+    {
+      $lookup: {
+        from: 'artists',
+        localField: 'artist',
+        foreignField: '_id',
+        as: 'artistDetails',
+      },
+    },
+    { $unwind: { path: '$artistDetails', preserveNullAndEmptyArrays: true } },
+
+    // Populate auth inside client
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'artistDetails.auth',
+        foreignField: '_id',
+        as: 'artistAuth',
+      },
+    },
+    { $unwind: { path: '$artistAuth', preserveNullAndEmptyArrays: true } },
+
     // Prepare final projection
     {
       $facet: {
@@ -353,6 +375,7 @@ const getUserBookings = async (
               email: `$${infoField}.email`,
               phone: `$${infoField}.phone`,
               image: `$${infoField}.image`,
+
               createdAt: 1,
             },
           },
