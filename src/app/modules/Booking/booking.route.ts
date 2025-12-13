@@ -30,9 +30,6 @@ router
   .get(auth(ROLE.CLIENT, ROLE.ARTIST), BookingController.getUserBookings);
 
 // confirmPaymentByClient
-router
-  .route('/confirm-payment')
-  .post(auth(ROLE.CLIENT), BookingController.confirmPaymentByClient);
 
 // confirmBookingByArtist
 router

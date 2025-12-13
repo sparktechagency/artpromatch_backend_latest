@@ -14,17 +14,6 @@ const createBooking = asyncHandler(async (req, res) => {
   });
 });
 
-// confirm payment by client
-const confirmPaymentByClient = asyncHandler(async (req, res) => {
-  const query = req.query as { sessionId: string };
-  const result = await BookingService.confirmPaymentByClient(query);
-
-  sendResponse(res, {
-    statusCode: httpStatus.CREATED,
-    message: 'Payment successfull!',
-    data: result,
-  });
-});
 
 // get user bookings
 const getUserBookings = asyncHandler(async (req, res) => {
@@ -219,7 +208,6 @@ const getBookingsWithReviewThatHaveReviewForClientHomePage = asyncHandler(
 
 export const BookingController = {
   reviewAfterAServiceIsCompleted,
-  confirmPaymentByClient,
   getArtistSchedule,
   completeSession,
   artistMarksCompleted,

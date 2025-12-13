@@ -1,9 +1,10 @@
 import { Document, Model, ObjectId } from 'mongoose';
 import { TRole } from './auth.constant';
+import { Types } from 'mongoose';
 
 // Instance methods
 export interface IAuth extends Document {
-  _id: ObjectId;
+  _id: Types.ObjectId;
   email: string;
   fullName: string;
   phoneNumber: string;
