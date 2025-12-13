@@ -19,6 +19,7 @@ import Booking from './booking.model';
 import { parseTimeToMinutes } from './booking.utils';
 import { TBookingData } from './booking.validation';
 
+import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { ROLE } from '../Auth/auth.constant';
 import { NOTIFICATION_TYPE } from '../notificationModule/notification.constant';
 import {
@@ -26,6 +27,7 @@ import {
   sendNotificationBySocket,
   sendPushNotification,
 } from '../notificationModule/notification.utils';
+import { BOOKING_STATUS, PAYMENT_STATUS } from './booking.constant';
 
 type TReviewData = {
   bookingId: string;
@@ -45,7 +47,10 @@ const stripe = new Stripe(config.stripe.stripe_secret_key as string, {});
 
 // create booking
 
-const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => {
+const createPaymentIntentIntoDB = async (
+  user: IAuth,
+  payload: TBookingData
+) => {
   const service = await Service.findById(payload.serviceId)
     .select('_id artist title description bodyLocation price')
     .populate<{ artist: IArtist }>('artist', '_id stripeAccountId');
@@ -53,15 +58,15 @@ const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => 
   if (!service) {
     throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
   }
-  
-  const client = await Client.findOne({auth: user._id})
-    .select('_id')
-    
-  if(!client){
-    throw new AppError(httpStatus.BAD_REQUEST, "client not found")
+
+  const client = await Client.findOne({ auth: user._id }).select('_id');
+
+  if (!client) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'client not found');
   }
   const servicePrice = Math.round(service.price * 100);
-  const platformFeeAmount = Math.round(Number(config.admin_commision) * 0.1);
+  const commissionPercent = Number(config.admin_commision) / 100;
+  const platformFeeAmount = Math.round(servicePrice * commissionPercent);
 
   const start = new Date(payload.preferredStartDate);
   const end = new Date(payload.preferredEndDate);
@@ -80,8 +85,8 @@ const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => 
     amount: servicePrice,
     currency: 'usd',
     capture_method: 'manual',
-    automatic_payment_methods: { enabled: true }, 
-    application_fee_amount: platformFeeAmount, 
+    automatic_payment_methods: { enabled: true },
+    application_fee_amount: platformFeeAmount,
     transfer_data: { destination: service.artist.stripeAccountId },
     metadata: metaPayload,
   });
@@ -92,39 +97,153 @@ const createPaymentIntentIntoDB = async (user: IAuth, payload: TBookingData) => 
 };
 
 // confirm payment
-const confirmPaymentByClient = async (query: { sessionId: string }) => {
-  const sessionId = query.sessionId as string;
+const handlePaymentIntentAuthorized = async (
+  pi: Stripe.PaymentIntent
+): Promise<void> => {
+  try {
+    const metadata = pi.metadata ?? {};
+    const clientId = metadata.clientId;
+    const serviceId = metadata.serviceId;
 
-  const chSession = await stripe.checkout.sessions.retrieve(sessionId, {
-    expand: ['payment_intent'],
-  });
+    if (!clientId || !serviceId) {
+      console.warn('Missing metadata', { piId: pi.id });
+      return;
+    }
 
-  const booking = await Booking.findOne(
-    { checkoutSessionId: chSession.id },
-    'payment status paymentStatus'
-  );
+    // Only proceed for manual capture authorization
+    if (pi.status !== 'requires_capture') {
+      console.warn('PI not capturable', { status: pi.status });
+      return;
+    }
 
-  if (!booking) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Session id not found!');
+    // Idempotency guard
+    const existingBooking = await Booking.findOne({
+      'payment.client.paymentIntentId': pi.id,
+    });
+
+    if (existingBooking) {
+      console.log('Booking already exists, skipping', pi.id);
+      return;
+    }
+
+    const service = await Service.findById(serviceId).select(
+      '_id artist title bodyLocation price'
+    );
+    if (!service) {
+      console.warn('Service not found', serviceId);
+      return;
+    }
+
+    const artist = await Artist.findById(service.artist).populate<{
+      auth: IAuth;
+    }>('auth', '_id fullName email phoneNumber fcmToken');
+
+    if (!artist) {
+      console.warn('Client not found', artist);
+      return;
+    }
+    const client = await Client.findById(clientId).populate<{ auth: IAuth }>(
+      'auth',
+      'fullName email phoneNumber fcmToken'
+    );
+
+    if (!client) {
+      console.warn('Client not found', client);
+      return;
+    }
+
+    const booking = await Booking.create({
+      artist: service.artist,
+      client: client?._id,
+      service: service._id,
+      clientInfo: {
+        fullName: client?.auth?.fullName,
+        email: client?.auth?.email,
+        phone: client?.auth?.phoneNumber,
+      },
+      artistInfo: {
+        fullName: artist?.auth?.fullName,
+        email: artist?.auth?.email,
+        phone: artist?.auth?.phoneNumber,
+      },
+      payment: {
+        client: {
+          paymentIntentId: pi.id,
+          chargeId: pi.latest_charge,
+        },
+      },
+      preferredDate: {
+        startDate: metadata.preferredStartDate,
+        endDate: metadata.preferredEndDate,
+      },
+      serviceName: service.title,
+      bodyPart: service.bodyLocation,
+      price: service.price,
+      paymentStatus: PAYMENT_STATUS.AUTHORIZED,
+    });
+
+    const artistPref = await ArtistPreferences.findOne(
+      { artistId: service.artist },
+      'notificationChannels'
+    );
+
+    console.log({ artispref: artistPref });
+
+    // Notifications
+    if (artistPref?.notificationChannels.includes('app')) {
+      try {
+        await sendNotificationBySocket({
+          title: 'New Booking Request',
+          message: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
+          receiver: artist.auth._id,
+          type: NOTIFICATION_TYPE.BOOKING_REQUEST,
+        });
+      } catch (err) {
+        console.error('Failed to send app notification', err);
+      }
+    }
+
+    if (artistPref?.notificationChannels.includes('email')) {
+      try {
+        await sendNotificationByEmail(
+          booking.artistInfo.email,
+          NOTIFICATION_TYPE.BOOKING_REQUEST,
+          {
+            fullName: booking.clientInfo.fullName,
+            serviceName: booking.serviceName,
+          }
+        );
+        console.info('Email notification sent');
+      } catch (err) {
+        console.error('Failed to send email notification');
+      }
+    }
+
+    if (
+      artistPref?.notificationChannels.includes('sms') &&
+      client?.auth.fcmToken
+    ) {
+      try {
+        const formattedDate = new Date().toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+        await sendPushNotification(client?.auth.fcmToken, {
+          title: 'New Booking Request',
+          content: `You have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
+          time: formattedDate,
+        });
+        console.info('Push notification sent');
+      } catch (err) {
+        console.error('Failed to send push notification');
+      }
+    }
+
+    console.log('Booking authorized:', booking._id);
+  } catch (err) {
+    console.error('Webhook logic failed', err);
   }
-
-  if (chSession.payment_intent) {
-    booking.payment.client.paymentIntentId =
-      typeof chSession.payment_intent === 'string'
-        ? chSession.payment_intent
-        : chSession.payment_intent.id;
-    booking.paymentStatus = 'authorized';
-  }
-
-  await booking.save();
-
-  // return {
-  //   status: booking.status,
-  //   paymentStatus: booking.paymentStatus,
-  //   payment: booking.payment.client,
-  // };
-
-  return null;
 };
 
 // get user bookings
@@ -255,7 +374,8 @@ const getUserBookings = async (
               name: `$${infoField}.fullName`,
               email: `$${infoField}.email`,
               phone: `$${infoField}.phone`,
-              artistImage: '$artistAuth.image',
+              image: `$${infoField}.image`,
+
               createdAt: 1,
             },
           },
@@ -267,7 +387,7 @@ const getUserBookings = async (
       },
     },
   ]);
-   console.log(result)
+  console.log(result);
   const total = result.meta[0]?.total || 0;
 
   return {
@@ -740,33 +860,12 @@ const confirmBookingByArtist = async (bookingId: string) => {
     );
   }
 
-  // 2. Capture payment on Stripe (before touching DB)
-  const paymentIntent = await stripe.paymentIntents.capture(
-    booking.payment.client.paymentIntentId
-  );
-
-  if (paymentIntent.status !== 'succeeded') {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Booking confirm failed');
-  }
-
-  const charge = await stripe.charges.retrieve(
-    paymentIntent.latest_charge as string
-  );
-  const balanceTx = await stripe.balanceTransactions.retrieve(
-    charge.balance_transaction as string
-  );
-
-  const stripeFee = balanceTx.fee / 100;
-
   // 3. Atomically update booking
   const updatedBooking = await Booking.findOneAndUpdate(
-    { _id: bookingId, status: 'pending' }, // only confirm if still pending
+    { _id: bookingId, status: 'pending' },
     {
       $set: {
-        'payment.client.chargeId': paymentIntent.latest_charge,
-        status: 'confirmed',
-        paymentStatus: 'captured',
-        stripeFee: stripeFee,
+        status: BOOKING_STATUS.CONFIRMED,
       },
     },
     { new: true }
@@ -785,7 +884,7 @@ const confirmBookingByArtist = async (bookingId: string) => {
     sendNotificationBySocket({
       title: 'Confirmed Booking',
       message: `your booking is now confirmed by ${booking.artistInfo.fullName} for ${booking.serviceName}.`,
-      receiver: booking.client.toString() ?? '',
+      receiver: booking.client ?? '',
       type: NOTIFICATION_TYPE.CONFIRMED_BOOKING,
     });
   }
@@ -908,7 +1007,7 @@ const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
 
   if (!client) throw new AppError(httpStatus.NOT_FOUND, 'client not found');
 
-  if (booking.paymentStatus !== 'captured') {
+  if (booking.paymentStatus !== PAYMENT_STATUS.AUTHORIZED) {
     throw new AppError(httpStatus.BAD_REQUEST, 'payment not found');
   }
 
@@ -1000,88 +1099,51 @@ const cancelBookingIntoDb = async (
   try {
     const booking = await Booking.findById(bookingId)
       .session(session)
-      .populate('service artist payment');
+      .populate('service artist payment paymentStatus');
 
-    if (!booking)
+    if (!booking) {
       throw new AppError(httpStatus.NOT_FOUND, 'Booking not found!');
+    }
 
     if (booking.status === 'cancelled') {
       throw new AppError(httpStatus.BAD_REQUEST, 'Booking already cancelled!');
     }
 
-    // --- Stripe Refund ---
+    const paymentClient = booking.payment?.client;
+
     if (
       booking.paymentStatus === 'pending' ||
       booking.paymentStatus === 'failed'
     ) {
-      // No Stripe action needed for unpaid or failed payments
     } else if (booking.paymentStatus === 'authorized') {
-      if (!booking.payment.client.paymentIntentId) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          'No payment intent found for this booking!'
-        );
+      if (!paymentClient?.paymentIntentId) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'No payment intent found!');
       }
 
       const cancelPayment = await stripe.paymentIntents.cancel(
-        booking.payment.client.paymentIntentId
+        paymentClient.paymentIntentId
       );
 
       if (cancelPayment.status !== 'canceled') {
         throw new AppError(httpStatus.BAD_REQUEST, 'Payment not canceled!');
       }
     } else if (booking.paymentStatus === 'captured') {
-      if (cancelBy === ROLE.CLIENT) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          "Client can't cancel this booking! If you need to cancel this booking please contact artist!"
-        );
-      }
-
-      const refundAmount = (booking.price - booking.stripeFee) * 100;
-
-      if (refundAmount > 0) {
-        if (!booking.payment.client.paymentIntentId) {
-          throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'No payment intent found for this booking!'
-          );
-        }
-
-        const refund = await stripe.refunds.create({
-          payment_intent: booking.payment.client.paymentIntentId,
-          amount: refundAmount,
-        });
-
-        if (refund.status !== 'succeeded')
-          throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'Booking can not be cancelled!'
-          );
-
-        booking.payment.client.refundId = refund.id;
-      }
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Booking already completed and payment captured; cancellation not allowed.'
+      );
     } else {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        `Cannot cancel booking in status: ${booking.paymentStatus}`
+        `Cannot cancel booking with payment status: ${booking.paymentStatus}`
       );
     }
 
     // --- DB Updates ---
-    // Only mark as refunded if there was an actual payment captured/authorized
-    if (
-      booking.paymentStatus === 'authorized' ||
-      booking.paymentStatus === 'captured'
-    ) {
-      booking.paymentStatus = 'refunded';
-    } else {
-      booking.paymentStatus = 'failed';
-    }
-
     booking.cancelledAt = new Date();
     booking.cancelBy = cancelBy;
     booking.status = 'cancelled';
+    booking.paymentStatus = 'refunded';
     await booking.save({ session });
 
     await session.commitTransaction();
@@ -1118,6 +1180,9 @@ const completeBookingIntoDb = async (
     if (!booking)
       throw new AppError(httpStatus.BAD_REQUEST, 'Booking not found');
 
+     if (!booking.otp)
+      throw new AppError(httpStatus.BAD_REQUEST, 'No OTP found for this booking');
+
     const [artist, service] = await Promise.all([
       Artist.findOne(
         { auth: user.id },
@@ -1130,44 +1195,6 @@ const completeBookingIntoDb = async (
     ]);
 
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
-    if (!service) throw new AppError(httpStatus.NOT_FOUND, 'Service not found');
-
-    if (booking.status !== 'confirmed')
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'this booking is not confirmed'
-      );
-
-    if (booking.paymentStatus !== 'captured')
-      throw new AppError(
-        httpStatus.NOT_FOUND,
-        'payment is not captured by stripe'
-      );
-
-    // ✅ check expiry before comparing
-    if (booking.otpExpiresAt && booking.otpExpiresAt < new Date()) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'otp time is expired');
-    }
-
-    // ✅ compare OTP securely
-    const isOtpCorrect = await booking.isOtpMatched(otp);
-    if (!isOtpCorrect) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'invalid otp');
-    }
-
-    const paymentIntent = await stripe.paymentIntents.retrieve(
-      booking.payment.client.paymentIntentId as string
-    );
-
-    if (!paymentIntent)
-      throw new AppError(httpStatus.NOT_FOUND, 'no payment found');
-
-    const stripeFee = Math.round(booking.stripeFee * 100);
-    const adminPercent = Number(config.admin_commision) || 5;
-    const adminFee = Math.round(
-      paymentIntent.amount_received * (adminPercent / 100)
-    );
-    const artistAmount = paymentIntent.amount_received - adminFee - stripeFee;
 
     if (!artist.stripeAccountId)
       throw new AppError(
@@ -1175,21 +1202,64 @@ const completeBookingIntoDb = async (
         'Artist stripe account not found!'
       );
 
-    const transfer = await stripe.transfers.create({
-      amount: artistAmount,
-      currency: paymentIntent.currency,
-      destination: artist.stripeAccountId!,
-      source_transaction: booking.payment.client.chargeId!,
-    });
+    if (!service) throw new AppError(httpStatus.NOT_FOUND, 'Service not found');
 
-    // ✅ mark booking completed + cleanup otp fields
+    if (booking.status !== BOOKING_STATUS.CONFIRMED)
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'this booking is not confirmed'
+      );
+
+    if (booking.paymentStatus !== PAYMENT_STATUS.AUTHORIZED)
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'payment is not authorized by stripe'
+      );
+
+    if (booking.otpExpiresAt && booking.otpExpiresAt < new Date()) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'otp time is expired');
+    }
+
+    const isOtpCorrect = await booking.isOtpMatched(otp);
+    if (!isOtpCorrect) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'invalid otp');
+    }
+
+    const paymentIntent = await stripe.paymentIntents.capture(
+      booking.payment.client.paymentIntentId as string
+    );
+    if (!paymentIntent)
+      throw new AppError(httpStatus.NOT_FOUND, 'no payment found');
+    if (paymentIntent.status !== 'succeeded') {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Payment Failed! Money Can not be tranferred'
+      );
+    }
+    const charge = await stripe.charges.retrieve(
+      paymentIntent.latest_charge as string
+    );
+    const balanceTx = await stripe.balanceTransactions.retrieve(
+      charge.balance_transaction as string
+    );
+
+    const stripeFee = balanceTx.fee / 100;
+
+    const finalStripeFee = Math.round(stripeFee * 100);
+    const adminPercent = Number(config.admin_commision) || 5;
+    const adminFee = Math.round(
+      paymentIntent.amount_received * (adminPercent / 100)
+    );
+    const artistAmount =
+      paymentIntent.amount_received - adminFee - finalStripeFee;
+
     booking.set({
-      status: 'completed',
-      paymentStatus: 'succeeded',
+      status: BOOKING_STATUS.COMPLETED,
+      stripeFee: Number((finalStripeFee / 100).toFixed(2)),
+      platFormFee: adminFee,
+      paymentStatus: PAYMENT_STATUS.SUCCESSED,
       completedAt: new Date(),
       artistEarning: artistAmount / 100,
-      'payment.artist.transferId': transfer.id,
-
       otp: undefined,
       otpExpiresAt: undefined,
     });
@@ -1246,7 +1316,7 @@ export const BookingService = {
   completeSessionByArtist,
   deleteSessionFromBooking,
   artistMarksCompletedIntoDb,
-  confirmPaymentByClient,
+  handlePaymentIntentAuthorized,
   getUserBookings,
   reviewAfterAServiceIsCompletedIntoDB,
   createOrUpdateSessionIntoDB,

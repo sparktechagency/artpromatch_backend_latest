@@ -15,7 +15,7 @@ export interface INotification {
 export interface INotificationPayload {
   title: string;
   message: string;
-  receiver: string;
+  receiver: Types.ObjectId;
   type: TNotification;
   redirectId?: string;
 }

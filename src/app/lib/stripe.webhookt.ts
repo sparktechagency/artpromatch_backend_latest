@@ -6,12 +6,9 @@ import config from '../config';
 // import logger from '../config/logger';
 // import { IAuth } from '../modules/Auth/auth.interface';
 import Artist from '../modules/Artist/artist.model';
-import { IAuth } from '../modules/Auth/auth.interface';
-import { PAYMENT_STATUS } from '../modules/Booking/booking.constant';
 import Booking from '../modules/Booking/booking.model';
+import { BookingService } from '../modules/Booking/booking.service';
 import { ArtistBoost } from '../modules/BoostProfile/boost.profile.model';
-import Client from '../modules/Client/client.model';
-import Service from '../modules/Service/service.model';
 import { AppError, asyncHandler } from '../utils';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
@@ -145,102 +142,8 @@ export const stripeWebhookHandler = asyncHandler(
       case 'payment_intent.amount_capturable_updated': {
         const pi = event.data.object as Stripe.PaymentIntent;
         console.log('pi', pi);
-
-        // Safely access metadata
-        const metadata = pi.metadata || {};
-        const clientId = metadata.clientId as string | undefined;
-        const serviceId = metadata.serviceId as string | undefined;
-
-        if (!clientId || !serviceId) {
-          console.warn(
-            'Missing clientId or serviceId in PaymentIntent metadata',
-            {
-              piId: pi.id,
-              metadata,
-            }
-          );
-          break;
-        }
-
-        try {
-          // Check for duplicate pending booking
-          const existingBooking = await Booking.findOne({
-            client: clientId,
-            service: serviceId,
-            paymentStatus: { $in: ['authorized', 'captured'] },
-          });
-          if (existingBooking) {
-            console.log('Booking already exists, skipping creation', {
-              clientId,
-              serviceId,
-            });
-            break;
-          }
-
-          const service = await Service.findById(serviceId).select(
-            '_id artist title description bodyLocation price'
-          );
-
-          if (!service) {
-            console.warn('Service not found', { serviceId });
-            break;
-          }
-
-          const artist = await Artist.findById(service.artist)
-            .select('auth')
-            .populate<{ auth: IAuth }>('auth', 'fullName email phoneNumber');
-
-          console.log('artist', artist);
-
-          const client = await Client.findById(clientId)
-            .select('auth')
-            .populate<{ auth: IAuth }>('auth', 'fullName email phoneNumber');
-
-          const bookingPayload = {
-            artist: service.artist,
-            client: client?._id,
-            service: service._id,
-            clientInfo: {
-              fullName: client?.auth?.fullName,
-              email: client?.auth?.email,
-              phone: client?.auth?.phoneNumber,
-            },
-            artistInfo: {
-              fullName: artist?.auth.fullName,
-              email: artist?.auth.email,
-              phone: artist?.auth.phoneNumber,
-            },
-            payment: {
-              client: {
-                chargeId: pi.latest_charge,
-                paymentIntentId: pi.id
-              },
-            },
-            preferredDate: {
-              startDate: metadata.preferredStartDate,
-              endDate: metadata.preferredEndDate,
-            },
-            serviceName: service.title,
-            bodyPart: service.bodyLocation,
-            price: service.price,
-            paymentStatus: PAYMENT_STATUS.AUTHORIZED,
-          };
-
-          if (pi.status !== 'requires_capture') {
-            console.warn('payment failed');
-            break;
-          }
-
-          const booking = await Booking.create(bookingPayload);
-          console.log('Booking authorized and created:', booking);
-        } catch (err) {
-          console.error(
-            'Error processing payment_intent.amount_capturable_updated',
-            err
-          );
-          // Optional: swallow error to always return 200
-          break;
-        }
+        await BookingService.handlePaymentIntentAuthorized(pi);
+        break;
       }
 
       // payment failed
