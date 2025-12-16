@@ -137,12 +137,15 @@ export const stripeWebhookHandler = asyncHandler(
             },
           });
         }
+
+        break;
       }
 
       case 'payment_intent.amount_capturable_updated': {
         const pi = event.data.object as Stripe.PaymentIntent;
         console.log('pi', pi);
         await BookingService.handlePaymentIntentAuthorized(pi);
+
         break;
       }
 
