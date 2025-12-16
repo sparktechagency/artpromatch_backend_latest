@@ -13,12 +13,55 @@ import Business from '../Business/business.model';
 import Client from '../Client/client.model';
 import SecretReview from '../SecretReview/secretReview.model';
 import { ROLE } from '../Auth/auth.constant';
+import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
+
+// Helper function to calculate growth rate
+const calculateGrowthRate = (current: number, previous: number): string => {
+  if (previous === 0) return current === 0 ? '0.0%' : '100.0%';
+  const growth = ((current - previous) / previous) * 100;
+  return growth.toFixed(1) + '%';
+};
 
 // 1. fetchDasboardPageData
 const fetchDasboardPageData = async () => {
-  const totalClients = await Auth.countDocuments({ role: ROLE.CLIENT });
-  const totalArtists = await Auth.countDocuments({ role: ROLE.ARTIST });
-  const totalBusinesses = await Auth.countDocuments({ role: ROLE.BUSINESS });
+  // Get current date ranges
+  const now = new Date();
+  const lastMonthStart = startOfMonth(subMonths(now, 1));
+  const lastMonthEnd = endOfMonth(subMonths(now, 1));
+
+  // Get current month counts
+  const [
+    totalClients,
+    totalArtists,
+    totalBusinesses,
+    lastMonthClients,
+    lastMonthArtists,
+    lastMonthBusinesses,
+  ] = await Promise.all([
+    // Current month counts
+    Auth.countDocuments({
+      role: ROLE.CLIENT,
+    }),
+    Auth.countDocuments({
+      role: ROLE.ARTIST,
+    }),
+    Auth.countDocuments({
+      role: ROLE.BUSINESS,
+    }),
+    // Previous month counts for comparison
+    Auth.countDocuments({
+      role: ROLE.CLIENT,
+      createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
+    }),
+    Auth.countDocuments({
+      role: ROLE.ARTIST,
+      createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
+    }),
+    Auth.countDocuments({
+      role: ROLE.BUSINESS,
+      createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
+    }),
+  ]);
   const adminCommision = Number(config.admin_commision) / 100;
   const adminBookingIncomeAgg = await Booking.aggregate([
     {
@@ -46,9 +89,52 @@ const fetchDasboardPageData = async () => {
     },
   ]);
 
-  const totalAdminEarnings =
+  // Calculate current month earnings
+  const currentMonthEarnings =
     (adminBookingIncomeAgg[0]?.total || 0) +
     (adminBoostIncomeAgg[0]?.total || 0);
+
+  // Get previous month earnings for comparison
+  const lastMonthEarningsAgg = await Booking.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        total: {
+          $sum: {
+            $multiply: [
+              { $subtract: ['$price', '$stripeFee'] },
+              adminCommision,
+            ],
+          },
+        },
+      },
+    },
+  ]);
+
+  const lastMonthBoostEarningsAgg = await ArtistBoost.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: '$charge' },
+      },
+    },
+  ]);
+
+  const lastMonthEarnings =
+    (lastMonthEarningsAgg[0]?.total || 0) +
+    (lastMonthBoostEarningsAgg[0]?.total || 0);
+
+  const totalAdminEarnings = currentMonthEarnings;
 
   // ---- New Users (last 3) ----
   const rawUsers = await Client.find()
@@ -109,12 +195,40 @@ const fetchDasboardPageData = async () => {
     },
   ]);
 
+  // Calculate growth rates
+  const clientGrowthRate = calculateGrowthRate(totalClients, lastMonthClients);
+  const artistGrowthRate = calculateGrowthRate(totalArtists, lastMonthArtists);
+  const businessGrowthRate = calculateGrowthRate(
+    totalBusinesses,
+    lastMonthBusinesses
+  );
+  const earningsGrowthRate = calculateGrowthRate(
+    currentMonthEarnings,
+    lastMonthEarnings
+  );
+
   return {
     stats: {
-      totalClients,
-      totalArtists,
-      totalBusinesses,
-      totalEarnings: totalAdminEarnings,
+      totalClients: {
+        count: totalClients,
+        growthRate: clientGrowthRate,
+        isPositive: parseFloat(clientGrowthRate) >= 0,
+      },
+      totalArtists: {
+        count: totalArtists,
+        growthRate: artistGrowthRate,
+        isPositive: parseFloat(artistGrowthRate) >= 0,
+      },
+      totalBusinesses: {
+        count: totalBusinesses,
+        growthRate: businessGrowthRate,
+        isPositive: parseFloat(businessGrowthRate) >= 0,
+      },
+      totalEarnings: {
+        count: totalAdminEarnings,
+        growthRate: earningsGrowthRate,
+        isPositive: parseFloat(earningsGrowthRate) >= 0,
+      },
     },
     newUsers,
     topArtists,
