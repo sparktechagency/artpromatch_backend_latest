@@ -9,7 +9,7 @@ const createBooking = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
-    message: 'Payment Initiate Successfully, pay now',
+    message: 'Payment Initiated Successfully, pay now!',
     data: result,
   });
 });

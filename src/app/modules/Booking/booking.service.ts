@@ -223,7 +223,7 @@ const handlePaymentIntentAuthorized = async (
           }
         );
         console.info('Email notification sent');
-      } catch (err) {
+      } catch {
         console.error('Failed to send email notification');
       }
     }
@@ -244,7 +244,7 @@ const handlePaymentIntentAuthorized = async (
           time: formattedDate,
         });
         console.info('Push notification sent');
-      } catch (err) {
+      } catch {
         console.error('Failed to send push notification');
       }
     }
@@ -337,6 +337,28 @@ const getUserBookings = async (
     },
     { $unwind: { path: '$clientAuth', preserveNullAndEmptyArrays: true } },
 
+    // Populate artist
+    {
+      $lookup: {
+        from: 'artists',
+        localField: 'artist',
+        foreignField: '_id',
+        as: 'artistDetails',
+      },
+    },
+    { $unwind: { path: '$artistDetails', preserveNullAndEmptyArrays: true } },
+
+    // Populate auth inside client
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'artistDetails.auth',
+        foreignField: '_id',
+        as: 'artistAuth',
+      },
+    },
+    { $unwind: { path: '$artistAuth', preserveNullAndEmptyArrays: true } },
+
     // Prepare final projection
     {
       $facet: {
@@ -362,6 +384,7 @@ const getUserBookings = async (
               email: `$${infoField}.email`,
               phone: `$${infoField}.phone`,
               image: `$${infoField}.image`,
+
               createdAt: 1,
             },
           },
@@ -828,23 +851,23 @@ const reviewAfterAServiceIsCompletedIntoDB = async (
 const confirmBookingByArtist = async (bookingId: string) => {
   // 1. Find booking first
   const booking = await Booking.findById(bookingId);
-  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found');
+  if (!booking) throw new AppError(httpStatus.NOT_FOUND, 'Booking not found!');
 
   if (!booking.payment.client.paymentIntentId) {
     throw new AppError(
       httpStatus.NOT_FOUND,
-      'No payment found for this booking'
+      'No payment found for this booking!'
     );
   }
 
   if (booking.status !== 'pending') {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Booking cannot be confirmed');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Booking cannot be confirmed!');
   }
 
   if (booking.sessions.length === 0) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'Cannot confirm booking without at least one session'
+      'Cannot confirm booking without at least one session!'
     );
   }
 
@@ -1103,6 +1126,7 @@ const cancelBookingIntoDb = async (
       booking.paymentStatus === 'pending' ||
       booking.paymentStatus === 'failed'
     ) {
+      // 
     } else if (booking.paymentStatus === 'authorized') {
       if (!paymentClient?.paymentIntentId) {
         throw new AppError(httpStatus.BAD_REQUEST, 'No payment intent found!');
@@ -1168,8 +1192,11 @@ const completeBookingIntoDb = async (
     if (!booking)
       throw new AppError(httpStatus.BAD_REQUEST, 'Booking not found');
 
-     if (!booking.otp)
-      throw new AppError(httpStatus.BAD_REQUEST, 'No OTP found for this booking');
+    if (!booking.otp)
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'No OTP found for this booking'
+      );
 
     const [artist, service] = await Promise.all([
       Artist.findOne(
