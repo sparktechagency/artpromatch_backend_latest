@@ -16,6 +16,6 @@ router
 // getAllPaymentsForAdmin
 router
   .route('/admin')
-  .get(auth(ROLE.ADMIN), PaymentHistoryController.getAllPaymentsForAdmin);
+  .get(auth(ROLE.ADMIN, ROLE.SUPER_ADMIN), PaymentHistoryController.getAllPaymentsForAdmin);
 
 export const PaymentHistoryRoutes = router;
