@@ -96,6 +96,15 @@ const createPaymentIntentIntoDB = async (
   };
 };
 
+const getConnectedAccountDashboard = async()=>{
+  const result = await stripe.accounts.createLoginLink('acct_1S7vsCKGc4sMlPFV');
+  const balance = await stripe.balance.retrieve({stripeAccount:'acct_1S7vsCKGc4sMlPFV'});
+  return {
+    url: result.url,
+    balance: balance
+  }
+    ;
+}
 // confirm payment
 const handlePaymentIntentAuthorized = async (
   pi: Stripe.PaymentIntent
@@ -472,6 +481,8 @@ const createOrUpdateSessionIntoDB = async (
   payload: TSessionData
 ) => {
   const { sessionId, date, startTime, endTime } = payload;
+  
+  console.log({payload: payload})
 
   const booking = await Booking.findById(bookingId);
 
@@ -493,7 +504,7 @@ const createOrUpdateSessionIntoDB = async (
   const startTimeInMin = parseTimeToMinutes(startTime);
   const endTimeInMin = parseTimeToMinutes(endTime);
   const duration = endTimeInMin - startTimeInMin;
-
+  console.log({startTime:startTimeInMin, endTime: endTimeInMin})
   if (duration <= 0) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration!');
   }
@@ -1311,11 +1322,13 @@ const getBookingsWithReviewThatHaveReviewForClientHomePage = async () => {
   return bookings;
 };
 
+
 export const BookingService = {
   createPaymentIntentIntoDB,
   resendBookingOtp,
   cancelBookingIntoDb,
   getArtistDailySchedule,
+  getConnectedAccountDashboard,
   completeBookingIntoDb,
   completeSessionByArtist,
   deleteSessionFromBooking,
