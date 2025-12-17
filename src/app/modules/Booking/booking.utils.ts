@@ -17,9 +17,11 @@ export const roundUpMinutes = (min: number, step = 15) => {
 };
 
 export function parseTimeToMinutes(timeStr: string): number {
+  console.log("timestr",timeStr)
   const [time, modifier] = timeStr.toLowerCase().split(' '); // e.g. "09:30 am"
+  console.log(timeStr.toLowerCase().split(' '))
   const [hoursRaw, minutesRaw] = time.split(':').map(Number);
-
+  console.log(hoursRaw,minutesRaw)
   let hours = hoursRaw;
   const minutes = minutesRaw; // ✅ now const
 
@@ -29,7 +31,7 @@ export function parseTimeToMinutes(timeStr: string): number {
   if (modifier === 'am' && hours === 12) {
     hours = 0;
   }
-
+  console.log(hours)
   return hours * 60 + minutes;
 }
 

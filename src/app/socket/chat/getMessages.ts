@@ -1,11 +1,12 @@
-import { Socket } from 'socket.io';
-import { getSocketIO, onlineUsers } from '../connectSocket';
 import QueryBuilder from 'mongoose-query-builders';
+import { Socket } from 'socket.io';
 import { IAuth } from '../../modules/Auth/auth.interface';
 import Message from '../../modules/Message/message.model';
+import { getSocketIO, onlineUsers } from '../connectSocket';
+
 import Conversation from '../../modules/Conversation/conversation.model';
-import { SOCKET_EVENTS } from '../socket.constant';
 import getUnreadMessageCount from '../../utils/getUnreadMessageCount';
+import { SOCKET_EVENTS } from '../socket.constant';
 
 export const handleMessagePage = async (
   socket: Socket,

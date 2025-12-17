@@ -24,6 +24,13 @@ router
     BookingController.createBooking
   );
 
+  router
+  .route('/payment-history')
+  .post(
+    auth(ROLE.ARTIST),
+    BookingController.getConnectedAccountDashboad
+  );
+
 // getUserBookings
 router
   .route('/list')
