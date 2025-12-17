@@ -207,6 +207,13 @@ const fetchDasboardPageData = async () => {
     lastMonthEarnings
   );
 
+  // // Get current year's data for charts
+  // const currentYear = new Date().getFullYear();
+  // const [appointmentSummary, totalRevenueStats] = await Promise.all([
+  //   getYearlyAppointmentStats(currentYear),
+  //   getYearlyRevenueStats(currentYear),
+  // ]);
+
   return {
     stats: {
       totalClients: {
@@ -232,6 +239,8 @@ const fetchDasboardPageData = async () => {
     },
     newUsers,
     topArtists,
+    // appointmentSummary,
+    // totalRevenueStats,
   };
 };
 
@@ -689,10 +698,10 @@ const getAllBookingsForAdminIntoDb = async (query: {
 
 export const AdminService = {
   fetchDasboardPageData,
-  getAllArtistsFoldersFromDB,
-  // changeStatusOnFolder,
   getYearlyRevenueStats,
   getYearlyAppointmentStats,
+  getAllArtistsFoldersFromDB,
+  // changeStatusOnFolder,
   verifyArtistByAdminIntoDB,
   verifyBusinessByAdminIntoDB,
   fetchAllArtistsFromDB,
