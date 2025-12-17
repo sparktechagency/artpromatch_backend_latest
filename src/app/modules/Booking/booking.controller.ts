@@ -15,6 +15,16 @@ const createBooking = asyncHandler(async (req, res) => {
 });
 
 
+const getConnectedAccountDashboad = asyncHandler(async (req, res) => {
+  const result = await BookingService.getConnectedAccountDashboard();
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Payment Initiate Successfully, pay now',
+    data: result,
+  });
+});
+
 // get user bookings
 const getUserBookings = asyncHandler(async (req, res) => {
   const result = await BookingService.getUserBookings(req.user, req.query);
@@ -208,6 +218,7 @@ const getBookingsWithReviewThatHaveReviewForClientHomePage = asyncHandler(
 
 export const BookingController = {
   reviewAfterAServiceIsCompleted,
+  getConnectedAccountDashboad,
   getArtistSchedule,
   completeSession,
   artistMarksCompleted,
