@@ -14,6 +14,7 @@ import Client from '../Client/client.model';
 import SecretReview from '../SecretReview/secretReview.model';
 import { ROLE } from '../Auth/auth.constant';
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import Service from '../Service/service.model';
 
 // Helper function to calculate growth rate
 const calculateGrowthRate = (current: number, previous: number): string => {
@@ -696,6 +697,84 @@ const getAllBookingsForAdminIntoDb = async (query: {
   };
 };
 
+const getAllServicesForAdminIntoDb = async (query: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}) => {
+  const page = query.page ? Number(query.page) : 1;
+  const limit = query.limit ? Number(query.limit) : 10;
+  const skip = (page - 1) * limit;
+
+  const matchStage: Record<string, unknown> = {
+    isDeleted: false,
+  };
+
+  if (query.search) {
+    matchStage.$or = [
+      { title: { $regex: query.search, $options: 'i' } },
+      { description: { $regex: query.search, $options: 'i' } },
+      { bodyLocation: { $regex: query.search, $options: 'i' } },
+      { price: { $regex: query.search, $options: 'i' } },
+      { avgRating: { $regex: query.search, $options: 'i' } },
+    ];
+  }
+
+  const pipeline: PipelineStage[] = [
+    { $match: matchStage },
+     {
+    $lookup: {
+      from: 'artists',
+      localField: 'artist',
+      foreignField: '_id',
+      as: 'artistInfo',
+    },
+  },
+  {
+    $unwind: {
+      path: '$artistInfo',
+      preserveNullAndEmptyArrays: true,
+    },
+  },
+    { $sort: { createdAt: -1 } },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        thumbnail: 1,
+        bodyLocation: 1,
+        sessionType: 1,
+        price: 1,
+        avgRating: 1,
+        totalCompletedOrder: 1,
+        totalReviewCount: 1,
+        createdAt: 1,
+      },
+    },
+    {
+      $facet: {
+        data: [{ $skip: skip }, { $limit: limit }],
+        totalCount: [{ $count: 'count' }],
+      },
+    },
+  ];
+
+  const result = await Service.aggregate(pipeline);
+  const total = result[0]?.totalCount[0]?.count || 0
+  return {
+    
+    data: result[0]?.data || [],
+    meta: {
+      page,
+      limit,
+      total: total,
+      totalPage: Math.ceil(total / Number(limit)),
+    },
+  };
+};
+
+
+
 export const AdminService = {
   fetchDasboardPageData,
   getYearlyRevenueStats,
@@ -709,4 +788,5 @@ export const AdminService = {
   fetchAllClientsFromDB,
   fetchAllSecretReviewsFromDB,
   getAllBookingsForAdminIntoDb,
+  getAllServicesForAdminIntoDb
 };

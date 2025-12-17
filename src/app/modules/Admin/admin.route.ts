@@ -59,16 +59,18 @@ router
   );
 
 // 8. fetchAllArtists
-router.route('/fetch-artists').get(AdminController.fetchAllArtists);
+router.route('/fetch-artists').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllArtists);
 
 // 9. fetchAllBusinesses
-router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
+router.route('/fetch-businesses').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllBusinesses);
 
 // 10. fetchAllClients
-router.route('/fetch-clients').get(AdminController.fetchAllClients);
+router.route('/fetch-clients').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllClients);
 
 // 11. fetchAllSecretReviews
-router.route('/secret-reviews').get(AdminController.fetchAllSecretReviews);
+router.route('/secret-reviews').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllSecretReviews);
+
+router.route('/services').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllServices);
 
 // // changeStatusOnFolder
 // router
