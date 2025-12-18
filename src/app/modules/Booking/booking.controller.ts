@@ -26,16 +26,29 @@ const getConnectedAccountDashboad = asyncHandler(async (req, res) => {
 });
 
 // get user bookings
-const getUserBookings = asyncHandler(async (req, res) => {
-  const result = await BookingService.getUserBookings(req.user, req.query);
+const fetchClientBookings = asyncHandler(async (req, res) => {
+  const result = await BookingService.getClientBookings(req.user, req.query);
 
   sendResponse(res, {
-    statusCode: httpStatus.CREATED,
-    message: 'Booking retrieve Successfully!',
+    statusCode: httpStatus.OK,
+    message: 'Booking data retrieved Successfully!',
     data: result.data,
     meta: result.meta,
   });
 });
+
+
+const fetchArtistBookings = asyncHandler(async (req, res) => {
+  const result = await BookingService.getArtistBookings(req.user, req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Booking data retrieved Successfully!',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
 
 // create session
 const createSession = asyncHandler(async (req, res) => {
@@ -224,7 +237,8 @@ export const BookingController = {
   artistMarksCompleted,
   deleteSession,
   cancelBooking,
-  getUserBookings,
+  fetchArtistBookings,
+  fetchClientBookings,
   createBooking,
   createSession,
   confirmBookingByArtist,

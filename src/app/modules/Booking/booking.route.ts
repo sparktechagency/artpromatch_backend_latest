@@ -31,10 +31,14 @@ router
     BookingController.getConnectedAccountDashboad
   );
 
-// getUserBookings
-router
-  .route('/list')
-  .get(auth(ROLE.CLIENT, ROLE.ARTIST), BookingController.getUserBookings);
+
+  router
+  .route('/client')
+  .get(auth(ROLE.CLIENT), BookingController.fetchClientBookings);
+
+    router
+  .route('/artist')
+  .get(auth(ROLE.ARTIST), BookingController.fetchArtistBookings);
 
 // confirmPaymentByClient
 
