@@ -339,6 +339,7 @@ const getClientBookings = async (
             serviceName: 1,
             bodyPart: 1,
             price: 1,
+            preferredDate:1,
             status: 1,
             paymentStatus: 1,
             sessions: {
@@ -473,6 +474,7 @@ const getArtistBookings = async (
             serviceName: 1,
             bodyPart: 1,
             price: 1,
+            preferredDate:1,
             status: 1,
             paymentStatus: 1,
             sessions: {
