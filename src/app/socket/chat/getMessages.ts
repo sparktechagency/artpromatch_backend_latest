@@ -78,16 +78,18 @@ export const handleMessagePage = async (
 
     const io = getSocketIO();
 
-    io.to(conversationId.toString()).emit(SOCKET_EVENTS.MESSAGES_SEEN, {
-      conversationId,
-      seenBy: currentUserId,
-      messageIds,
-    });
+    if (io) {
+      io.to(conversationId.toString()).emit(SOCKET_EVENTS.MESSAGES_SEEN, {
+        conversationId,
+        seenBy: currentUserId,
+        messageIds,
+      });
 
-    const currentUserUnread = await getUnreadMessageCount(currentUserId);
-    io.to(currentUserId).emit(SOCKET_EVENTS.UNREAD_MESSAGE_COUNT, {
-      unreadCount: currentUserUnread,
-    });
+      const currentUserUnread = await getUnreadMessageCount(currentUserId);
+      io.to(currentUserId).emit(SOCKET_EVENTS.UNREAD_MESSAGE_COUNT, {
+        unreadCount: currentUserUnread,
+      });
+    }
   }
 
   socket.emit(SOCKET_EVENTS.MESSAGES, {

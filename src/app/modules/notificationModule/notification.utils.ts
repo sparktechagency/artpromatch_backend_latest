@@ -57,10 +57,12 @@ export const sendNotificationBySocket = async (
     notificationData.receiver.toString()
   );
 
-  io.to(notificationData.receiver.toString()).emit(
-    'notification',
-    updatedNotification
-  );
+  if (io) {
+    io.to(notificationData.receiver.toString()).emit(
+      'notification',
+      updatedNotification
+    );
+  }
 };
 
 export const sendPushNotification = async (

@@ -11,10 +11,12 @@ const sendNotification = async (notificationData: INotification) => {
     notificationData.receiver.toString()
   );
 
-  io.to(notificationData.receiver.toString()).emit(
-    'notification',
-    updatedNotification
-  );
+  if (io) {
+    io.to(notificationData.receiver.toString()).emit(
+      'notification',
+      updatedNotification
+    );
+  }
 };
 
 export default sendNotification;

@@ -8,28 +8,28 @@ const objectIdPattern = /^[0-9a-fA-F]{24}$/;
 // bookingSchema
 const bookingSchema = z.object({
   body: z.object({
-    service: z.string({ required_error: 'Service is required' }),
-    serviceType: z.string({ required_error: 'Service type is required' }),
-    bodyLocation: z.string({ required_error: 'Body location is required' }),
-    description: z.string({ required_error: 'Description is required' }),
+    service: z.string({ required_error: 'Service is required!' }),
+    serviceType: z.string({ required_error: 'Service type is required!' }),
+    bodyLocation: z.string({ required_error: 'Body location is required!' }),
+    description: z.string({ required_error: 'Description is required!' }),
 
     date: z
       .string()
       .regex(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
-        'Invalid date format'
+        'Invalid date format!'
       )
       .transform((str) => {
         const date = new Date(str);
         if (isNaN(date.getTime())) {
-          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string!');
         }
         return date;
       }),
 
     slotId: z
-      .string({ required_error: 'Slot ID is required' })
-      .regex(objectIdPattern, 'Invalid slot ID format'),
+      .string({ required_error: 'Slot ID is required!' })
+      .regex(objectIdPattern, 'Invalid slot ID format!'),
 
     paymentIntentId: z.string().optional(),
     transactionId: z.string().optional(),
@@ -40,39 +40,42 @@ const bookingSchema = z.object({
 const reviewAfterAServiceIsCompletedSchema = z.object({
   body: z.object({
     bookingId: z
-      .string({ required_error: 'Booking ID is required' })
-      .min(1, 'Booking ID cannot be empty'),
+      .string({ required_error: 'Booking ID is required!' })
+      .trim()
+      .min(1, 'Booking ID cannot be empty!'),
 
     review: z
-      .string({ required_error: 'Review is required' })
-      .min(1, 'Review cannot be empty'),
+      .string({ required_error: 'Review is required!' })
+      .trim()
+      .min(15, 'Review must be at least 15 characters!'),
 
     rating: z.coerce
-      .number({ required_error: 'Rating is required' })
+      .number({ required_error: 'Rating is required!' })
       .min(0, 'Rating must be at least 0')
       .max(5, 'Rating cannot exceed 5')
       .multipleOf(0.5, 'Rating must be in 0.5 increments'),
 
     secretReviewForAdmin: z
-      .string({ required_error: 'Secret review is required' })
-      .min(1, 'Secret review cannot be empty'),
+      .string({ required_error: 'Secret review is required!' })
+      .trim()
+      .min(20, 'Secret review must be at least 20 characters!'),
   }),
 });
 
 // createBookingSchema
 const createBookingSchema = z.object({
   body: z.object({
-    serviceId: z.string({ required_error: 'Service is required' }),
+    serviceId: z.string({ required_error: 'Service is required!' }),
     preferredStartDate: z
       .string()
       .regex(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
-        'Invalid date format'
+        'Invalid date format!'
       )
       .transform((str) => {
         const date = new Date(str);
         if (isNaN(date.getTime())) {
-          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string!');
         }
         return date;
       }),
@@ -80,12 +83,12 @@ const createBookingSchema = z.object({
       .string()
       .regex(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
-        'Invalid date format'
+        'Invalid date format!'
       )
       .transform((str) => {
         const date = new Date(str);
         if (isNaN(date.getTime())) {
-          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string!');
         }
         return date;
       }),
@@ -97,7 +100,7 @@ const timeString = z
   .string()
   .regex(
     /^(0?[1-9]|1[0-2]):[0-5][0-9]\s?(am|pm)$/i,
-    'Time must be in hh:mm am/pm format'
+    'Time must be in hh:mm am/pm format!'
   );
 
 // createSessionSchema
@@ -108,12 +111,12 @@ const createSessionSchema = z.object({
       .string()
       .regex(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/,
-        'Invalid date format'
+        'Invalid date format!'
       )
       .transform((str) => {
         const date = new Date(str);
         if (isNaN(date.getTime())) {
-          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string');
+          throw new AppError(httpStatus.NOT_FOUND, 'Invalid date string!');
         }
         return date;
       }),
@@ -126,16 +129,16 @@ const createSessionSchema = z.object({
 // completeSessionSchema
 const completeSessionSchema = z.object({
   body: z.object({
-    sessionId: z.string({ required_error: 'Service is required' }),
+    sessionId: z.string({ required_error: 'Service is required!' }),
   }),
 });
 
 // getAvailabilitySchema
 const getAvailabilitySchema = z.object({
   body: z.object({
-    artistId: z.string({ required_error: 'ArtistId is required' }),
-    serviceId: z.string({ required_error: 'ServiceId is required' }),
-    date: z.string({ required_error: 'Date type is required' }),
+    artistId: z.string({ required_error: 'ArtistId is required!' }),
+    serviceId: z.string({ required_error: 'ServiceId is required!' }),
+    date: z.string({ required_error: 'Date type is required!' }),
   }),
 });
 

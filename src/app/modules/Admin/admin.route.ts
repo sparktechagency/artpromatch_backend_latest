@@ -68,9 +68,16 @@ router.route('/fetch-artists').get(AdminController.fetchAllArtists);
 router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
 
 // 11. fetchAllSecretReviews
-router.route('/secret-reviews').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllSecretReviews);
+router
+  .route('/secret-reviews')
+  .get(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.fetchAllSecretReviews
+  );
 
-router.route('/services').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.getAllServices);
+router
+  .route('/services')
+  .get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN), AdminController.getAllServices);
 
 // // changeStatusOnFolder
 // router
