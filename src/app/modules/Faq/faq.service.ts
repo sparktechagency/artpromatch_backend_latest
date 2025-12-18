@@ -18,7 +18,6 @@ const getAllFaqForAdmin = async (query: Record<string, unknown>) => {
   builder.search(['question', 'answer']).filter().sort().paginate().fields();
 
   const data = await builder.modelQuery.exec();
-
   const meta = await builder.countTotal();
 
   return {
@@ -26,7 +25,7 @@ const getAllFaqForAdmin = async (query: Record<string, unknown>) => {
       page: meta.page,
       limit: meta.limit,
       total: meta.total,
-      totalPages: meta.totalPage,
+      totalPage: meta.totalPage,
     },
     data,
   };
@@ -39,8 +38,8 @@ const getAllFaqForUser = async (query: Record<string, unknown>) => {
 
   if (search) {
     match.$or = [
-      { question: { $regex: search, $options: "i" } },
-      { answer: { $regex: search, $options: "i" } },
+      { question: { $regex: search, $options: 'i' } },
+      { answer: { $regex: search, $options: 'i' } },
     ];
   }
 
@@ -59,21 +58,32 @@ const getAllFaqForUser = async (query: Record<string, unknown>) => {
   return faqs;
 };
 
-const updateFaqintoDb = async (id: string, payload: TUpdatedFaqPayload) => {
+const updateFaqIntoDb = async (id: string, payload: TUpdatedFaqPayload) => {
   const updatedFaq = await Faq.findByIdAndUpdate(id, payload, {
     new: true,
   });
 
   if (!updatedFaq) {
-    throw new AppError(httpStatus.NOT_FOUND, 'FAQ not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'FAQ not found!');
   }
 
   return updatedFaq;
 };
 
+const deleteFaqFromDb = async (id: string) => {
+  const deletedFaq = await Faq.findByIdAndDelete(id);
+
+  if (!deletedFaq) {
+    throw new AppError(httpStatus.NOT_FOUND, 'FAQ not found!');
+  }
+
+  return deletedFaq;
+};
+
 export const FaqService = {
   createFaqintoDb,
-  updateFaqintoDb,
+  updateFaqIntoDb,
+  deleteFaqFromDb,
   getAllFaqForAdmin,
   getAllFaqForUser,
 };

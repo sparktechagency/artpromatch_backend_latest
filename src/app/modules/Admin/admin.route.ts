@@ -58,14 +58,14 @@ router
     AdminController.getAllBookingsForAdmin
   );
 
-// 8. fetchAllArtists
+// 8. fetchAllClients
+router.route('/fetch-clients').get(AdminController.fetchAllClients);
+
+// 9. fetchAllArtists
 router.route('/fetch-artists').get(AdminController.fetchAllArtists);
 
-// 9. fetchAllBusinesses
+// 10. fetchAllBusinesses
 router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
-
-// 10. fetchAllClients
-router.route('/fetch-clients').get(AdminController.fetchAllClients);
 
 // 11. fetchAllSecretReviews
 router.route('/secret-reviews').get(AdminController.fetchAllSecretReviews);

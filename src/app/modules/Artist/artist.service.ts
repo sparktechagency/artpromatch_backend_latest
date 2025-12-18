@@ -142,7 +142,7 @@ const getAllArtistsFromDB = async (query: Record<string, any>, user: IAuth) => {
         as: 'auth',
       },
     },
-    { $unwind: '$auth' },
+    { $unwind: { path: '$auth', preserveNullAndEmptyArrays: true } },
     {
       $project: {
         expertise: 1,
@@ -785,7 +785,7 @@ const getArtistMonthlySchedule = async (
     },
 
     // 3. Unwind sessions
-    { $unwind: '$sessions' },
+    { $unwind: { path: '$sessions', preserveNullAndEmptyArrays: true } },
 
     // 4. Match only sessions within month
     {
@@ -804,7 +804,7 @@ const getArtistMonthlySchedule = async (
         as: 'service',
       },
     },
-    { $unwind: '$service' },
+    { $unwind: { path: '$service', preserveNullAndEmptyArrays: true } },
 
     // 6. Project only needed fields per session
     {
