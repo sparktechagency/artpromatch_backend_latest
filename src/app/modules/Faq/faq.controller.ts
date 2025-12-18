@@ -1,8 +1,7 @@
-import { asyncHandler } from "../../utils";
-import sendResponse from "../../utils/sendResponse";
-import httpStatus  from "http-status";
-import { FaqService } from "./faq.service";
-
+import { asyncHandler } from '../../utils';
+import sendResponse from '../../utils/sendResponse';
+import httpStatus from 'http-status';
+import { FaqService } from './faq.service';
 
 const createFaq = asyncHandler(async (req, res) => {
   const result = await FaqService.createFaqintoDb(req.body);
@@ -15,10 +14,12 @@ const createFaq = asyncHandler(async (req, res) => {
 
 const getAllFaqForAdmin = asyncHandler(async (req, res) => {
   const result = await FaqService.getAllFaqForAdmin(req.query);
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Frequently Asked Question retrieved Successfully!',
-    data: result,
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -32,7 +33,7 @@ const getAllFaqForUser = asyncHandler(async (req, res) => {
 });
 
 const updateFaq = asyncHandler(async (req, res) => {
-  const result = await FaqService.updateFaqintoDb(req.params.id,req.body);
+  const result = await FaqService.updateFaqIntoDb(req.params.id, req.body);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Frequently Asked Question updated Successfully!',
@@ -40,10 +41,19 @@ const updateFaq = asyncHandler(async (req, res) => {
   });
 });
 
+const deleteFaq = asyncHandler(async (req, res) => {
+  const result = await FaqService.deleteFaqFromDb(req.params.id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Frequently Asked Question deleted Successfully!',
+    data: result,
+  });
+});
 
 export const faqController = {
-    createFaq,
-    updateFaq,
-    getAllFaqForAdmin,
-    getAllFaqForUser
-}
+  createFaq,
+  updateFaq,
+  deleteFaq,
+  getAllFaqForAdmin,
+  getAllFaqForUser,
+};

@@ -32,4 +32,11 @@ router.patch(
   faqController.updateFaq
 );
 
+// deleteFaq
+router.delete(
+  '/delete/:id',
+  auth(ROLE.ADMIN, ROLE.SUPER_ADMIN),
+  faqController.deleteFaq
+);
+
 export const faqRoutes = router;

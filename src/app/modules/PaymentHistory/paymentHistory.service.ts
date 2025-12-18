@@ -62,9 +62,22 @@ const getAllPaymentsForClientAndArtistFromDB = async (
 // getAllPaymentsForAdminFromDB
 const getAllPaymentsForAdminFromDB = async (query: Record<string, unknown>) => {
   const bookingQuery = new QueryBuilder(
-    Booking.find().select(
-      'serviceName price status paymentStatus stripeFee platFormFee artistEarning clientInfo artistInfo createdAt'
-    ),
+    Booking.find()
+      .select(
+        'serviceName price status paymentStatus stripeFee platFormFee artistEarning clientInfo artistInfo createdAt client artist'
+      )
+      .populate([
+        {
+          path: 'client',
+          select: 'auth',
+          populate: { path: 'auth', select: 'image' },
+        },
+        {
+          path: 'artist',
+          select: 'auth',
+          populate: { path: 'auth', select: 'image' },
+        },
+      ]),
     query
   )
     .search([
@@ -82,7 +95,27 @@ const getAllPaymentsForAdminFromDB = async (query: Record<string, unknown>) => {
     .sort()
     .paginate();
 
-  const data = await bookingQuery.modelQuery;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawData: any[] = await bookingQuery.modelQuery;
+  const data = rawData.map((doc) => {
+    const d = typeof doc?.toObject === 'function' ? doc.toObject() : doc;
+
+    const clientImage = d?.client?.auth?.image;
+    const artistImage = d?.artist?.auth?.image;
+
+    if (d?.clientInfo && clientImage) {
+      d.clientInfo.image = clientImage;
+    }
+
+    if (d?.artistInfo && artistImage) {
+      d.artistInfo.image = artistImage;
+    }
+
+    delete d.client;
+    delete d.artist;
+
+    return d;
+  });
   const meta = await bookingQuery.countTotal();
 
   return { data, meta };

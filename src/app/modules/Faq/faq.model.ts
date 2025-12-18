@@ -4,8 +4,8 @@ import { IFaq } from './faq.interface';
 const faqSchema = new Schema<IFaq>(
   {
     question: { type: String, required: true, trim: true },
-    answer: { type: String, required: true},
-    isPublished: { type: Boolean, default: false },
+    answer: { type: String, required: true },
+    isPublished: { type: Boolean, default: true },
   },
   { timestamps: true, versionKey: false }
 );

@@ -3,7 +3,6 @@ import config from '../config';
 import { defaultUserImage, ROLE } from '../modules/Auth/auth.constant';
 import Auth from '../modules/Auth/auth.model';
 
-
 const adminData = {
   fullName: config.super_admin.fullName,
   role: ROLE.SUPER_ADMIN,
@@ -24,13 +23,13 @@ const seedingAdmin = async () => {
 
     if (!admin) {
       await Auth.create(adminData);
-      
-      console.log('🎉✅ Super admin seeded successfully!');
+
+      console.log('🎉 ✅  Super admin seeded successfully!');
     } else {
-      console.log('🟡⚠️ Super admin already exists!');
+      console.log('🟡 ⚠️  Super admin already exists!');
     }
   } catch (error) {
-    console.log('🔴❌ Error seeding super admin', error);
+    console.log('🔴 ❌  Error seeding super admin', error);
   }
 };
 

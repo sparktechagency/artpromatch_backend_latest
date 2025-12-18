@@ -14,18 +14,18 @@ let server: Server;
 async function bootstrap() {
   try {
     await connect(config.db_url as string);
-    console.log('🛢 Database connected successfully');
+    console.log('🛢  Database connected successfully');
 
     await seedingAdmin();
 
     server = app.get('httpServer');
     server = server.listen(config.port, () => {
-      console.log(`🚀 Application is running on port ${config.port}`);
+      console.log(`🚀  Application is running on port ${config.port}`);
     });
 
     connectSocket(server);
   } catch (err: any) {
-    console.error('🔴❌ Failed to connect to database:', err);
+    console.error('🔴 ❌  Failed to connect to database:', err);
     process.exit(1);
   }
 }

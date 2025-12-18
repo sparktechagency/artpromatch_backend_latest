@@ -93,7 +93,20 @@ const getAllBookingsForAdmin = asyncHandler(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Bookings data retrieved successFully!',
-    data: result,
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+// fetchAllClients
+const fetchAllClients = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchAllClientsFromDB(req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Clients retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
   });
 });
 
@@ -116,18 +129,6 @@ const fetchAllBusinesses = asyncHandler(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     message: 'Business retrieved successFully!',
-    data: result.data,
-    meta: result.meta,
-  });
-});
-
-// fetchAllClients
-const fetchAllClients = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllClientsFromDB(req.query);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Clients retrieved successFully!',
     data: result.data,
     meta: result.meta,
   });
@@ -168,8 +169,8 @@ export const AdminController = {
   verifyBusinessByAdmin,
   getAllBookingsForAdmin,
   // changeStatusOnFolder,
+  fetchAllClients,
   fetchAllArtists,
   fetchAllBusinesses,
-  fetchAllClients,
   fetchAllSecretReviews,
 };
