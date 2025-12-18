@@ -10,10 +10,18 @@ import { connectSocket } from './app/socket/connectSocket';
 import seedingAdmin from './app/utils/seeding';
 
 let server: Server;
+let dbConnectionPromise: Promise<unknown> | null = null;
+
+const ensureDbConnection = async () => {
+  if (!dbConnectionPromise) {
+    dbConnectionPromise = connect(config.db_url as string);
+  }
+  return dbConnectionPromise;
+};
 
 async function bootstrap() {
   try {
-    await connect(config.db_url as string);
+    await ensureDbConnection();
     console.log('🛢  Database connected successfully');
 
     await seedingAdmin();
