@@ -96,15 +96,16 @@ const createPaymentIntentIntoDB = async (
   };
 };
 
-const getConnectedAccountDashboard = async()=>{
+const getConnectedAccountDashboard = async () => {
   const result = await stripe.accounts.createLoginLink('acct_1S7vsCKGc4sMlPFV');
-  const balance = await stripe.balance.retrieve({stripeAccount:'acct_1S7vsCKGc4sMlPFV'});
+  const balance = await stripe.balance.retrieve({
+    stripeAccount: 'acct_1S7vsCKGc4sMlPFV',
+  });
   return {
     url: result.url,
-    balance: balance
-  }
-    ;
-}
+    balance: balance,
+  };
+};
 // confirm payment
 const handlePaymentIntentAuthorized = async (
   pi: Stripe.PaymentIntent
@@ -255,148 +256,251 @@ const handlePaymentIntentAuthorized = async (
   }
 };
 
-// get user bookings
-const getUserBookings = async (
+const getClientBookings = async (
   user: IAuth,
   query: { page?: number; limit?: number; search?: string }
 ) => {
   const page = query.page ? Number(query.page) : 1;
   const limit = query.limit ? Number(query.limit) : 10;
   const skip = (page - 1) * limit;
-  // Role-based filter
-  const match: Record<string, any> = {};
-  let infoField = '';
 
-  if (user.role === ROLE.CLIENT) {
-    const client = await Client.findOne({ auth: user._id });
-
-    if (!client) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Client profile not found');
-    }
-
-    match.client = client._id;
-    infoField = 'artistInfo';
-  } else if (user.role === ROLE.ARTIST) {
-    const artist = await Artist.findOne({ auth: user._id });
-
-    if (!artist) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Artist profile not found');
-    }
-
-    match.artist = artist._id;
-    infoField = 'clientInfo';
+  // 1. Find the Client Profile associated with this User
+  const client = await Client.findOne({ auth: user._id });
+  if (!client) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Client profile not found');
   }
 
-  // Add search filter
-  const search = query.search?.trim();
-  if (search) {
-    match.$or = [
-      { [`${infoField}.fullName`]: { $regex: search, $options: 'i' } },
-      { [`${infoField}.email`]: { $regex: search, $options: 'i' } },
-      { [`${infoField}.phone`]: { $regex: search, $options: 'i' } },
-      { serviceName: { $regex: search, $options: 'i' } },
-      { status: { $regex: search, $options: 'i' } },
-      { paymentStatus: { $regex: search, $options: 'i' } },
-    ];
-  }
+  // 2. Initial Match: Get bookings for this specific client
+  const pipeline: any[] = [
+    { $match: { client: client._id } },
 
-  // Single aggregation with facet
-  const [result] = await Booking.aggregate([
-    { $match: match },
-
-    // Populate service
-    {
-      $lookup: {
-        from: 'services',
-        localField: 'service',
-        foreignField: '_id',
-        as: 'serviceDetails',
-      },
-    },
-    { $unwind: { path: '$serviceDetails', preserveNullAndEmptyArrays: true } },
-
-    // Populate client
-    {
-      $lookup: {
-        from: 'clients',
-        localField: 'client',
-        foreignField: '_id',
-        as: 'clientDetails',
-      },
-    },
-    { $unwind: { path: '$clientDetails', preserveNullAndEmptyArrays: true } },
-
-    // Populate auth inside client
-    {
-      $lookup: {
-        from: 'auths',
-        localField: 'clientDetails.auth',
-        foreignField: '_id',
-        as: 'clientAuth',
-      },
-    },
-    { $unwind: { path: '$clientAuth', preserveNullAndEmptyArrays: true } },
-
-    // Populate artist
     {
       $lookup: {
         from: 'artists',
         localField: 'artist',
         foreignField: '_id',
+        pipeline: [
+          {
+            $project: {
+              auth: 1,
+            },
+          },
+        ],
         as: 'artistDetails',
       },
     },
     { $unwind: { path: '$artistDetails', preserveNullAndEmptyArrays: true } },
 
-    // Populate auth inside client
     {
       $lookup: {
         from: 'auths',
         localField: 'artistDetails.auth',
         foreignField: '_id',
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              email: 1,
+              phoneNumber: 1,
+              image: 1,
+            },
+          },
+        ],
         as: 'artistAuth',
       },
     },
     { $unwind: { path: '$artistAuth', preserveNullAndEmptyArrays: true } },
+  ];
 
-    // Prepare final projection
+  const search = query.search?.trim();
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { 'artistAuth.fullName': { $regex: search, $options: 'i' } }, // Search Artist Name
+          { 'artistAuth.email': { $regex: search, $options: 'i' } },
+          { 'artistAuth.phone': { $regex: search, $options: 'i' } },
+          { 'serviceDetails.title': { $regex: search, $options: 'i' } }, // Assuming service has a name field
+          { serviceName: { $regex: search, $options: 'i' } },
+          { status: { $regex: search, $options: 'i' } },
+          { paymentStatus: { $regex: search, $options: 'i' } },
+        ],
+      },
+    });
+  }
+
+  // 7. Facet for Pagination & Projection
+  pipeline.push({
+    $facet: {
+      data: [
+        {
+          $project: {
+            _id: 1,
+            serviceName: 1,
+            bodyPart: 1,
+            price: 1,
+            status: 1,
+            paymentStatus: 1,
+            sessions: {
+              $map: {
+                input: '$sessions',
+                as: 'session',
+                in: {
+                  sessionNumber: '$$session.sessionNumber',
+                  startTime: '$$session.startTime',
+                  endTime: '$$session.endTime',
+                  date: '$$session.date',
+                  status: '$$session.status',
+                },
+              },
+            },
+            createdAt: 1,
+            // Project the Artist info as the "other party"
+            authId: '$artistAuth._id',
+            artistName: '$artistAuth.fullName',
+            artistEmail: '$artistAuth.email',
+            artistPhone: '$artistAuth.phoneNumber',
+            artistImage: '$artistAuth.image',
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+      ],
+      meta: [{ $count: 'total' }],
+    },
+  });
+
+  const [result] = await Booking.aggregate(pipeline);
+  const total = result.meta[0]?.total || 0;
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
+    data: result.data,
+  };
+};
+
+const getArtistBookings = async (
+  user: IAuth,
+  query: { page?: number; limit?: number; search?: string }
+) => {
+  const page = query.page ? Number(query.page) : 1;
+  const limit = query.limit ? Number(query.limit) : 10;
+  const skip = (page - 1) * limit;
+
+  // 1. Find the Artist Profile associated with this User
+  const artist = await Artist.findOne({ auth: user._id });
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist profile not found');
+  }
+
+  // 2. Initial Match: Get bookings for this specific artist
+  const pipeline: any[] = [
+    { $match: { artist: artist._id } },
+
+    // 4. Lookup Client (The person who booked)
     {
-      $facet: {
-        data: [
+      $lookup: {
+        from: 'clients',
+        localField: 'client',
+        foreignField: '_id',
+        pipeline: [
           {
             $project: {
-              _id: 1,
-              serviceName: 1,
-              price: 1,
-              status: 1,
-              paymentStatus: 1,
-              sessions: 1,
-              service: '$serviceDetails',
-              // client: '$clientDetails',
-              client: {
-                _id: '$clientAuth._id',
-                name: '$clientAuth.fullName',
-                email: '$clientAuth.email',
-                phone: '$clientAuth.phone',
-                image: '$clientAuth.image',
-              },
-              name: `$${infoField}.fullName`,
-              email: `$${infoField}.email`,
-              phone: `$${infoField}.phone`,
-              image: `$${infoField}.image`,
-
-              createdAt: 1,
+              auth: 1,
             },
           },
-          { $sort: { createdAt: -1 } },
-          { $skip: skip },
-          { $limit: limit },
         ],
-        meta: [{ $count: 'total' }],
+        as: 'clientDetails',
       },
     },
-  ]);
-  console.log(result);
+    { $unwind: { path: '$clientDetails', preserveNullAndEmptyArrays: true } },
+
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'clientDetails.auth',
+        foreignField: '_id',
+        pipeline: [
+          {
+            $project: {
+              fullName: 1,
+              email: 1,
+              phoneNumber: 1,
+              image: 1,
+            },
+          },
+        ],
+        as: 'clientAuth',
+      },
+    },
+    { $unwind: { path: '$clientAuth', preserveNullAndEmptyArrays: true } },
+  ];
+
+  const search = query.search?.trim();
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { 'clientAuth.fullName': { $regex: search, $options: 'i' } }, // Search Client Name
+          { 'clientAuth.email': { $regex: search, $options: 'i' } },
+          { 'clientAuth.phoneNumber': { $regex: search, $options: 'i' } },
+          { serviceName: { $regex: search, $options: 'i' } },
+          { status: { $regex: search, $options: 'i' } },
+          { paymentStatus: { $regex: search, $options: 'i' } },
+        ],
+      },
+    });
+  }
+
+  // 7. Facet for Pagination & Projection
+  pipeline.push({
+    $facet: {
+      data: [
+        {
+          $project: {
+            _id: 1,
+            authId: '$clientAuth._id',
+            clientName: '$clientAuth.fullName',
+            clientEmail: '$clientAuth.email',
+            clientPhone: '$clientAuth.phoneNumber',
+            clientImage: '$clientAuth.image',
+            serviceName: 1,
+            bodyPart: 1,
+            price: 1,
+            status: 1,
+            paymentStatus: 1,
+            sessions: {
+              $map: {
+                input: '$sessions',
+                as: 'session',
+                in: {
+                  sessionNumber: '$$session.sessionNumber',
+                  startTime: '$$session.startTime',
+                  endTime: '$$session.endTime',
+                  date: '$$session.date',
+                  status: '$$session.status',
+                },
+              },
+            },
+            createdAt: 1,
+            // Project the Client info as the "other party"
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+      ],
+      meta: [{ $count: 'total' }],
+    },
+  });
+
+  const [result] = await Booking.aggregate(pipeline);
   const total = result.meta[0]?.total || 0;
 
   return {
@@ -481,8 +585,8 @@ const createOrUpdateSessionIntoDB = async (
   payload: TSessionData
 ) => {
   const { sessionId, date, startTime, endTime } = payload;
-  
-  console.log({payload: payload})
+
+  console.log({ payload: payload });
 
   const booking = await Booking.findById(bookingId);
 
@@ -504,7 +608,7 @@ const createOrUpdateSessionIntoDB = async (
   const startTimeInMin = parseTimeToMinutes(startTime);
   const endTimeInMin = parseTimeToMinutes(endTime);
   const duration = endTimeInMin - startTimeInMin;
-  console.log({startTime:startTimeInMin, endTime: endTimeInMin})
+  console.log({ startTime: startTimeInMin, endTime: endTimeInMin });
   if (duration <= 0) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration!');
   }
@@ -1197,7 +1301,7 @@ const completeBookingIntoDb = async (
         httpStatus.BAD_REQUEST,
         'No OTP found for this booking'
       );
-
+    console.log("otp",otp)
     const [artist, service] = await Promise.all([
       Artist.findOne(
         { auth: user.id },
@@ -1271,7 +1375,7 @@ const completeBookingIntoDb = async (
     booking.set({
       status: BOOKING_STATUS.COMPLETED,
       stripeFee: Number((finalStripeFee / 100).toFixed(2)),
-      platFormFee: adminFee,
+      platFormFee: Number((adminFee / 100).toFixed(2)),
       paymentStatus: PAYMENT_STATUS.SUCCESSED,
       completedAt: new Date(),
       artistEarning: artistAmount / 100,
@@ -1334,7 +1438,8 @@ export const BookingService = {
   deleteSessionFromBooking,
   artistMarksCompletedIntoDb,
   handlePaymentIntentAuthorized,
-  getUserBookings,
+  getClientBookings,
+  getArtistBookings,
   reviewAfterAServiceIsCompletedIntoDB,
   createOrUpdateSessionIntoDB,
   confirmBookingByArtist,

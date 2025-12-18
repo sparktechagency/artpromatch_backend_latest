@@ -1440,7 +1440,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
       {
         path: 'auth',
         select:
-          'fullName image email phoneNumber isProfile stringLocation isSocialLogin',
+          'fullName image email phoneNumber isProfile stringLocation isSocialLogin role',
       },
     ]);
     // .lean();
@@ -1456,7 +1456,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
     const artist = await Artist.findOne({ auth: user._id }).populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile isSocialLogin',
+        select: 'fullName image email phoneNumber isProfile isSocialLogin role',
       },
     ]);
 
@@ -1469,7 +1469,7 @@ const fetchProfileFromDB = async (user: IAuth) => {
     const business = await Business.findOne({ auth: user._id }).populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile isSocialLogin',
+        select: 'fullName image email phoneNumber isProfile isSocialLogin role',
       },
       // {
       //   path: 'residentArtists',
