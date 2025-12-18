@@ -134,7 +134,7 @@ const fetchAllBusinesses = asyncHandler(async (req, res) => {
   });
 });
 
-const fetchAllServices = asyncHandler(async (req, res) => {
+const getAllServices = asyncHandler(async (req, res) => {
   const result = await AdminService.getAllServicesForAdminIntoDb(req.query);
 
   sendResponse(res, {
@@ -174,7 +174,6 @@ export const AdminController = {
   fetchDashboardPage,
   getYearlyAppointmentStats,
   getYearlyRevenueStats,
-
   getAllArtistsFolders,
   verifyArtistByAdmin,
   verifyBusinessByAdmin,
@@ -184,5 +183,5 @@ export const AdminController = {
   fetchAllArtists,
   fetchAllBusinesses,
   fetchAllSecretReviews,
-  fetchAllServices
+  getAllServices
 };
