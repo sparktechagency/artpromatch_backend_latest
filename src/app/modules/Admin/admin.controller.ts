@@ -134,6 +134,17 @@ const fetchAllBusinesses = asyncHandler(async (req, res) => {
   });
 });
 
+const fetchAllServices = asyncHandler(async (req, res) => {
+  const result = await AdminService.getAllServicesForAdminIntoDb(req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Services retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
 // fetchAllSecretReviews
 const fetchAllSecretReviews = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllSecretReviewsFromDB(req.query);
@@ -173,4 +184,5 @@ export const AdminController = {
   fetchAllArtists,
   fetchAllBusinesses,
   fetchAllSecretReviews,
+  fetchAllServices
 };
