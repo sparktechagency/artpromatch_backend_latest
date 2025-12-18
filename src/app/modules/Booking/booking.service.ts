@@ -339,7 +339,7 @@ const getClientBookings = async (
             serviceName: 1,
             bodyPart: 1,
             price: 1,
-            preferredDate:1,
+            preferredDate: 1,
             status: 1,
             paymentStatus: 1,
             sessions: {
@@ -474,7 +474,7 @@ const getArtistBookings = async (
             serviceName: 1,
             bodyPart: 1,
             price: 1,
-            preferredDate:1,
+            preferredDate: 1,
             status: 1,
             paymentStatus: 1,
             sessions: {
@@ -923,7 +923,7 @@ const reviewAfterAServiceIsCompletedIntoDB = async (
     booking.rating = rating;
     await booking.save({ session });
 
-    const secretReview = await SecretReview.create(
+    const newReview = await SecretReview.create(
       [
         {
           service: service._id,
@@ -934,7 +934,7 @@ const reviewAfterAServiceIsCompletedIntoDB = async (
       { session }
     );
 
-    if (!secretReview) {
+    if (!newReview) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         'Failed to submit your review!'
@@ -944,7 +944,7 @@ const reviewAfterAServiceIsCompletedIntoDB = async (
     await session.commitTransaction();
     await session.endSession();
 
-    return secretReview;
+    return newReview;
   } catch (err: any) {
     await session.abortTransaction();
     await session.endSession();
@@ -1303,7 +1303,7 @@ const completeBookingIntoDb = async (
         httpStatus.BAD_REQUEST,
         'No OTP found for this booking'
       );
-    console.log("otp",otp)
+    console.log('otp', otp);
     const [artist, service] = await Promise.all([
       Artist.findOne(
         { auth: user.id },
@@ -1427,7 +1427,6 @@ const getBookingsWithReviewThatHaveReviewForClientHomePage = async () => {
 
   return bookings;
 };
-
 
 export const BookingService = {
   createPaymentIntentIntoDB,
