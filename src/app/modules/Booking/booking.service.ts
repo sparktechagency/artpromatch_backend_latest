@@ -714,7 +714,7 @@ const getArtistDailySchedule = async (user: IAuth, date: Date) => {
     },
 
     // 3. Unwind sessions
-    { $unwind: '$sessions' },
+    { $unwind: { path: '$sessions', preserveNullAndEmptyArrays: true } },
 
     // 4. Match sessions for the given day
     {
@@ -733,7 +733,7 @@ const getArtistDailySchedule = async (user: IAuth, date: Date) => {
         as: 'service',
       },
     },
-    { $unwind: '$service' },
+    { $unwind: { path: '$service', preserveNullAndEmptyArrays: true } },
 
     // 6. Final projection
     {
@@ -1126,7 +1126,7 @@ const cancelBookingIntoDb = async (
       booking.paymentStatus === 'pending' ||
       booking.paymentStatus === 'failed'
     ) {
-      // 
+      //
     } else if (booking.paymentStatus === 'authorized') {
       if (!paymentClient?.paymentIntentId) {
         throw new AppError(httpStatus.BAD_REQUEST, 'No payment intent found!');

@@ -210,7 +210,7 @@ const getBusinessArtists = async (
         as: 'artistAuth',
       },
     },
-    { $unwind: '$artistAuth' },
+    { $unwind: { path: '$artistAuth', preserveNullAndEmptyArrays: true } },
 
     // 🔹 Lookup business info
     {
@@ -221,7 +221,7 @@ const getBusinessArtists = async (
         as: 'businessInfo',
       },
     },
-    { $unwind: '$businessInfo' },
+    { $unwind: { path: '$businessInfo', preserveNullAndEmptyArrays: true } },
 
     // 🔹 Final projection
     {

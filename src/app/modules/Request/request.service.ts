@@ -72,11 +72,11 @@ const createRequestIntoDB = async (user: IAuth, artistId: string) => {
   const notificationPayload = {
     title: 'Ioin studio request',
     message: `${business.studioName} request you to join their business studio`,
-    receiver: artistId,
+    receiver: artist.auth._id,
     type: NOTIFICATION_TYPE.JOIN_STUDIO_REQUEST,
   };
 
-  sendNotificationBySocket(notificationPayload);
+  await sendNotificationBySocket(notificationPayload);
 
   return {
     requestId: result._id,
@@ -136,7 +136,12 @@ const fetchAllMyRequestsFromDB = async (
               as: 'businessInfo',
             },
           },
-          { $unwind: '$businessInfo' },
+          {
+            $unwind: {
+              path: '$businessInfo',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
 
           // lookup auth for business (to get contact)
           {
@@ -147,7 +152,12 @@ const fetchAllMyRequestsFromDB = async (
               as: 'businessAuth',
             },
           },
-          { $unwind: '$businessAuth' },
+          {
+            $unwind: {
+              path: '$businessAuth',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
         ]
       : [
           // lookup artist
@@ -170,7 +180,12 @@ const fetchAllMyRequestsFromDB = async (
               as: 'artistInfo',
             },
           },
-          { $unwind: '$artistInfo' },
+          {
+            $unwind: {
+              path: '$artistInfo',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
 
           {
             $lookup: {
@@ -180,7 +195,12 @@ const fetchAllMyRequestsFromDB = async (
               as: 'artistAuth',
             },
           },
-          { $unwind: '$artistAuth' },
+          {
+            $unwind: {
+              path: '$artistAuth',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
         ]),
 
     // final projection

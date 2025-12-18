@@ -143,7 +143,7 @@ const fetchDasboardPageData = async () => {
     .limit(3)
     .populate<{ auth: IAuth }>({
       path: 'auth',
-      select: 'fullName email phoneNumber',
+      select: 'fullName email phoneNumber image',
     });
 
   const newUsers = rawUsers.map((u) => ({
@@ -151,6 +151,7 @@ const fetchDasboardPageData = async () => {
     fullName: u.auth?.fullName || '',
     email: u.auth?.email || '',
     phone: u.auth?.phoneNumber || '',
+    image: u.auth?.image || '',
   }));
 
   // ---- Top Artists (Example: by completed bookings count) ----
@@ -175,7 +176,7 @@ const fetchDasboardPageData = async () => {
         as: 'artist',
       },
     },
-    { $unwind: '$artist' },
+    { $unwind: { path: '$artist', preserveNullAndEmptyArrays: true } },
 
     {
       $lookup: {
@@ -185,13 +186,16 @@ const fetchDasboardPageData = async () => {
         as: 'auth',
       },
     },
-    { $unwind: '$auth' },
+    { $unwind: { path: '$auth', preserveNullAndEmptyArrays: true } },
 
     {
       $project: {
         _id: 0,
         fullName: '$auth.fullName',
+        email: '$auth.email',
         type: '$artist.type',
+        image: '$auth.image',
+        phoneNumber: '$auth.phoneNumber',
       },
     },
   ]);
@@ -326,6 +330,35 @@ const verifyBusinessByAdminIntoDB = async (businessId: string) => {
   return result;
 };
 
+// fetchAllClientsFromDB
+const fetchAllClientsFromDB = async (query: Record<string, unknown>) => {
+  const businessQuery = new QueryBuilder(
+    Client.find().populate([
+      {
+        path: 'auth',
+        select: 'fullName image email phoneNumber isProfile',
+      },
+    ]),
+    query
+  )
+    .search([
+      'preferredArtistType',
+      'favoritePiercing',
+      'country',
+      'favoriteTattoos',
+      'lookingFor',
+    ])
+    .filter()
+    .sort()
+    .sort()
+    .paginate();
+
+  const data = await businessQuery.modelQuery;
+  const meta = await businessQuery.countTotal();
+
+  return { data, meta };
+};
+
 // fetchAllArtistsFromDB
 const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
   const artistQuery = new QueryBuilder(
@@ -358,14 +391,6 @@ const fetchAllBusinessesFromDB = async (query: Record<string, unknown>) => {
         path: 'auth',
         select: 'fullName image email phoneNumber isProfile',
       },
-      {
-        path: 'residentArtists',
-        select: 'auth',
-        populate: {
-          path: 'auth',
-          select: 'fullName image email phoneNumber isProfile',
-        },
-      },
     ]),
     query
   )
@@ -388,35 +413,6 @@ const fetchAllBusinessesFromDB = async (query: Record<string, unknown>) => {
   return { data, meta };
 };
 
-// fetchAllClientsFromDB
-const fetchAllClientsFromDB = async (query: Record<string, unknown>) => {
-  const businessQuery = new QueryBuilder(
-    Client.find().populate([
-      {
-        path: 'auth',
-        select: 'fullName image email phoneNumber isProfile',
-      },
-    ]),
-    query
-  )
-    .search([
-      'preferredArtistType',
-      'favoritePiercing',
-      'country',
-      'favoriteTattoos',
-      'lookingFor',
-    ])
-    .filter()
-    .sort()
-    .sort()
-    .paginate();
-
-  const data = await businessQuery.modelQuery;
-  const meta = await businessQuery.countTotal();
-
-  return { data, meta };
-};
-
 // fetchAllSecretReviewsFromDB
 const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
   const {
@@ -426,6 +422,9 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
     sortBy = 'createdAt',
     sortOrder = 'desc',
   } = query;
+
+  const normalizedSearchTerm =
+    typeof searchTerm === 'string' ? searchTerm.trim() : '';
 
   const pipeline: PipelineStage[] = [
     // join service
@@ -437,7 +436,7 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
         as: 'service',
       },
     },
-    { $unwind: '$service' },
+    { $unwind: { path: '$service', preserveNullAndEmptyArrays: true } },
 
     // join artist
     {
@@ -448,7 +447,7 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
         as: 'artist',
       },
     },
-    { $unwind: '$artist' },
+    { $unwind: { path: '$artist', preserveNullAndEmptyArrays: true } },
 
     // join auth
     {
@@ -459,7 +458,7 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
         as: 'auth',
       },
     },
-    { $unwind: '$auth' },
+    { $unwind: { path: '$auth', preserveNullAndEmptyArrays: true } },
 
     // join booking
     {
@@ -470,7 +469,7 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
         as: 'booking',
       },
     },
-    { $unwind: '$booking' },
+    { $unwind: { path: '$booking', preserveNullAndEmptyArrays: true } },
 
     // custom alias projection
     {
@@ -487,7 +486,7 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
 
         artistType: '$artist.type',
         artistExpertise: '$artist.expertise',
-        // artistCity: '$artist.city',
+        artistCity: '$artist.city',
         artistStringLocation: '$artist.stringLocation',
 
         artistEmail: '$auth.email',
@@ -495,28 +494,37 @@ const fetchAllSecretReviewsFromDB = async (query: Record<string, unknown>) => {
         artistPhone: '$auth.phoneNumber',
         artistImage: '$auth.image',
 
-        bookingDate: '$booking.originalDate',
-        bookingLocation: '$booking.serviceLocation',
+        bookingDate: '$booking.createdAt',
         bookingBodyPart: '$booking.bodyPart',
         bookingPaymentStatus: '$booking.paymentStatus',
         bookingReview: '$booking.review',
         bookingRating: '$booking.rating',
+
+        // booking client info
+        bookingClientFullName: '$booking.clientInfo.fullName',
+        bookingClientEmail: '$booking.clientInfo.email',
+        bookingClientPhone: '$booking.clientInfo.phone',
       },
     },
   ];
 
   // Search across all fields
-  if (searchTerm) {
+  if (
+    normalizedSearchTerm &&
+    normalizedSearchTerm !== 'undefined' &&
+    normalizedSearchTerm !== 'null'
+  ) {
     pipeline.push({
       $match: {
         $or: [
-          { description: { $regex: searchTerm, $options: 'i' } },
-          { serviceTitle: { $regex: searchTerm, $options: 'i' } },
-          { artistEmail: { $regex: searchTerm, $options: 'i' } },
-          { artistPhone: { $regex: searchTerm, $options: 'i' } },
-          { bookingReview: { $regex: searchTerm, $options: 'i' } },
-          { bookingLocation: { $regex: searchTerm, $options: 'i' } },
-          { bookingBodyPart: { $regex: searchTerm, $options: 'i' } },
+          { description: { $regex: normalizedSearchTerm, $options: 'i' } },
+          { serviceTitle: { $regex: normalizedSearchTerm, $options: 'i' } },
+          { artistEmail: { $regex: normalizedSearchTerm, $options: 'i' } },
+          { artistFullName: { $regex: normalizedSearchTerm, $options: 'i' } },
+          { artistPhone: { $regex: normalizedSearchTerm, $options: 'i' } },
+          { bookingReview: { $regex: normalizedSearchTerm, $options: 'i' } },
+          { bookingLocation: { $regex: normalizedSearchTerm, $options: 'i' } },
+          { bookingBodyPart: { $regex: normalizedSearchTerm, $options: 'i' } },
         ],
       },
     });
@@ -665,6 +673,42 @@ const getAllBookingsForAdminIntoDb = async (query: {
     { $match: matchStage },
     { $sort: { createdAt: -1 } },
     {
+      $lookup: {
+        from: 'clients',
+        localField: 'client',
+        foreignField: '_id',
+        as: 'client',
+      },
+    },
+    { $unwind: { path: '$client', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'client.auth',
+        foreignField: '_id',
+        as: 'clientAuth',
+      },
+    },
+    { $unwind: { path: '$clientAuth', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'artists',
+        localField: 'artist',
+        foreignField: '_id',
+        as: 'artist',
+      },
+    },
+    { $unwind: { path: '$artist', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'artist.auth',
+        foreignField: '_id',
+        as: 'artistAuth',
+      },
+    },
+    { $unwind: { path: '$artistAuth', preserveNullAndEmptyArrays: true } },
+    {
       $project: {
         serviceName: 1,
         status: 1,
@@ -672,8 +716,10 @@ const getAllBookingsForAdminIntoDb = async (query: {
         createdAt: 1,
         'clientInfo.fullName': 1,
         'clientInfo.phone': 1,
+        'clientInfo.image': '$clientAuth.image',
         'artistInfo.fullName': 1,
         'artistInfo.phone': 1,
+        'artistInfo.image': '$artistAuth.image',
         price: 1,
       },
     },
@@ -686,12 +732,14 @@ const getAllBookingsForAdminIntoDb = async (query: {
   ];
 
   const result = await Booking.aggregate(pipeline);
+  const total = result[0]?.totalCount[0]?.count || 0;
 
   return {
     meta: {
       page,
       limit,
-      total: result[0]?.totalCount[0]?.count || 0,
+      total,
+      totalPage: Math.ceil(total / limit),
     },
     data: result[0]?.data || [],
   };
@@ -783,9 +831,9 @@ export const AdminService = {
   // changeStatusOnFolder,
   verifyArtistByAdminIntoDB,
   verifyBusinessByAdminIntoDB,
+  fetchAllClientsFromDB,
   fetchAllArtistsFromDB,
   fetchAllBusinessesFromDB,
-  fetchAllClientsFromDB,
   fetchAllSecretReviewsFromDB,
   getAllBookingsForAdminIntoDb,
   getAllServicesForAdminIntoDb

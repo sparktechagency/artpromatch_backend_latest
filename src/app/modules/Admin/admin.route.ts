@@ -58,14 +58,14 @@ router
     AdminController.getAllBookingsForAdmin
   );
 
-// 8. fetchAllArtists
-router.route('/fetch-artists').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllArtists);
+// 8. fetchAllClients
+router.route('/fetch-clients').get(AdminController.fetchAllClients);
 
-// 9. fetchAllBusinesses
-router.route('/fetch-businesses').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllBusinesses);
+// 9. fetchAllArtists
+router.route('/fetch-artists').get(AdminController.fetchAllArtists);
 
-// 10. fetchAllClients
-router.route('/fetch-clients').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllClients);
+// 10. fetchAllBusinesses
+router.route('/fetch-businesses').get(AdminController.fetchAllBusinesses);
 
 // 11. fetchAllSecretReviews
 router.route('/secret-reviews').get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),AdminController.fetchAllSecretReviews);
