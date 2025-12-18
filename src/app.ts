@@ -33,6 +33,7 @@ app.use(
       'http://10.10.20.30:5173',
       'https://dlmiked-artpro-match-5500-client.vercel.app',
       'https://dlmiked-artpro-match-5500-artist.vercel.app',
+      'https://artpromatch-dashboard.vercel.app',
     ],
   })
 );

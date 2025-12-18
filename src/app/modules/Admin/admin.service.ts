@@ -310,7 +310,7 @@ const verifyArtistByAdminIntoDB = async (artistId: string) => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const authDoc = artist.auth as any;
-  authDoc.isActive = true;
+  authDoc.isActive = !authDoc.isActive;
   await authDoc.save();
   return null;
 };
@@ -365,7 +365,7 @@ const fetchAllArtistsFromDB = async (query: Record<string, unknown>) => {
     Artist.find().populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile',
+        select: 'fullName image email phoneNumber isProfile isActive',
       },
     ]),
     query
@@ -748,7 +748,7 @@ const getAllBookingsForAdminIntoDb = async (query: {
 const getAllServicesForAdminIntoDb = async (query: {
   page?: number;
   limit?: number;
-  search?: string;
+  searchTerm?: string;
 }) => {
   const page = query.page ? Number(query.page) : 1;
   const limit = query.limit ? Number(query.limit) : 10;
@@ -758,32 +758,46 @@ const getAllServicesForAdminIntoDb = async (query: {
     isDeleted: false,
   };
 
-  if (query.search) {
+  if (query.searchTerm) {
     matchStage.$or = [
-      { title: { $regex: query.search, $options: 'i' } },
-      { description: { $regex: query.search, $options: 'i' } },
-      { bodyLocation: { $regex: query.search, $options: 'i' } },
-      { price: { $regex: query.search, $options: 'i' } },
-      { avgRating: { $regex: query.search, $options: 'i' } },
+      { title: { $regex: query.searchTerm, $options: 'i' } },
+      { description: { $regex: query.searchTerm, $options: 'i' } },
+      { bodyLocation: { $regex: query.searchTerm, $options: 'i' } },
+      { price: { $regex: query.searchTerm, $options: 'i' } },
+      { avgRating: { $regex: query.searchTerm, $options: 'i' } },
     ];
   }
 
   const pipeline: PipelineStage[] = [
     { $match: matchStage },
-     {
-    $lookup: {
-      from: 'artists',
-      localField: 'artist',
-      foreignField: '_id',
-      as: 'artistInfo',
+    {
+      $lookup: {
+        from: 'artists',
+        localField: 'artist',
+        foreignField: '_id',
+        as: 'artistInfo',
+      },
     },
-  },
-  {
-    $unwind: {
-      path: '$artistInfo',
-      preserveNullAndEmptyArrays: true,
+    {
+      $unwind: {
+        path: '$artistInfo',
+        preserveNullAndEmptyArrays: true,
+      },
     },
-  },
+    {
+      $lookup: {
+        from: 'auths',
+        localField: 'artistInfo.auth',
+        foreignField: '_id',
+        as: 'artistAuth',
+      },
+    },
+    {
+      $unwind: {
+        path: '$artistAuth',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     { $sort: { createdAt: -1 } },
     {
       $project: {
@@ -797,6 +811,14 @@ const getAllServicesForAdminIntoDb = async (query: {
         totalCompletedOrder: 1,
         totalReviewCount: 1,
         createdAt: 1,
+
+        artist: {
+          _id: '$artistInfo._id',
+          fullName: '$artistAuth.fullName',
+          email: '$artistAuth.email',
+          phoneNumber: '$artistAuth.phoneNumber',
+          image: '$artistAuth.image',
+        },
       },
     },
     {
@@ -808,9 +830,8 @@ const getAllServicesForAdminIntoDb = async (query: {
   ];
 
   const result = await Service.aggregate(pipeline);
-  const total = result[0]?.totalCount[0]?.count || 0
+  const total = result[0]?.totalCount[0]?.count || 0;
   return {
-    
     data: result[0]?.data || [],
     meta: {
       page,
@@ -820,8 +841,6 @@ const getAllServicesForAdminIntoDb = async (query: {
     },
   };
 };
-
-
 
 export const AdminService = {
   fetchDasboardPageData,
@@ -836,5 +855,5 @@ export const AdminService = {
   fetchAllBusinessesFromDB,
   fetchAllSecretReviewsFromDB,
   getAllBookingsForAdminIntoDb,
-  getAllServicesForAdminIntoDb
+  getAllServicesForAdminIntoDb,
 };
