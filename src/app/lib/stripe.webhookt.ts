@@ -34,78 +34,7 @@ export const stripeWebhookHandler = asyncHandler(
     }
 
     switch (event.type) {
-      // case 'checkout.session.completed': {
-      //   const session = event.data.object as Stripe.Checkout.Session;
-      //   const bookingId = session.metadata?.bookingId;
-      //   const clientId = session.metadata?.clientId ?? '';
-      //   const paymentIntentId = session.payment_intent as string;
-
-      //   console.log('checkout session completed',bookingId,clientId);
-
-      //   const booking = await Booking.findById(bookingId).select(
-      //     'artistInfo clientInfo client artist serviceName'
-      //   );
-      //   if (!booking)
-      //     logger.warn('booking not found', { clientId, bookingId });
-      //   await Booking.updateOne(
-      //     { _id: bookingId },
-      //     {
-      //       $set: {
-      //         'payment.client.paymentIntentId': paymentIntentId,
-      //         paymentStatus: PAYMENT_STATUS.AUTHORIZED,
-      //       },
-      //     },
-      //     { runValidators: true }
-      //   );
-
-      //   const artist = await ArtistPreferences.findOne(
-      //     { artistId: booking.artist },
-      //     'notificationChannels'
-      //   );
-
-      //   const user = await Auth.findOne({ _id: clientId }, 'fcmToken');
-      //    logger.warn('User not found', { clientId, bookingId });
-
-      //   if (artist?.notificationChannels.includes('app')) {
-      //     sendNotificationBySocket({
-      //       title: 'New Booking Request',
-      //       message: `you have a new booking request from ${booking.clientInfo.fullName} for ${booking.serviceName}. Please review and confirm.`,
-      //       receiver: booking.artist.toString() ?? '',
-      //       type: NOTIFICATION_TYPE.BOOKING_REQUEST,
-      //     });
-      //   }
-
-      //   if (artist?.notificationChannels.includes('email')) {
-      //     sendNotificationByEmail(
-      //       booking.artistInfo.email,
-      //       NOTIFICATION_TYPE.BOOKING_REQUEST,
-      //       {
-      //         fullName: booking.clientInfo.fullName,
-      //         serviceName: booking.serviceName,
-      //       }
-      //     );
-      //   }
-      //   const date = new Date();
-
-      //   const formatted = date.toLocaleDateString('en-GB', {
-      //     day: '2-digit',
-      //     month: 'short',
-      //     year: 'numeric',
-      //   });
-
-      //   if (artist?.notificationChannels.includes('sms')) {
-      //     if (user.fcmToken) {
-      //       sendPushNotification(user.fcmToken, {
-      //         title: 'New Booking Request',
-      //         content: `you have a new booking request from ${booking.clientInfo.fullName} for${booking.serviceName}. Please review and confirm.`,
-      //         time: formatted,
-      //       });
-      //     }
-      //   }
-
-      //   break;
-      // }
-
+      
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const paymentIntentId =

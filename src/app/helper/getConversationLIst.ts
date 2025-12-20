@@ -1,8 +1,8 @@
 import { Types } from 'mongoose';
-import Auth from '../modules/Auth/auth.model';
-import Conversation from '../modules/Conversation/conversation.model';
-import { onlineUsers } from '../socket/connectSocket';
 import { IAuth } from '../modules/Auth/auth.interface';
+import Auth from '../modules/Auth/auth.model';
+import Conversation from '../modules/conversationModule/conversation.model';
+import { onlineUsers } from '../socket/connectSocket';
 
 interface ConversationQuery {
   searchTerm?: string;
