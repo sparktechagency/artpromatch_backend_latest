@@ -521,6 +521,12 @@ const createProfileIntoDB = async (
 
       const [business] = await Business.create([businessPayload], { session });
 
+      if (business) {
+        await Auth.findByIdAndUpdate(user._id, { fullName: studioName });
+        // user.fullName = studioName as string;
+        // user.save();
+      }
+
       const [businessPreferences] = await BusinessPreferences.create(
         [{ businessId: business._id }],
         { session }

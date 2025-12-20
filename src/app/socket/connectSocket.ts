@@ -29,8 +29,6 @@ const connectSocket = (server: HTTPServer) => {
   }
 
   io.on(SOCKET_EVENTS.CONNECTION, async (socket: Socket) => {
-    console.log('Client connected:', socket.id);
-
     const userId = socket.handshake.query.id as string;
 
     if (!userId || typeof userId !== 'string') {
@@ -88,7 +86,6 @@ const connectSocket = (server: HTTPServer) => {
     handleChatEvents(io, socket, currentUserId, onlineUsers);
 
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
-      console.log('Disconnected:', socket.id);
       onlineUsers.delete(currentUserId);
 
       io.emit(SOCKET_EVENTS.USER_STATUS, {

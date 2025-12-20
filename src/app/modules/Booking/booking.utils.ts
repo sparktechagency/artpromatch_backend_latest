@@ -17,21 +17,21 @@ export const roundUpMinutes = (min: number, step = 15) => {
 };
 
 export function parseTimeToMinutes(timeStr: string): number {
-  console.log("timestr",timeStr)
-  const [time, modifier] = timeStr.toLowerCase().split(' '); // e.g. "09:30 am"
-  console.log(timeStr.toLowerCase().split(' '))
+  const [time, modifier] = timeStr.toLowerCase().split(' ');
+
   const [hoursRaw, minutesRaw] = time.split(':').map(Number);
-  console.log(hoursRaw,minutesRaw)
+
   let hours = hoursRaw;
-  const minutes = minutesRaw; // ✅ now const
+  const minutes = minutesRaw;
 
   if (modifier === 'pm' && hours !== 12) {
     hours += 12;
   }
+
   if (modifier === 'am' && hours === 12) {
     hours = 0;
   }
-  console.log(hours)
+
   return hours * 60 + minutes;
 }
 
@@ -57,11 +57,13 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
         date.getMonth(),
         date.getDate()
       );
+      
       const gsStartOnly = new Date(
         guestSpot.startDate.getFullYear(),
         guestSpot.startDate.getMonth(),
         guestSpot.startDate.getDate()
       );
+
       const gsEndOnly = new Date(
         guestSpot.endDate.getFullYear(),
         guestSpot.endDate.getMonth(),
@@ -98,5 +100,3 @@ export const resolveScheduleForDate = async (artistId: string, date: Date) => {
     offDays: scheduleDoc.offDays || null,
   };
 };
-
-

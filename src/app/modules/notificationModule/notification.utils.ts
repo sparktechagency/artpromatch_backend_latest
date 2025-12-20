@@ -37,12 +37,10 @@ export const sendNotificationByEmail = async (
     };
 
     await transporter.sendMail(mailOptions);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.log(error);
+  } catch {
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
-      'Failed to send email'
+      'Failed to send email!'
     );
   }
 };

@@ -84,7 +84,6 @@ export default ArtistSchedule;
 //   const mins = minutes % 60;
 //   const ampm = hours >= 12 ? 'PM' : 'AM';
 //   const displayHour = hours % 12 || 12; // 0 → 12
-//   console.log(displayHour)
 //   return `${displayHour}:${String(mins).padStart(2, '0')} ${ampm}`;
 // }
 
@@ -92,7 +91,6 @@ export default ArtistSchedule;
 //   return `${formatMinutesToTime(start)} - ${formatMinutesToTime(end)}`;
 // }
 
-// console.log(formatSlot(0, 580)); 
 
 
 function timeToMinutes(timeStr) {
@@ -116,9 +114,6 @@ function rangeToMinutes(rangeStr) {
     end: timeToMinutes(endStr)
   };
 }
-
-// Example:
-console.log(rangeToMinutes("1:00 AM - 12:00 PM"));
 
 
 */
