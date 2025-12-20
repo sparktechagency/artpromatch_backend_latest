@@ -1,14 +1,14 @@
 /* eslint-disable no-console */
 import { Server as HTTPServer } from 'http';
-import { Server as ChatServer, Socket } from 'socket.io';
-import handleChatEvents from './handleChatEvents';
-import Auth from '../modules/Auth/auth.model';
-import Conversation from '../modules/Conversation/conversation.model';
-import { SOCKET_EVENTS } from './socket.constant';
-import mongoose from 'mongoose';
-import { AppError } from '../utils';
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
+import { Server as ChatServer, Socket } from 'socket.io';
+import Auth from '../modules/Auth/auth.model';
+import Conversation from '../modules/conversationModule/conversation.model';
+import { AppError } from '../utils';
 import getUnreadMessageCount from '../utils/getUnreadMessageCount';
+import handleChatEvents from './handleChatEvents';
+import { SOCKET_EVENTS } from './socket.constant';
 
 let io: ChatServer;
 

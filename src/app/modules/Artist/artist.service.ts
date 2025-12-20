@@ -1027,6 +1027,8 @@ const boostProfileIntoDb = async (user: IAuth) => {
       session
     );
 
+    console.log({artist})
+
     if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'artist not found');
 
     if (artist.boost.endTime && artist.boost.endTime > new Date()) {
