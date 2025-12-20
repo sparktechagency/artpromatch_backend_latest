@@ -34,7 +34,6 @@ export const stripeWebhookHandler = asyncHandler(
     }
 
     switch (event.type) {
-      
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         const paymentIntentId =
@@ -46,7 +45,6 @@ export const stripeWebhookHandler = asyncHandler(
         const boostId = session.metadata?.boostId;
 
         if (boostId) {
-          console.log(boostId);
           await ArtistBoost.findOneAndUpdate(
             { _id: boostId },
             {
@@ -72,7 +70,6 @@ export const stripeWebhookHandler = asyncHandler(
 
       case 'payment_intent.amount_capturable_updated': {
         const pi = event.data.object as Stripe.PaymentIntent;
-        console.log('pi', pi);
         await BookingService.handlePaymentIntentAuthorized(pi);
 
         break;
@@ -125,7 +122,6 @@ export const stripeWebhookHandler = asyncHandler(
           const boostId = session.metadata?.boostId;
 
           if (boostId) {
-            console.log(boostId);
             await ArtistBoost.findOneAndUpdate(
               { _id: boostId },
               {

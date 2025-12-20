@@ -106,6 +106,7 @@ const getConnectedAccountDashboard = async () => {
     balance: balance,
   };
 };
+
 // confirm payment
 const handlePaymentIntentAuthorized = async (
   pi: Stripe.PaymentIntent
@@ -132,8 +133,7 @@ const handlePaymentIntentAuthorized = async (
     });
 
     if (existingBooking) {
-      console.log('Booking already exists, skipping', pi.id);
-      return;
+      throw new AppError(httpStatus.BAD_REQUEST, 'Booking already exists!');
     }
 
     const service = await Service.findById(serviceId).select(
@@ -197,8 +197,6 @@ const handlePaymentIntentAuthorized = async (
       'notificationChannels'
     );
 
-    console.log({ artispref: artistPref });
-
     // Notifications
     if (artistPref?.notificationChannels.includes('app')) {
       try {
@@ -249,8 +247,6 @@ const handlePaymentIntentAuthorized = async (
         console.error('Failed to send push notification');
       }
     }
-
-    console.log('Booking authorized:', booking._id);
   } catch (err) {
     console.error('Webhook logic failed', err);
   }
@@ -588,8 +584,6 @@ const createOrUpdateSessionIntoDB = async (
 ) => {
   const { sessionId, date, startTime, endTime } = payload;
 
-  console.log({ payload: payload });
-
   const booking = await Booking.findById(bookingId);
 
   if (!booking) {
@@ -610,7 +604,6 @@ const createOrUpdateSessionIntoDB = async (
   const startTimeInMin = parseTimeToMinutes(startTime);
   const endTimeInMin = parseTimeToMinutes(endTime);
   const duration = endTimeInMin - startTimeInMin;
-  console.log({ startTime: startTimeInMin, endTime: endTimeInMin });
   if (duration <= 0) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid session duration!');
   }
@@ -1139,7 +1132,6 @@ const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
   // Generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  console.log({ otp });
   booking.otp = otp;
   booking.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -1303,7 +1295,6 @@ const completeBookingIntoDb = async (
         httpStatus.BAD_REQUEST,
         'No OTP found for this booking'
       );
-    console.log('otp', otp);
     const [artist, service] = await Promise.all([
       Artist.findOne(
         { auth: user.id },

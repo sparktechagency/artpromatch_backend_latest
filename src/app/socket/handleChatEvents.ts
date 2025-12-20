@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Server as IOServer, Socket } from 'socket.io';
 import { handleMessagePage } from './chat/getMessages';
 import { handleSendMessage } from './chat/sendMessage';
@@ -15,7 +14,6 @@ const handleChatEvents = async (
   socket.on(SOCKET_EVENTS.JOIN_CONVERSATION, async (conversationId: string) => {
     socket.join(conversationId);
     socket.data.currentConversationId = conversationId;
-    console.log(`User ${currentUserId} joined room ${conversationId}`);
   });
 
   socket.on(SOCKET_EVENTS.LEAVE_CONVERSATION, (conversationId?: string) => {
