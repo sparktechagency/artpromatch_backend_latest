@@ -30,6 +30,11 @@ router
   .route('/reject/:requestId')
   .put(auth(ROLE.ARTIST), RequestController.artistRejectRequest);
 
+// businessDeleteSpecificRequest
+router
+  .route('/delete/:requestId')
+  .delete(auth(ROLE.BUSINESS), RequestController.businessDeleteSpecificRequest);
+
 // addToJoinStudio
 router
   .route('/studio/:id')

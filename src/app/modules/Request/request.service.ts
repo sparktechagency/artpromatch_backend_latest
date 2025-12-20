@@ -375,6 +375,66 @@ const artistRejectRequestIntoDb = async (user: IAuth, requestId: string) => {
   return result;
 };
 
+// businessDeleteSpecificRequestFromDB
+const businessDeleteSpecificRequestFromDB = async (
+  user: IAuth,
+  requestId: string
+) => {
+  // Check if artist exists
+  const business = await Business.findOne({ auth: user._id }, '_id');
+
+  if (!business) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
+  }
+
+  // Find the request by ID and ensure it belongs to this artist
+  const request = await RequestModel.findOne({
+    _id: requestId,
+    businessId: business._id,
+  });
+
+  if (!request) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Request not found!');
+  }
+
+  if (request.status !== REQUEST_STATUS.PENDING) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `You can only delete a pending request. Current status: ${request.status}`
+    );
+  }
+
+  // Find the artist linked to the request
+  const artist = await Artist.findById(request.artistId).select(
+    'business isConnBusiness'
+  );
+
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  }
+
+  // Check if the artist is already connected to this business
+  if (
+    artist.isConnBusiness &&
+    artist.business &&
+    artist.business?.toString() === business._id.toString()
+  ) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You cannot delete/reject a request of an artist who is already connected to your business!'
+    );
+  }
+
+  // Update the request status to 'rejected'
+  const result = await RequestModel.findByIdAndDelete(requestId);
+
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to reject the request!');
+  }
+
+  return result;
+};
+
 // addToJoinStudioIntoDb
 const addToJoinStudioIntoDb = async (user: IAuth, requestId: string) => {
   const request = await RequestModel.findOne({
@@ -431,6 +491,7 @@ export const RequestService = {
   fetchAllMyRequestsFromDB,
   artistAcceptRequestIntoDb,
   artistRejectRequestIntoDb,
+  businessDeleteSpecificRequestFromDB,
   addToJoinStudioIntoDb,
   // removeRequestFromDB,
 };
