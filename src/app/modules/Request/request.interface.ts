@@ -1,11 +1,11 @@
-import { Document, ObjectId } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { RequestStatus } from './request.constant';
 
 export interface IRequest extends Document {
-  _id: ObjectId;
+  _id: Types.ObjectId;
 
-  artistId: ObjectId;
-  businessId: ObjectId;
+  artistId: Types.ObjectId;
+  businessId: Types.ObjectId;
   status: RequestStatus;
 
   createdAt: Date;
