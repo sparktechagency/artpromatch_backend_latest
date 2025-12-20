@@ -47,7 +47,7 @@ const artistAcceptRequest = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Requests accepted successfully!',
+    message: 'Request accepted successfully!',
     data: result,
   });
 });
@@ -70,7 +70,30 @@ const artistRejectRequest = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Requests rejected successfully!',
+    message: 'Request rejected successfully!',
+    data: result,
+  });
+});
+
+// businessDeleteSpecificRequest
+const businessDeleteSpecificRequest = asyncHandler(async (req, res) => {
+  const { requestId } = req.params;
+
+  if (!requestId) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Request id not found in params!'
+    );
+  }
+
+  const result = await RequestService.businessDeleteSpecificRequestFromDB(
+    req.user,
+    requestId
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Request deleted successfully!',
     data: result,
   });
 });
@@ -114,6 +137,7 @@ export const RequestController = {
   fetchAllMyRequests,
   artistAcceptRequest,
   artistRejectRequest,
+  businessDeleteSpecificRequest,
   addToJoinStudio,
   // removeRequest,
 };
