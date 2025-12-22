@@ -18,6 +18,7 @@ const authSchema = new Schema<IAuth, IAuthModel>(
     phoneNumber: {
       type: String,
       unique: [true, 'This phone number is already used!'],
+      required:false
     },
     password: {
       type: String,

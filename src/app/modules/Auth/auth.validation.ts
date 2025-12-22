@@ -321,7 +321,6 @@ const socialSigninSchema = z.object({
     fcmToken: z.string().nonempty('FCM Token is required!'),
     image: z.string().url('Image URL must be a valid URL!'),
     fullName: z.string(),
-    phoneNumber: z.string(),
     address: z.string(),
   }),
 });
