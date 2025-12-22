@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
@@ -48,6 +49,7 @@
     "@types/nodemailer": "^6.4.19",
     "@types/otp-generator": "^4.0.2",
     "@types/socket.io": "^3.0.2",
+    "@types/streamifier": "^0.1.2",
     "eslint": "^9.34.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
