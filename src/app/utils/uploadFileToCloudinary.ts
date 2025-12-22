@@ -21,7 +21,7 @@ export const uploadToCloudinary = (
         });
       }
     );
-
+    
     streamifier.createReadStream(file.buffer).pipe(stream);
   });
 };
