@@ -28,21 +28,20 @@ import {
 import { JwtPayload } from 'jsonwebtoken';
 import Stripe from 'stripe';
 import config from '../../config';
+import { deleteImageFromCloudinary } from '../../utils/deleteImageFromCloudinary';
+
 import { ROLE } from '../Auth/auth.constant';
 import Booking from '../Booking/booking.model';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
 import Folder from '../Folder/folder.model';
-import {
-  deleteSingleImage,
-  deleteSomeImages,
-  deleteSomeMulterFiles,
-} from '../Folder/folder.utils';
+import { deleteSomeMulterFiles } from '../Folder/folder.utils';
 import GuestSpot from '../GuestSpot/guestSpot.model';
 import Notification from '../notificationModule/notification.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
+import { uploadToCloudinary } from '../../utils/uploadFileToCloudinary';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -474,77 +473,71 @@ const updateArtistServiceByIdIntoDB = async (
 ) => {
   const artist = await Artist.findOne({ auth: UserData._id });
   if (!artist) {
-    deleteSomeMulterFiles([
-      ...(files?.thumbnail || []),
-      ...(files?.images || []),
-    ]);
-
     throw new AppError(httpStatus.NOT_FOUND, 'Your artist account not found!');
   }
 
   const service = await Service.findOne({ _id: id, artist: artist._id });
   if (!service) {
-    deleteSomeMulterFiles([
-      ...(files?.thumbnail || []),
-      ...(files?.images || []),
-    ]);
-
     throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
   }
 
-  // Handle thumbnail
+  /* -------------------- THUMBNAIL -------------------- */
   let thumbnail = service.thumbnail;
-  if (files?.thumbnail && files.thumbnail.length > 0) {
-    thumbnail = files.thumbnail[0].path.replace(/\\/g, '/');
-    deleteSingleImage(service.thumbnail);
+
+  if (files?.thumbnail?.length) {
+    const thumbResult = await uploadToCloudinary(
+      files.thumbnail[0],
+      'services_images'
+    );
+
+    await deleteImageFromCloudinary(service.thumbnail);
+    thumbnail = thumbResult.secure_url;
   }
 
-  // Handle images (merge old + new)
-  let images: string[] = payload.images || service.images || [];
-  if (files?.images && files.images.length > 0) {
-    const newImages = files.images.map((img) => img.path.replace(/\\/g, '/'));
-    images = [...images, ...newImages];
-  }
+  /* -------------------- IMAGES -------------------- */
 
-  // Find removed images (present in old service.images but not in payload.images)
-  const removedImages: string[] = service.images.filter(
-    (img) => !(payload.images || []).includes(img)
+  // Images frontend wants to keep
+  const keptImages: string[] = payload.images || [];
+
+  // Images removed by frontend
+  const removedImages = service.images.filter(
+    (img) => !keptImages.includes(img)
   );
 
-  // Delete removed images from storage
-  if (removedImages.length > 0) {
-    deleteSomeImages(removedImages);
-  }
-
-  // Validate images length (2-5)
-  if (images.length < 2 || images.length > 5) {
-    deleteSomeMulterFiles([
-      ...(files?.thumbnail || []),
-      ...(files?.images || []),
-    ]);
-
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'You must upload between 2 and 5 Service Images!'
+  // Delete removed images from Cloudinary
+  if (removedImages.length) {
+    await Promise.all(
+      removedImages.map((img) => deleteImageFromCloudinary(img))
     );
   }
 
-  const serviceData = {
-    ...payload,
-    thumbnail,
-    images,
-  };
+  // Upload new images
+  let uploadedImages: string[] = [];
+  if (files?.images?.length) {
+    const uploads = await Promise.all(
+      files.images.map((file) =>
+        uploadToCloudinary(file, 'services_images')
+      )
+    );
 
-  const result = await Service.findByIdAndUpdate(id, serviceData, {
-    new: true,
-  });
+    uploadedImages = uploads.map((img:any) => img.secure_url);
+  }
+
+  // Final images list
+  const images = [...keptImages, ...uploadedImages];
+
+  /* -------------------- UPDATE -------------------- */
+  const result = await Service.findByIdAndUpdate(
+    id,
+    {
+      ...payload,
+      thumbnail,
+      images,
+    },
+    { new: true }
+  );
 
   if (!result) {
-    deleteSomeMulterFiles([
-      ...(files?.thumbnail || []),
-      ...(files?.images || []),
-    ]);
-
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to update service!');
   }
 
@@ -938,6 +931,8 @@ const createService = async (
 ): Promise<IService> => {
   const artist = await Artist.findOne({ auth: user._id });
 
+  console.log({ files: files });
+
   if (!artist) {
     try {
       deleteSomeMulterFiles([
@@ -983,29 +978,57 @@ const createService = async (
     );
   }
 
-  const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
-  const images =
-    files?.images?.map((image) => image.path.replace(/\\/g, '/') || '') || [];
+  // const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
+  // const images =
+  //   files?.images?.map((image) => image.path.replace(/\\/g, '/') || '') || [];
 
-  // Validate images length (2-5)
-  if (images.length < 2 || images.length > 5) {
-    // Cleanup any uploaded files to avoid orphaned files on validation failure
+  // // Validate images length (2-5)
+  // if (images.length < 2 || images.length > 5) {
+  //   // Cleanup any uploaded files to avoid orphaned files on validation failure
 
-    try {
-      deleteSomeMulterFiles([
-        ...(files?.thumbnail || []),
-        ...(files?.images || []),
-      ]);
-    } catch (cleanupErr) {
-      console.error('Failed to cleanup uploaded files:', cleanupErr);
-    }
+  //   try {
+  //     deleteSomeMulterFiles([
+  //       ...(files?.thumbnail || []),
+  //       ...(files?.images || []),
+  //     ]);
+  //   } catch (cleanupErr) {
+  //     console.error('Failed to cleanup uploaded files:', cleanupErr);
+  //   }
 
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'You must upload between 2 and 5 Service Images!'
+  //   throw new AppError(
+  //     httpStatus.BAD_REQUEST,
+  //     'You must upload between 2 and 5 Service Images!'
+  //   );
+  // }
+
+  // const serviceData = {
+  //   ...payload,
+  //   artist: artist._id,
+  //   thumbnail,
+  //   images,
+  // };
+
+  // const service = await Service.create(serviceData);
+
+  // Upload gallery images (multiple)
+  const gallery = await Promise.all(
+    files.images.map((file) => uploadToCloudinary(file, 'services_images'))
+  );
+
+  console.log({ gallery: gallery });
+  const images = gallery.map((res) => res.secure_url);
+
+  // Upload thumbnail (single)
+  let thumbnail = null;
+  if (files.thumbnail?.[0]) {
+    const thumbResult = await uploadToCloudinary(
+      files.thumbnail[0],
+      'services_thumbnail'
     );
+    thumbnail = thumbResult.secure_url;
   }
 
+  // Save to database
   const serviceData = {
     ...payload,
     artist: artist._id,
@@ -1014,6 +1037,7 @@ const createService = async (
   };
 
   const service = await Service.create(serviceData);
+
   return service;
 };
 

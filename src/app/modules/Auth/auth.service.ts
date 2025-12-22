@@ -28,6 +28,7 @@ import { IAuth } from './auth.interface';
 import { AuthValidation, TProfilePayload } from './auth.validation';
 // import sendOtpSms from '../../utils/sendOtpSms';
 // import { getLocationName } from './auth.utils';
+import { uploadToCloudinary } from '../../utils/uploadToCloudinaryToCloudinary';
 import Auth from './auth.model';
 
 const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
@@ -336,18 +337,47 @@ const createProfileIntoDB = async (
   } = payload;
 
   // Extract file paths for ID verification images for artists
-  const idCardFront = files?.idFrontPart?.[0]?.path.replace(/\\/g, '/') || null;
-  const idCardBack = files?.idBackPart?.[0]?.path.replace(/\\/g, '/') || null;
-  const selfieWithId =
-    files?.selfieWithId?.[0]?.path.replace(/\\/g, '/') || null;
+  // let idCardFront;
+  // const idCardFrontFile = files?.idFrontPart?.[0];
 
-  // Business-specific file extractions
-  const registrationCertificate =
-    files?.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || null;
-  const taxIdOrEquivalent =
-    files?.taxIdOrEquivalent?.[0]?.path.replace(/\\/g, '/') || null;
-  const studioLicense =
-    files?.studioLicense?.[0]?.path.replace(/\\/g, '/') || null;
+  // if (idCardFrontFile) {
+  //   const idCardFrontResult = await uploadToCloudinary(
+  //     idCardFrontFile,
+  //     'kyc_images'
+  //   );
+  //   idCardFront = idCardFrontResult.secure_url;
+  // }
+
+  // const idCardBack = files?.idBackPart?.[0]?.path.replace(/\\/g, '/') || null;
+  // const selfieWithId =
+  //   files?.selfieWithId?.[0]?.path.replace(/\\/g, '/') || null;
+
+  // // Business-specific file extractions
+  // const registrationCertificate =
+  //   files?.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || null;
+  // const taxIdOrEquivalent =
+  //   files?.taxIdOrEquivalent?.[0]?.path.replace(/\\/g, '/') || null;
+  // const studioLicense =
+  //   files?.studioLicense?.[0]?.path.replace(/\\/g, '/') || null;
+
+  // Extract files from the request
+
+  // Upload all files to Cloudinary
+  const idCardFront = await uploadToCloudinary(files?.idFrontPart?.[0], 'kyc_images');
+  const idCardBack = await uploadToCloudinary(files?.idBackPart?.[0], 'kyc_images');
+  const selfieWithId = await uploadToCloudinary(files?.selfieWithId?.[0], 'kyc_images');
+  const registrationCertificate = await uploadToCloudinary(
+    files?.registrationCertificate?.[0],
+    'kyc_images'
+  );
+  const taxIdOrEquivalent = await uploadToCloudinary(
+    files?.taxIdOrEquivalent?.[0],
+    'kyc_images'
+  );
+  const studioLicense = await uploadToCloudinary(
+    files?.studioLicense?.[0],
+    'kyc_images'
+  );
 
   // stringLocation
   // const stringLocation = getLocationName(mainLocation?.coordinates as number[]);
