@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { Server, Socket } from 'socket.io';
 import Auth from '../../modules/Auth/auth.model';
-import Conversation from '../../modules/conversationModule/conversation.model';
+import Conversation from '../../modules/conversation/conversation.model';
 import Message from '../../modules/Message/message.model';
 import { SOCKET_EVENTS } from '../../socket/socket.constant';
 import getUnreadMessageCount from '../../utils/getUnreadMessageCount';

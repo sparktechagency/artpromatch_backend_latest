@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import Conversation from '../modules/conversationModule/conversation.model';
+import Conversation from '../modules/conversation/conversation.model';
 import Message from '../modules/Message/message.model';
 
 const getUnreadMessageCount = async (userId: string): Promise<number> => {

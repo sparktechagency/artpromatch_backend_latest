@@ -4,7 +4,7 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import { Server as ChatServer, Socket } from 'socket.io';
 import Auth from '../modules/Auth/auth.model';
-import Conversation from '../modules/conversationModule/conversation.model';
+import Conversation from '../modules/conversation/conversation.model';
 import { AppError } from '../utils';
 import getUnreadMessageCount from '../utils/getUnreadMessageCount';
 import handleChatEvents from './handleChatEvents';

@@ -4,7 +4,7 @@ import { startSession } from 'mongoose';
 import { getSocketIO, onlineUsers } from '../../socket/connectSocket';
 import { AppError } from '../../utils';
 import Auth from '../Auth/auth.model';
-import Conversation from '../conversationModule/conversation.model';
+import Conversation from '../conversation/conversation.model';
 import { NewMessagePayload } from './message.interface';
 import Message from './message.model';
 
