@@ -125,6 +125,8 @@ const updateArtistFlashes = asyncHandler(async (req, res) => {
   });
 });
 
+
+
 // boost profile
 const boostProfile = asyncHandler(async (req, res) => {
   const result = await ArtistService.boostProfileIntoDb(req.user);
@@ -183,6 +185,17 @@ const createArtistService = asyncHandler(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Service created successfully!',
+    data: result,
+  });
+});
+
+// createArtistService
+const getArtistServiceDetails = asyncHandler(async (req, res) => {
+  const result = await ArtistService.getServiceDetailsFromDB(req.user, req.params.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Service retrieved successfully!',
     data: result,
   });
 });
@@ -362,6 +375,7 @@ export const ArtistController = {
   updateArtistPortfolio,
   createArtistService,
   getServicesByArtist,
+  getArtistServiceDetails,
   getArtistSchedule,
   updateArtistServiceById,
   deleteArtistService,
