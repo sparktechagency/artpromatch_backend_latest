@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
-
 import { Server } from 'http';
 import { connect } from 'mongoose';
 import app from './app';
