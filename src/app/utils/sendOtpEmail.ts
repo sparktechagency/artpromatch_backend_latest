@@ -202,17 +202,8 @@ const sendOtpEmail = async (
       ],
     };
 
-    // Send the email using Nodemailer with an explicit safety timeout
-    const SEND_TIMEOUT_MS = 8000;
-    await Promise.race([
-      transporter.sendMail(mailOptions),
-      new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Email send timeout')),
-          SEND_TIMEOUT_MS
-        )
-      ),
-    ]);
+    // Send the email using Nodemailer
+    await transporter.sendMail(mailOptions);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log(error);
