@@ -30,6 +30,7 @@ import { deleteImageFromCloudinary } from '../../utils/deleteImageFromCloudinary
 
 import { ROLE } from '../Auth/auth.constant';
 import Booking from '../Booking/booking.model';
+import { BOOKING_STATUS } from '../Booking/booking.constant';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
 import Folder from '../Folder/folder.model';
@@ -537,10 +538,29 @@ const deleteArtistServiceFromDB = async (id: string, UserData: IAuth) => {
     throw new AppError(httpStatus.NOT_FOUND, 'Your artist account not found!');
   }
 
-  const serviceExists = await Service.find({ _id: id, artist: artist._id });
+  const serviceExists = await Service.findOne({ _id: id, artist: artist._id });
 
   if (!serviceExists) {
     throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+  }
+
+  const bookedServiceExists = await Booking.exists({
+    service: serviceExists._id,
+    status: {
+      $in: [
+        BOOKING_STATUS.PENDING,
+        BOOKING_STATUS.CONFIRMED,
+        BOOKING_STATUS.PROGRESS,
+        BOOKING_STATUS.READY_FOR_COMPLETION,
+      ],
+    },
+  });
+
+  if (bookedServiceExists) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This service is already booked, so it cannot be deleted!'
+    );
   }
 
   await Service.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
