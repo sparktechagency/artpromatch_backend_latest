@@ -3,15 +3,18 @@ import { JwtPayload } from 'jsonwebtoken';
 import { startSession } from 'mongoose';
 import { getSocketIO, onlineUsers } from '../../socket/connectSocket';
 import { AppError } from '../../utils';
+import { uploadToCloudinary } from '../../utils/uploadFileToCloudinary';
+import { deleteImageFromCloudinary } from '../../utils/deleteImageFromCloudinary';
 import Auth from '../Auth/auth.model';
 import Conversation from '../conversation/conversation.model';
 import { NewMessagePayload } from './message.interface';
 import Message from './message.model';
 
 // send message
-const new_message_IntoDb = async (
+const newMessageIntoDb = async (
   user: JwtPayload,
-  data: NewMessagePayload
+  data: NewMessagePayload,
+  files?: { [fieldname: string]: Express.Multer.File[] }
 ) => {
   const isReceiverExist = await Auth.findById(data.receiverId);
   if (!isReceiverExist) {
@@ -39,6 +42,27 @@ const new_message_IntoDb = async (
     isNewConversation = true;
   }
 
+  const uploadedUrls: string[] = [];
+  if (files?.imageUrl?.length) {
+    const uploaded = await Promise.all(
+      files.imageUrl.map((file) => uploadToCloudinary(file, 'folder_images'))
+    );
+    uploadedUrls.push(...uploaded.map((u) => u.secure_url));
+  }
+
+  const finalText = data.text;
+  const finalImages = [...(data.imageUrl || []), ...uploadedUrls];
+
+  if (!finalText?.trim() && finalImages.length === 0) {
+    if (uploadedUrls.length) {
+      await Promise.all(uploadedUrls.map((u) => deleteImageFromCloudinary(u)));
+    }
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Either text or image is required'
+    );
+  }
+
   if (io) {
     const participants = [user._id.toString(), data.receiverId.toString()];
     for (const participantId of participants) {
@@ -55,14 +79,22 @@ const new_message_IntoDb = async (
   }
 
   const messageData = {
-    text: data.text,
-    imageUrl: data.imageUrl || [],
-    audioUrl: data.audioUrl || '',
+    text: finalText,
+    imageUrl: finalImages,
+    audioUrl: '',
     msgByUser: user.id,
     conversationId: conversation._id,
   };
 
-  const saveMessage = await Message.create(messageData);
+  let saveMessage;
+  try {
+    saveMessage = await Message.create(messageData);
+  } catch (err) {
+    if (uploadedUrls.length) {
+      await Promise.all(uploadedUrls.map((u) => deleteImageFromCloudinary(u)));
+    }
+    throw err;
+  }
 
   await Conversation.updateOne(
     { _id: conversation._id },
@@ -120,17 +152,33 @@ const new_message_IntoDb = async (
 };
 
 //update message
-const updateMessageById_IntoDb = async (
+const updateMessageByIdIntoDb = async (
   messageId: string,
-  updateData: Partial<{ text: string; imageUrl: string[] }>
+  updateData: Partial<{ text: string; imageUrl: string[] }>,
+  files?: { [fieldname: string]: Express.Multer.File[] }
 ) => {
+  const uploadedUrls: string[] = [];
+  if (files?.imageUrl?.length) {
+    const uploaded = await Promise.all(
+      files.imageUrl.map((file) => uploadToCloudinary(file, 'folder_images'))
+    );
+    uploadedUrls.push(...uploaded.map((u) => u.secure_url));
+  }
+
+  const mergedUpdateData = {
+    ...updateData,
+    ...(uploadedUrls.length
+      ? { imageUrl: [...(updateData.imageUrl || []), ...uploadedUrls] }
+      : {}),
+  };
+
   const session = await startSession();
   session.startTransaction();
 
   try {
     const updated = await Message.findByIdAndUpdate(
       messageId,
-      { $set: updateData },
+      { $set: mergedUpdateData },
       { new: true, session }
     );
 
@@ -166,6 +214,11 @@ const updateMessageById_IntoDb = async (
   } catch (error: unknown) {
     await session.abortTransaction();
     session.endSession();
+
+    if (uploadedUrls.length) {
+      await Promise.all(uploadedUrls.map((u) => deleteImageFromCloudinary(u)));
+    }
+
     throw new AppError(
       httpStatus.BAD_REQUEST,
       error instanceof Error ? error.message : String(error)
@@ -173,7 +226,7 @@ const updateMessageById_IntoDb = async (
   }
 };
 
-const deleteMessageById_IntoDb = async (messageId: string) => {
+const deleteMessageByIdIntoDb = async (messageId: string) => {
   const session = await startSession();
   session.startTransaction();
 
@@ -233,7 +286,7 @@ const deleteMessageById_IntoDb = async (messageId: string) => {
 };
 
 export const MessageServices = {
-  new_message_IntoDb,
-  updateMessageById_IntoDb,
-  deleteMessageById_IntoDb,
+  newMessageIntoDb,
+  updateMessageByIdIntoDb,
+  deleteMessageByIdIntoDb,
 };

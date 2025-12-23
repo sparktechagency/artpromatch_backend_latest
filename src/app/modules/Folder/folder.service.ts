@@ -3,12 +3,9 @@ import { IAuth } from '../Auth/auth.interface';
 import httpStatus from 'http-status';
 import Folder from './folder.model';
 import { IFolder } from './folder.interface';
-import {
-  deleteSomeMulterFiles,
-  deleteSingleImage,
-  deleteSomeImages,
-  toTitleCase,
-} from './folder.utils';
+import { toTitleCase } from './folder.utils';
+import { uploadToCloudinary } from '../../utils/uploadFileToCloudinary';
+import { deleteImageFromCloudinary } from '../../utils/deleteImageFromCloudinary';
 
 // getAllFoldersFromDB
 const getAllFoldersFromDB = async (userData: IAuth) => {
@@ -44,7 +41,6 @@ const createFolderIntoDB = async (
   files: Express.Multer.File[]
 ) => {
   if (files && files?.length > 50) {
-    deleteSomeMulterFiles(files);
     throw new AppError(
       httpStatus.BAD_REQUEST,
       "You can't upload more then 50 images in a folder. Create a new one!"
@@ -60,17 +56,29 @@ const createFolderIntoDB = async (
   });
 
   if (folder) {
-    deleteSomeMulterFiles(files);
     throw new AppError(httpStatus.BAD_REQUEST, 'Folder name already exists!');
   }
 
-  return await Folder.create({
-    owner: userData._id,
-    images: files?.length
-      ? files.map((file) => file.path.replace(/\\/g, '/'))
-      : [],
-    ...payload,
-  });
+  const uploaded = files?.length
+    ? await Promise.all(
+        files.map((file) => uploadToCloudinary(file, 'folder_images'))
+      )
+    : [];
+
+  const imageUrls = uploaded.map((u) => u.secure_url);
+
+  try {
+    return await Folder.create({
+      owner: userData._id,
+      images: imageUrls,
+      ...payload,
+    });
+  } catch (err) {
+    if (imageUrls.length) {
+      await Promise.all(imageUrls.map((url) => deleteImageFromCloudinary(url)));
+    }
+    throw err;
+  }
 };
 
 // updateFolderIntoDB
@@ -125,12 +133,10 @@ const addImagesToFolderIntoDB = async (
   });
 
   if (!folder) {
-    deleteSomeMulterFiles(files);
     throw new AppError(httpStatus.NOT_FOUND, 'Folder not found!');
   }
 
   if (folder.images.length + files.length > 50) {
-    deleteSomeMulterFiles(files);
     throw new AppError(
       httpStatus.BAD_REQUEST,
       "You can't upload more than 50 images in a folder. Create a new one!"
@@ -139,7 +145,11 @@ const addImagesToFolderIntoDB = async (
 
   // folder.images.push(...files.map((file) => file.path.replace(/\\/g, '/')));
 
-  const newFiles = files.map((file) => file.path.replace(/\\/g, '/'));
+  const uploaded = await Promise.all(
+    files.map((file) => uploadToCloudinary(file, 'folder_images'))
+  );
+
+  const newFiles = uploaded.map((u) => u.secure_url);
   // folder.images.push(
   //   ...newFiles.filter((file) => !folder.images.includes(file))
   // );
@@ -153,14 +163,27 @@ const addImagesToFolderIntoDB = async (
   // );
 
   // $addToSet avoids duplicate push
-  const updatedFolder = await Folder.findByIdAndUpdate(
-    folderId,
-    { $addToSet: { images: { $each: newFiles } } },
-    { new: true }
-  );
+  try {
+    const updatedFolder = await Folder.findByIdAndUpdate(
+      folderId,
+      { $addToSet: { images: { $each: newFiles } } },
+      { new: true }
+    );
 
-  // return folder;
-  return updatedFolder;
+    if (!updatedFolder) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to update folder'
+      );
+    }
+
+    return updatedFolder;
+  } catch (err) {
+    if (newFiles.length) {
+      await Promise.all(newFiles.map((url) => deleteImageFromCloudinary(url)));
+    }
+    throw err;
+  }
 };
 
 // removeImageFromFolderFromDB
@@ -186,8 +209,9 @@ const removeImageFromFolderFromDB = async (
     { new: true }
   );
 
-  // Remove file physically from storage
-  deleteSingleImage(imageUrl);
+  if (typeof imageUrl === 'string' && imageUrl.includes('/upload/')) {
+    await deleteImageFromCloudinary(imageUrl);
+  }
   return updatedFolder;
 };
 
@@ -199,7 +223,13 @@ const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
     if (!folder) {
       throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists!');
     }
-    deleteSomeImages(folder.images);
+    await Promise.all(
+      folder.images.map((img) =>
+        img.includes('/upload/')
+          ? deleteImageFromCloudinary(img)
+          : Promise.resolve()
+      )
+    );
   } else {
     const folder = await Folder.findOneAndDelete({
       _id: folderId,
@@ -209,7 +239,13 @@ const removeFolderFromDB = async (folderId: string, userData: IAuth) => {
     if (!folder) {
       throw new AppError(httpStatus.NOT_FOUND, 'Folder not exists!');
     }
-    deleteSomeImages(folder.images);
+    await Promise.all(
+      folder.images.map((img) =>
+        img.includes('/upload/')
+          ? deleteImageFromCloudinary(img)
+          : Promise.resolve()
+      )
+    );
   }
 
   return null;

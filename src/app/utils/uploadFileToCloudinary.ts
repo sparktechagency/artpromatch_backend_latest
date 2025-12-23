@@ -1,13 +1,19 @@
-import cloudinary from "../config/cloudinary.config";
+import cloudinary from '../config/cloudinary.config';
 import streamifier from 'streamifier';
+
 export const uploadToCloudinary = (
   file: Express.Multer.File,
-  folder: 'profile_images' | 'services_images' | 'services_thumbnail' | 'folder_images' | 'kyc_images'
+  folderName:
+    | 'profile_images'
+    | 'services_images'
+    | 'services_thumbnail'
+    | 'folder_images'
+    | 'kyc_images'
 ): Promise<{ secure_url: string; public_id: string }> => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder,
+        folder: folderName,
         resource_type: 'image',
       },
       (error, result) => {
@@ -21,7 +27,7 @@ export const uploadToCloudinary = (
         });
       }
     );
-    
+
     streamifier.createReadStream(file.buffer).pipe(stream);
   });
 };

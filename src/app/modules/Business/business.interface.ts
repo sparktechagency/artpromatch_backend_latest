@@ -1,5 +1,5 @@
 import { Document, Types } from 'mongoose';
-import { TBusinessType, TServiceOffered } from './business.constants';
+import { TBusinessType, TOperatingDay, TServiceOffered } from './business.constants';
 
 export interface IBusiness extends Document {
   _id: Types.ObjectId;
@@ -15,10 +15,10 @@ export interface IBusiness extends Document {
   // city: string;
   // contact: TContact;
 
-  // // Operating hours
-  // operatingHours: {
-  //   [key in TOperatingDay]?: { start: string; end: string }[];
-  // };
+  // Operating hours
+  operatingHours: {
+    [key in TOperatingDay]?: { start: string; end: string }[];
+  };
 
   // Documents for verification
   registrationCertificate: string | null;

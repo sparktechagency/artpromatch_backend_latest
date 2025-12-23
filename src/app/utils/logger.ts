@@ -1,21 +1,11 @@
-import fs from 'fs';
-import path from 'path';
-
-const logsDir = path.join(__dirname, '../../../', 'logs');
-
-// Create logs directory if not exists
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
-}
-
 const getTimestamp = () => {
   return new Date().toLocaleString(); // e.g. "4/18/2025, 2:35:10 PM"
 };
 
 // Log success message to success.txt
 const logSuccess = (message: string) => {
-  const logLine = `[SUCCESS] ${getTimestamp()} - ${message}\n`;
-  fs.appendFileSync(path.join(logsDir, 'success.txt'), logLine, 'utf8');
+  // eslint-disable-next-line no-console
+  console.log(`[SUCCESS] ${getTimestamp()} - ${message}`);
 };
 
 // ❌ Log error message to error.txt (with optional stack)
@@ -30,14 +20,14 @@ const logError = (message: string, error?: unknown) => {
     details = `\n${JSON.stringify(error, null, 2)}`;
   }
 
-  const logLine = `[ERROR] ${getTimestamp()} - ${message}${details}\n\n`;
-  fs.appendFileSync(path.join(logsDir, 'error.txt'), logLine, 'utf8');
+  // eslint-disable-next-line no-console
+  console.error(`[ERROR] ${getTimestamp()} - ${message}${details}`);
 };
 
 // ℹ️ Optional info log to success.txt
 const logInfo = (message: string) => {
-  const logLine = `[INFO] ${getTimestamp()} - ${message}\n`;
-  fs.appendFileSync(path.join(logsDir, 'success.txt'), logLine, 'utf8');
+  // eslint-disable-next-line no-console
+  console.log(`[INFO] ${getTimestamp()} - ${message}`);
 };
 
 export const Logger = {
