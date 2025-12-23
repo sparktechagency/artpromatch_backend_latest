@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import config from '../config';
 import AppError from './AppError';
 import path from 'path';
+import fs from 'fs';
 
 const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
   try {
@@ -13,6 +14,13 @@ const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
         user: config.nodemailer.email,
         pass: config.nodemailer.password,
       },
+
+      // Ensure serverless does not hang indefinitely on blocked SMTP
+      pool: true,
+      maxConnections: 1,
+      connectionTimeout: 5000, // ms
+      greetingTimeout: 5000, // ms
+      socketTimeout: 5000, // ms
     });
 
     // Email HTML template with dynamic placeholders
@@ -113,26 +121,42 @@ const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
   `;
 
     // Email options: from, to, subject, and HTML body
-    const mailOptions = {
-      from: config.nodemailer.email, // Sender's email address
-      to: email, // Recipient's email address
+    const logoPath = path.join(__dirname, 'assets', 'logo.png');
+    const hasLogo = fs.existsSync(logoPath);
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: config.nodemailer.email,
+      to: email,
       subject: 'Your OTP for Account Verification',
       html: htmlTemplate,
-      attachments: [
-        {
-          filename: 'logo.png',
-          path: path.join(__dirname, 'assets', 'logo.png'),
-          cid: 'steady_hands_logo',
-        },
-      ],
+      attachments: hasLogo
+        ? [
+            {
+              filename: 'logo.png',
+              path: logoPath,
+              cid: 'steady_hands_logo',
+            },
+          ]
+        : [],
     };
 
-    // Send the email using Nodemailer
-    await transporter.sendMail(mailOptions);
+    // Send the email using Nodemailer with an explicit safety timeout
+    const SEND_TIMEOUT_MS = 8000;
+    await Promise.race([
+      transporter.sendMail(mailOptions),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Email send timeout')),
+          SEND_TIMEOUT_MS
+        )
+      ),
+    ]);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log(error);
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to send email');
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to send email'
+    );
   }
 };
 
