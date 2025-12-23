@@ -173,11 +173,11 @@ const sendOtpEmail = async (
         user: config.nodemailer.email,
         pass: config.nodemailer.password,
       },
-      pool: true,
-      maxConnections: 1,
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 5000,
+      // pool: true,
+      // maxConnections: 1,
+      // connectionTimeout: 5000,
+      // greetingTimeout: 5000,
+      // socketTimeout: 5000,
     });
 
     // Email HTML template with dynamic placeholders
