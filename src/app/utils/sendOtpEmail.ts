@@ -2,8 +2,6 @@ import httpStatus from 'http-status';
 import nodemailer from 'nodemailer';
 import config from '../config';
 import AppError from './AppError';
-import path from 'path';
-import fs from 'fs';
 
 type TSendOtpEmailOptions = {
   email: string;
@@ -186,10 +184,6 @@ const sendOtpEmail = async (
     const htmlTemplate = generateEmailHTML(otp, name, logoCid, customMessage);
 
     // Email options: from, to, subject, and HTML body
-    const logoPath = path.join(__dirname, 'assets', 'logo.png');
-    const localLogoExists = fs.existsSync(logoPath);
-    const isProd = process.env.NODE_ENV === 'production';
-
     const siteName = 'Art Pro Match';
     const mailOptions: nodemailer.SendMailOptions = {
       from: `${siteName} 📰 <${config.nodemailer.email}>`,
@@ -198,23 +192,13 @@ const sendOtpEmail = async (
       html: htmlTemplate,
       attachments: [
         ...attachments,
-        ...(isProd
-          ? [
-              {
-                filename: 'logo.png',
-                path: 'https://res.cloudinary.com/dqk9g25o1/image/upload/v1766495346/logo_snbn3g.png',
-                cid: logoCid,
-              },
-            ]
-          : localLogoExists
-          ? [
-              {
-                filename: 'logo.png',
-                path: logoPath,
-                cid: logoCid,
-              },
-            ]
-          : []),
+        ...[
+          {
+            filename: 'logo.png',
+            path: 'https://res.cloudinary.com/dqk9g25o1/image/upload/v1766495346/logo_snbn3g.png',
+            cid: logoCid,
+          },
+        ],
       ],
     };
 
