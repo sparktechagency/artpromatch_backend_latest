@@ -4,8 +4,14 @@ import sendResponse from '../../utils/sendResponse';
 import { asyncHandler } from '../../utils';
 import { MessageServices } from './message.service';
 
-const new_message: RequestHandler = asyncHandler(async (req, res) => {
-  const result = await MessageServices.new_message_IntoDb(req.user, req.body);
+const newMessage: RequestHandler = asyncHandler(async (req, res) => {
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  const result = await MessageServices.newMessageIntoDb(
+    req.user,
+    req.body,
+    files
+  );
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Successfully Send By The Message',
@@ -14,19 +20,23 @@ const new_message: RequestHandler = asyncHandler(async (req, res) => {
 });
 
 const updateMessageById: RequestHandler = asyncHandler(async (req, res) => {
-  const result = await MessageServices.updateMessageById_IntoDb(
-    req.params.messageId,
-    req.body
+  const { messageId } = req.params;
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  const result = await MessageServices.updateMessageByIdIntoDb(
+    messageId,
+    req.body,
+    files
   );
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Successfully Update The Message',
+    message: 'Message updated successfully',
     data: result,
   });
 });
 
 const deleteMessageById: RequestHandler = asyncHandler(async (req, res) => {
-  const result = await MessageServices.deleteMessageById_IntoDb(
+  const result = await MessageServices.deleteMessageByIdIntoDb(
     req.params.messageId
   );
   sendResponse(res, {
@@ -37,7 +47,7 @@ const deleteMessageById: RequestHandler = asyncHandler(async (req, res) => {
 });
 
 export const MessageController = {
-  new_message,
+  newMessage,
   updateMessageById,
   deleteMessageById,
 };

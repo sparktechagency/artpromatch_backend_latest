@@ -2,7 +2,6 @@
 import config from '../config';
 import AppError from './AppError';
 import asyncHandler from './asyncHandler';
-import { deleteFile } from './deleteFile';
 import globalErrorHandler from './globalErrorHandler';
 import notFound from './notFound';
 import sendContactUsEmail from './sendContactUsEmail';
@@ -23,7 +22,6 @@ export {
   notFound,
   options,
   sendOtpEmail,
-  deleteFile,
   sendContactUsEmail,
   // Logger
 };

@@ -2,13 +2,13 @@ import { model, Schema } from 'mongoose';
 import { BUSINESS_TYPE, SERVICES_OFFERED } from './business.constants';
 import { IBusiness } from './business.interface';
 
-// const timeRangeSchema = new Schema<{ start: string; end: string }>(
-//   {
-//     start: { type: String, required: true, match: /^\d{2}:\d{2}$/ },
-//     end: { type: String, required: true, match: /^\d{2}:\d{2}$/ },
-//   },
-//   { _id: false }
-// );
+const timeRangeSchema = new Schema<{ start: string; end: string }>(
+  {
+    start: { type: String, required: true, match: /^\d{2}:\d{2}$/ },
+    end: { type: String, required: true, match: /^\d{2}:\d{2}$/ },
+  },
+  { _id: false }
+);
 
 // const contactSchema = new Schema<TContact>(
 //   {
@@ -29,7 +29,10 @@ const businessSchema = new Schema<IBusiness>(
     },
 
     // Core details
-    studioName: { type: String, required: true },
+    studioName: {
+      type: String,
+      required: true,
+    },
     businessType: {
       type: String,
       enum: Object.values(BUSINESS_TYPE),
@@ -59,28 +62,49 @@ const businessSchema = new Schema<IBusiness>(
     },
     // contact: { type: contactSchema, required: true },
 
-    // // Operating hours
-    // operatingHours: {
-    //   type: Map,
-    //   of: [timeRangeSchema],
-    //   default: {},
-    // },
+    // Operating hours
+    operatingHours: {
+      type: Map,
+      of: [timeRangeSchema],
+      default: {},
+    },
 
     // Documents for verification
-    registrationCertificate: { type: String, default: null },
-    taxIdOrEquivalent: { type: String, default: null },
-    studioLicense: { type: String, default: null },
+    registrationCertificate: {
+      type: String,
+      default: null,
+    },
+    taxIdOrEquivalent: {
+      type: String,
+      default: null,
+    },
+    studioLicense: {
+      type: String,
+      default: null,
+    },
 
     // Metadata
-    description: { type: String },
-    taskCompleted: { type: Number, default: 0 },
+    description: {
+      type: String,
+    },
+    taskCompleted: {
+      type: Number,
+      default: 0,
+    },
 
     // References
-    preferences: { type: Schema.Types.ObjectId, ref: 'BusinessPreferences' },
+    preferences: {
+      type: Schema.Types.ObjectId,
+      ref: 'BusinessPreferences',
+    },
     // guestSpots: [{ type: Schema.Types.ObjectId, ref: 'GuestSpot' }],
     // events: [{ type: Schema.Types.ObjectId, ref: 'Event' }],
     // residentArtists: [{ type: Schema.Types.ObjectId, ref: 'Artist' }],
-    timeOff: [{ type: Date }],
+    timeOff: [
+      {
+        type: Date,
+      },
+    ],
   },
   { timestamps: true, versionKey: false }
 );

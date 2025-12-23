@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import fs from 'fs';
 import httpStatus from 'http-status';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { startSession } from 'mongoose';
@@ -31,6 +30,7 @@ import { AuthValidation, TProfilePayload } from './auth.validation';
 
 import { uploadToCloudinary } from '../../utils/uploadFileToCloudinary';
 import Auth from './auth.model';
+import { deleteImageFromCloudinary } from '../../utils/deleteImageFromCloudinary';
 
 const OTP_EXPIRY_MINUTES = Number(config.otp_expiry_minutes);
 
@@ -368,298 +368,393 @@ const createProfileIntoDB = async (
   // stringLocation
   // const stringLocation = getLocationName(mainLocation?.coordinates as number[]);
 
-  // Start a MongoDB session for transaction
-  const session = await startSession();
+  const uploadedCloudinaryUrls: string[] = [];
 
-  try {
-    session.startTransaction();
+  const isTransientTransactionError = (err: unknown) => {
+    const anyErr = err as {
+      errorLabels?: string[];
+      hasErrorLabel?: (label: string) => boolean;
+      message?: string;
+    };
 
-    // CLIENT PROFILE CREATION
-    if (role === ROLE.CLIENT) {
-      const isExistClient = await Client.findOne({ auth: user._id });
-      if (isExistClient) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          'Client data already saved in database'
-        );
-      }
-
-      const clientPayload = {
-        auth: user._id,
-        role,
-        location: mainLocation,
-        stringLocation,
-        radius,
-        lookingFor,
-        favoriteTattoos,
-      };
-
-      const [client] = await Client.create([clientPayload], { session });
-
-      const clientPreferenceData: any = {
-        clientId: client._id,
-        notificationPreferences,
-      };
-
-      if (user?.isSocialLogin) {
-        clientPreferenceData.connectedAccounts = [
-          {
-            provider: 'google',
-            connectedOn: user?.createdAt || new Date(),
-          },
-        ];
-      }
-
-      await Auth.findByIdAndUpdate(
-        user._id,
-        { role: ROLE.CLIENT, isProfile: true },
-        { session }
-      );
-
-      await ClientPreferences.create([clientPreferenceData], { session });
-
-      await session.commitTransaction();
-      await session.endSession();
-
-      const jwtPayload = {
-        id: user._id.toString(),
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        stringLocation: stringLocation,
-        email: user.email,
-        image: user.image || defaultUserImage,
-        role: role,
-        isProfile: true,
-        isActive: user?.isActive,
-      };
-
-      const accessToken = createAccessToken(jwtPayload);
-      const refreshToken = createRefreshToken(jwtPayload);
-
-      return {
-        accessToken,
-        refreshToken,
-      };
-    } else if (role === ROLE.ARTIST) {
-      if (
-        !files?.idFrontPart?.[0] ||
-        !files?.idBackPart?.[0] ||
-        !files?.selfieWithId?.[0]
-      ) {
-        throw new AppError(httpStatus.BAD_REQUEST, 'files not found');
-      }
-      const idCardFront = await uploadToCloudinary(
-        files?.idFrontPart?.[0],
-        'kyc_images'
-      );
-      const idCardBack = await uploadToCloudinary(
-        files?.idBackPart?.[0],
-        'kyc_images'
-      );
-      const selfieWithId = await uploadToCloudinary(
-        files?.selfieWithId?.[0],
-        'kyc_images'
-      );
-      // ARTIST PROFILE CREATION
-      const isExistArtist = await Artist.findOne({ auth: user._id });
-      if (isExistArtist) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          'Artist profile already exists.'
-        );
-      }
-
-      const artistPayload = {
-        auth: user._id,
-        type: artistType,
-        expertise,
-        description,
-        hourlyRate,
-        // city,
-        mainLocation,
-        stringLocation,
-        currentLocation: mainLocation,
-        idCardFront,
-        idCardBack,
-        selfieWithId,
-      };
-
-      const [artist] = await Artist.create([artistPayload], { session });
-
-      const [artistPreferences] = await ArtistPreferences.create(
-        [{ artistId: artist._id }],
-        { session }
-      );
-
-      await Auth.findByIdAndUpdate(
-        user._id,
-        { role: ROLE.ARTIST, isActive: false, isProfile: true },
-        { session }
-      );
-
-      await Artist.findByIdAndUpdate(
-        artist._id,
-        { preferences: artistPreferences._id },
-        { session }
-      );
-
-      await session.commitTransaction();
-      await session.endSession();
-
-      const jwtPayload = {
-        id: user._id.toString(),
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        stringLocation: stringLocation,
-        email: user.email,
-        image: user.image || defaultUserImage,
-        role: role,
-        isProfile: true,
-        isActive: false,
-      };
-
-      const accessToken = createAccessToken(jwtPayload);
-      const refreshToken = createRefreshToken(jwtPayload);
-
-      return {
-        accessToken,
-        refreshToken,
-      };
-    } else if (role === ROLE.BUSINESS) {
-
-       if (
-        !files?.registrationCertificate?.[0] ||
-        !files?.taxIdOrEquivalent?.[0] ||
-        !files?.studioLicense?.[0]
-      ) {
-        throw new AppError(httpStatus.BAD_REQUEST, 'files not found');
-      }
-
-      const registrationCertificate = await uploadToCloudinary(
-        files?.registrationCertificate?.[0],
-        'kyc_images'
-      );
-      const taxIdOrEquivalent = await uploadToCloudinary(
-        files?.taxIdOrEquivalent?.[0],
-        'kyc_images'
-      );
-      const studioLicense = await uploadToCloudinary(
-        files?.studioLicense?.[0],
-        'kyc_images'
-      );
-
-      // BUSINESS PROFILE CREATION
-      const isExistBusiness = await Business.findOne({ auth: user._id });
-      if (isExistBusiness) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          'Business profile already exists.'
-        );
-      }
-
-      const businessPayload = {
-        auth: user._id,
-        location: mainLocation,
-        stringLocation,
-        // city,
-
-        studioName,
-        businessType,
-        servicesOffered,
-        contact: {
-          phone: contactNumber,
-          email: contactEmail,
-        },
-        operatingHours,
-        registrationCertificate,
-        taxIdOrEquivalent,
-        studioLicense,
-      };
-
-      const [business] = await Business.create([businessPayload], { session });
-
-      if (business) {
-        await Auth.findByIdAndUpdate(user._id, { fullName: studioName });
-        // user.fullName = studioName as string;
-        // user.save();
-      }
-
-      const [businessPreferences] = await BusinessPreferences.create(
-        [{ businessId: business._id }],
-        { session }
-      );
-
-      await Auth.findByIdAndUpdate(
-        user._id,
-        { role: ROLE.BUSINESS, isActive: false, isProfile: true },
-        { session }
-      );
-
-      await Business.findByIdAndUpdate(
-        business._id,
-        { preferences: businessPreferences._id },
-        { session }
-      );
-
-      await session.commitTransaction();
-      await session.endSession();
-
-      const jwtPayload = {
-        id: user._id.toString(),
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        stringLocation: stringLocation,
-        email: user.email,
-        image: user.image || defaultUserImage,
-        role: role,
-        isProfile: true,
-        isActive: false,
-      };
-
-      const accessToken = createAccessToken(jwtPayload);
-      const refreshToken = createRefreshToken(jwtPayload);
-
-      return {
-        accessToken,
-        refreshToken,
-      };
+    if (typeof anyErr?.hasErrorLabel === 'function') {
+      if (anyErr.hasErrorLabel('TransientTransactionError')) return true;
+      if (anyErr.hasErrorLabel('UnknownTransactionCommitResult')) return true;
     }
-  } catch (error: any) {
-    // ❌ Roll back transaction in case of any error
-    await session.abortTransaction();
-    await session.endSession();
 
-    // 🧼 Cleanup: Delete uploaded files to avoid storage bloat
-    if (files && typeof files === 'object' && !Array.isArray(files)) {
-      Object.values(files).forEach((fileArray) => {
-        fileArray.forEach((file) => {
-          try {
-            if (file?.path && fs.existsSync(file.path)) {
-              fs.unlinkSync(file.path);
-            }
-          } catch (deleteErr) {
-            // eslint-disable-next-line no-console
-            console.warn(
-              'Failed to delete uploaded file:',
-              file.path,
-              deleteErr
-            );
+    if (Array.isArray(anyErr?.errorLabels)) {
+      if (anyErr.errorLabels.includes('TransientTransactionError')) return true;
+      if (anyErr.errorLabels.includes('UnknownTransactionCommitResult'))
+        return true;
+    }
+
+    const msg = anyErr?.message || '';
+    return (
+      msg.includes('Write conflict') ||
+      msg.includes('write conflict') ||
+      msg.includes('Please retry your operation')
+    );
+  };
+
+  const maxAttempts = 3;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const session = await startSession();
+    const attemptUploadedUrls: string[] = [];
+
+    try {
+      session.startTransaction();
+
+      // CLIENT PROFILE CREATION
+      if (role === ROLE.CLIENT) {
+        const isExistClient = await Client.findOne({ auth: user._id });
+        if (isExistClient) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Client data already saved in database'
+          );
+        }
+
+        const clientPayload = {
+          auth: user._id,
+          role,
+          location: mainLocation,
+          stringLocation,
+          radius,
+          lookingFor,
+          favoriteTattoos,
+        };
+
+        const [client] = await Client.create([clientPayload], { session });
+
+        const clientPreferenceData: any = {
+          clientId: client._id,
+          notificationPreferences,
+        };
+
+        if (user?.isSocialLogin) {
+          clientPreferenceData.connectedAccounts = [
+            {
+              provider: 'google',
+              connectedOn: user?.createdAt || new Date(),
+            },
+          ];
+        }
+
+        await Auth.findByIdAndUpdate(
+          user._id,
+          { role: ROLE.CLIENT, isProfile: true },
+          { session }
+        );
+
+        await ClientPreferences.create([clientPreferenceData], { session });
+
+        await session.commitTransaction();
+        await session.endSession();
+
+        const jwtPayload = {
+          id: user._id.toString(),
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          stringLocation: stringLocation,
+          email: user.email,
+          image: user.image || defaultUserImage,
+          role: role,
+          isProfile: true,
+          isActive: user?.isActive,
+        };
+
+        const accessToken = createAccessToken(jwtPayload);
+        const refreshToken = createRefreshToken(jwtPayload);
+
+        return {
+          accessToken,
+          refreshToken,
+        };
+      } else if (role === ROLE.ARTIST) {
+        let idCardFront: string | null = null;
+        let idCardBack: string | null = null;
+        let selfieWithId: string | null = null;
+
+        if (files?.idFrontPart?.[0]) {
+          const idCardFrontCloudRes = await uploadToCloudinary(
+            files?.idFrontPart?.[0],
+            'kyc_images'
+          );
+
+          idCardFront = idCardFrontCloudRes?.secure_url;
+          if (idCardFront) {
+            uploadedCloudinaryUrls.push(idCardFront);
+            attemptUploadedUrls.push(idCardFront);
           }
+        }
+
+        if (files?.idBackPart?.[0]) {
+          const idCardBackCloudRes = await uploadToCloudinary(
+            files?.idBackPart?.[0],
+            'kyc_images'
+          );
+
+          idCardBack = idCardBackCloudRes?.secure_url;
+          if (idCardBack) {
+            uploadedCloudinaryUrls.push(idCardBack);
+            attemptUploadedUrls.push(idCardBack);
+          }
+        }
+
+        if (files?.selfieWithId?.[0]) {
+          const selfieWithIdCloudRes = await uploadToCloudinary(
+            files?.selfieWithId?.[0],
+            'kyc_images'
+          );
+
+          selfieWithId = selfieWithIdCloudRes?.secure_url;
+          if (selfieWithId) {
+            uploadedCloudinaryUrls.push(selfieWithId);
+            attemptUploadedUrls.push(selfieWithId);
+          }
+        }
+
+        // ARTIST PROFILE CREATION
+        const isExistArtist = await Artist.findOne({ auth: user._id });
+        if (isExistArtist) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Artist profile already exists!'
+          );
+        }
+
+        const artistPayload = {
+          auth: user._id,
+          type: artistType,
+          expertise,
+          description,
+          hourlyRate,
+          // city,
+          mainLocation,
+          stringLocation,
+          currentLocation: mainLocation,
+          idCardFront,
+          idCardBack,
+          selfieWithId,
+        };
+
+        const [artist] = await Artist.create([artistPayload], { session });
+
+        const [artistPreferences] = await ArtistPreferences.create(
+          [{ artistId: artist._id }],
+          { session }
+        );
+
+        await Auth.findByIdAndUpdate(
+          user._id,
+          { role: ROLE.ARTIST, isActive: false, isProfile: true },
+          { session }
+        );
+
+        await Artist.findByIdAndUpdate(
+          artist._id,
+          { preferences: artistPreferences._id },
+          { session }
+        );
+
+        await session.commitTransaction();
+        await session.endSession();
+
+        const jwtPayload = {
+          id: user._id.toString(),
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          stringLocation: stringLocation,
+          email: user.email,
+          image: user.image || defaultUserImage,
+          role: role,
+          isProfile: true,
+          isActive: false,
+        };
+
+        const accessToken = createAccessToken(jwtPayload);
+        const refreshToken = createRefreshToken(jwtPayload);
+
+        return {
+          accessToken,
+          refreshToken,
+        };
+      } else if (role === ROLE.BUSINESS) {
+        let registrationCertificate: string | null = null;
+        let taxIdOrEquivalent: string | null = null;
+        let studioLicense: string | null = null;
+
+        if (files?.registrationCertificate?.[0]) {
+          const registrationCertificateCloudRes = await uploadToCloudinary(
+            files?.registrationCertificate?.[0],
+            'kyc_images'
+          );
+          registrationCertificate = registrationCertificateCloudRes?.secure_url;
+          if (registrationCertificate) {
+            uploadedCloudinaryUrls.push(registrationCertificate);
+            attemptUploadedUrls.push(registrationCertificate);
+          }
+        }
+
+        if (files?.taxIdOrEquivalent?.[0]) {
+          const taxIdOrEquivalentCloudRes = await uploadToCloudinary(
+            files?.taxIdOrEquivalent?.[0],
+            'kyc_images'
+          );
+          taxIdOrEquivalent = taxIdOrEquivalentCloudRes?.secure_url;
+          if (taxIdOrEquivalent) {
+            uploadedCloudinaryUrls.push(taxIdOrEquivalent);
+            attemptUploadedUrls.push(taxIdOrEquivalent);
+          }
+        }
+
+        if (files?.studioLicense?.[0]) {
+          const studioLicenseCloudRes = await uploadToCloudinary(
+            files?.studioLicense?.[0],
+            'kyc_images'
+          );
+          studioLicense = studioLicenseCloudRes?.secure_url;
+          if (studioLicense) {
+            uploadedCloudinaryUrls.push(studioLicense);
+            attemptUploadedUrls.push(studioLicense);
+          }
+        }
+
+        // BUSINESS PROFILE CREATION
+        const isExistBusiness = await Business.findOne({ auth: user._id });
+        if (isExistBusiness) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Business profile already exists.'
+          );
+        }
+
+        const businessPayload = {
+          auth: user._id,
+          location: mainLocation,
+          stringLocation,
+          // city,
+
+          studioName,
+          businessType,
+          servicesOffered,
+          contact: {
+            phone: contactNumber,
+            email: contactEmail,
+          },
+          operatingHours,
+          registrationCertificate,
+          taxIdOrEquivalent,
+          studioLicense,
+        };
+
+        const [business] = await Business.create([businessPayload], {
+          session,
         });
-      });
-    }
 
-    // Re-throw application-specific errors
-    if (error instanceof AppError) {
-      throw error;
-    }
+        if (business) {
+          await Auth.findByIdAndUpdate(
+            user._id,
+            { fullName: studioName },
+            { session }
+          );
+          // user.fullName = studioName as string;
+          // user.save();
+        }
 
-    // Throw generic internal server error
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      error?.message || 'Failed to create profile. Please try again.'
+        const [businessPreferences] = await BusinessPreferences.create(
+          [{ businessId: business._id }],
+          { session }
+        );
+
+        await Auth.findByIdAndUpdate(
+          user._id,
+          { role: ROLE.BUSINESS, isActive: false, isProfile: true },
+          { session }
+        );
+
+        await Business.findByIdAndUpdate(
+          business._id,
+          { preferences: businessPreferences._id },
+          { session }
+        );
+
+        await session.commitTransaction();
+        await session.endSession();
+
+        const jwtPayload = {
+          id: user._id.toString(),
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          stringLocation: stringLocation,
+          email: user.email,
+          image: user.image || defaultUserImage,
+          role: role,
+          isProfile: true,
+          isActive: false,
+        };
+
+        const accessToken = createAccessToken(jwtPayload);
+        const refreshToken = createRefreshToken(jwtPayload);
+
+        return {
+          accessToken,
+          refreshToken,
+        };
+      }
+    } catch (error: unknown) {
+      lastError = error;
+      try {
+        await session.abortTransaction();
+      } catch {
+        // ignore
+      }
+      await session.endSession();
+
+      const shouldRetry =
+        attempt < maxAttempts &&
+        !(error instanceof AppError) &&
+        isTransientTransactionError(error);
+
+      if (shouldRetry && attemptUploadedUrls.length) {
+        await Promise.all(
+          attemptUploadedUrls.map((url) => deleteImageFromCloudinary(url))
+        );
+        for (const url of attemptUploadedUrls) {
+          const idx = uploadedCloudinaryUrls.indexOf(url);
+          if (idx !== -1) uploadedCloudinaryUrls.splice(idx, 1);
+        }
+      }
+
+      if (error instanceof AppError) {
+        break;
+      }
+
+      if (shouldRetry) {
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  if (uploadedCloudinaryUrls.length) {
+    await Promise.all(
+      uploadedCloudinaryUrls.map((url) => deleteImageFromCloudinary(url))
     );
   }
+
+  if (lastError instanceof AppError) {
+    throw lastError;
+  }
+
+  const anyErr = lastError as { message?: string };
+  throw new AppError(
+    httpStatus.INTERNAL_SERVER_ERROR,
+    anyErr?.message || 'Failed to create profile. Please try again.'
+  );
 };
 
 // 5. checkProfileStatusIntoDB
@@ -724,333 +819,6 @@ const checkProfileStatusIntoDB = async (user: IAuth) => {
     refreshToken,
   };
 };
-
-// // clientCreateProfileIntoDB
-// const clientCreateProfileIntoDB = async (
-//   payload: TProfilePayload,
-//   user: IAuth
-// ) => {
-//   // Prevent creating multiple profiles for same user
-//   if (user.isProfile) {
-//     throw new AppError(
-//       httpStatus.BAD_REQUEST,
-//       'Your profile is already saved!'
-//     );
-//   }
-
-//   // Destructure relevant fields from the payload
-//   const {
-//     role,
-//     location,
-//     radius,
-//     lookingFor,
-//     favoriteTattoos,
-//     notificationPreferences,
-//   } = payload;
-
-//   // Start a MongoDB session for transaction
-//   const session = await startSession();
-
-//   try {
-//   session.startTransaction();
-
-//     // CLIENT PROFILE CREATION
-//     const isExistClient = await Client.findOne({ auth: user._id });
-//     if (isExistClient) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         'Client data already saved in database'
-//       );
-//     }
-
-//     const clientPayload = {
-//       auth: user._id,
-//       role,
-//       location,
-//       radius,
-//       lookingFor,
-//       favoriteTattoos,
-//     };
-
-//     const [client] = await Client.create([clientPayload], { session });
-
-//     const clientPreferenceData: any = {
-//       clientId: client._id,
-//       notificationPreferences,
-//     };
-
-//     if (user?.isSocialLogin) {
-//       clientPreferenceData.connectedAccounts = [
-//         {
-//           provider: 'google',
-//           connectedOn: user?.createdAt || new Date(),
-//         },
-//       ];
-//     }
-
-//     await Auth.findByIdAndUpdate(
-//       user._id,
-//       { role: ROLE.CLIENT, isProfile: true },
-//       { session }
-//     );
-
-//     await ClientPreferences.create([clientPreferenceData], { session });
-
-//     await session.commitTransaction();
-//     await session.endSession();
-
-//     return client;
-//   } catch (error: any) {
-//     // ❌ Roll back transaction in case of any error
-//     await session.abortTransaction();
-//     await session.endSession();
-
-//     // Re-throw application-specific errors
-//     if (error instanceof AppError) {
-//       throw error;
-//     }
-
-//     // Throw generic internal server error
-//     throw new AppError(
-//       httpStatus.INTERNAL_SERVER_ERROR,
-//       error?.message || 'Failed to create profile. Please try again.'
-//     );
-//   }
-// };
-
-// // artistCreateProfileIntoDB
-// const artistCreateProfileIntoDB = async (
-//   payload: TProfilePayload,
-//   user: IAuth,
-//   files: TProfileFileFields
-// ) => {
-//   // Prevent creating multiple profiles for same user
-//   if (user.isProfile) {
-//     throw new AppError(
-//       httpStatus.BAD_REQUEST,
-//       'Your profile is already saved!'
-//     );
-//   }
-
-//   // Destructure relevant fields from the payload
-//   const { location, artistType, expertise, city } = payload;
-
-//   // Extract file paths for ID verification images and business documents
-//   const idCardFront = files.idFrontPart?.[0]?.path.replace(/\\/g, '/') || '';
-//   const idCardBack = files.idBackPart?.[0]?.path.replace(/\\/g, '/') || '';
-//   const selfieWithId = files.selfieWithId?.[0]?.path.replace(/\\/g, '/') || '';
-
-//   // Start a MongoDB session for transaction
-//   const session = await startSession();
-
-//   try {
-//   session.startTransaction();
-
-//     // ARTIST PROFILE CREATION
-//     const isExistArtist = await Artist.findOne({ auth: user._id });
-//     if (isExistArtist) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         'Artist profile already exists.'
-//       );
-//     }
-
-//     const artistPayload = {
-//       auth: user._id,
-//       type: artistType,
-//       expertise,
-//       location,
-//       city,
-//       idCardFront,
-//       idCardBack,
-//       selfieWithId,
-//     };
-
-//     const [artist] = await Artist.create([artistPayload], { session });
-
-//     const [artistPreferences] = await ArtistPreferences.create(
-//       [{ artistId: artist._id }],
-//       { session }
-//     );
-
-//     await Auth.findByIdAndUpdate(
-//       user._id,
-//       { role: ROLE.ARTIST, isActive: false, isProfile: true },
-//       { session }
-//     );
-
-//     await Artist.findByIdAndUpdate(
-//       artist._id,
-//       { preferences: artistPreferences._id },
-//       { session }
-//     );
-
-//     await session.commitTransaction();
-//     await session.endSession();
-
-//     return artist;
-//   } catch (error: any) {
-//     // ❌ Roll back transaction in case of any error
-//     await session.abortTransaction();
-//     await session.endSession();
-
-//     // 🧼 Cleanup: Delete uploaded files to avoid storage bloat
-//     if (files && typeof files === 'object' && !Array.isArray(files)) {
-//       Object.values(files).forEach((fileArray) => {
-//         fileArray.forEach((file) => {
-//           try {
-//             if (file?.path && fs.existsSync(file.path)) {
-//               fs.unlinkSync(file.path);
-//             }
-//           } catch (deleteErr) {
-//             // eslint-disable-next-line no-console
-//             console.warn(
-//               'Failed to delete uploaded file:',
-//               file.path.replace(/\\/g, '/'),
-//               deleteErr
-//             );
-//           }
-//         });
-//       });
-//     }
-
-//     // Re-throw application-specific errors
-//     if (error instanceof AppError) {
-//       throw error;
-//     }
-
-//     // Throw generic internal server error
-//     throw new AppError(
-//       httpStatus.INTERNAL_SERVER_ERROR,
-//       error?.message || 'Failed to create profile. Please try again.'
-//     );
-//   }
-// };
-
-// // businessCreateProfileIntoDB
-// const businessCreateProfileIntoDB = async (
-//   payload: TProfilePayload,
-//   user: IAuth,
-//   files: TProfileFileFields
-// ) => {
-//   // Prevent creating multiple profiles for same user
-//   if (user.isProfile) {
-//     throw new AppError(
-//       httpStatus.BAD_REQUEST,
-//       'Your profile is already saved!'
-//     );
-//   }
-
-//   // Destructure relevant fields from the payload
-//   const {
-//     location,
-//     studioName,
-//     city,
-//     businessType,
-//     servicesOffered,
-//     contactNumber,
-//     contactEmail,
-//     operatingHours,
-//   } = payload;
-
-//   // Business-specific file extractions
-//   const registrationCertificate =
-//     files.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || '';
-//   const taxIdOrEquivalent = files.taxIdOrEquivalent?.[0]?.path.replace(/\\/g, '/') || '';
-//   const studioLicense = files.studioLicense?.[0]?.path.replace(/\\/g, '/') || '';
-
-//   // Start a MongoDB session for transaction
-//   const session = await startSession();
-
-//   try {
-//   session.startTransaction();
-
-//     // BUSINESS PROFILE CREATION
-//     const isExistBusiness = await Business.findOne({ auth: user._id });
-//     if (isExistBusiness) {
-//       throw new AppError(
-//         httpStatus.BAD_REQUEST,
-//         'Business profile already exists.'
-//       );
-//     }
-
-//     const businessPayload = {
-//       auth: user._id,
-//       studioName,
-//       businessType,
-//       servicesOffered,
-//       location,
-//       city,
-//       contact: {
-//         phone: contactNumber,
-//         email: contactEmail,
-//       },
-//       operatingHours,
-//       registrationCertificate,
-//       taxIdOrEquivalent,
-//       studioLicense,
-//     };
-
-//     const [business] = await Business.create([businessPayload], { session });
-
-//     const [businessPreferences] = await BusinessPreferences.create(
-//       [{ businessId: business._id }],
-//       { session }
-//     );
-
-//     await Auth.findByIdAndUpdate(
-//       user._id,
-//       { role: ROLE.BUSINESS, isActive: false, isProfile: true },
-//       { session }
-//     );
-
-//     await Business.findByIdAndUpdate(
-//       business._id,
-//       { preferences: businessPreferences._id },
-//       { session }
-//     );
-
-//     await session.commitTransaction();
-//     await session.endSession();
-
-//     return business;
-//   } catch (error: any) {
-//     // ❌ Roll back transaction in case of any error
-//     await session.abortTransaction();
-//     await session.endSession();
-
-//     // 🧼 Cleanup: Delete uploaded files to avoid storage bloat
-//     if (files && typeof files === 'object' && !Array.isArray(files)) {
-//       Object.values(files).forEach((fileArray) => {
-//         fileArray.forEach((file) => {
-//           try {
-//             if (file?.path && fs.existsSync(file.path)) {
-//               fs.unlinkSync(file.path);
-//             }
-//           } catch (deleteErr) {
-//             // eslint-disable-next-line no-console
-//             console.warn(
-//               'Failed to delete uploaded file:',
-//               file.path.replace(/\\/g, '/'),
-//               deleteErr
-//             );
-//           }
-//         });
-//       });
-//     }
-
-//     // Re-throw application-specific errors
-//     if (error instanceof AppError) {
-//       throw error;
-//     }
-
-//     // Throw generic internal server error
-//     throw new AppError(
-//       httpStatus.INTERNAL_SERVER_ERROR,
-//       error?.message || 'Failed to create profile. Please try again.'
-//     );
-//   }
-// };
 
 // 6. socialLoginServices
 const socialLoginServices = async (payload: TSocialLoginPayload) => {
@@ -1172,29 +940,37 @@ const updateProfilePhotoIntoDB = async (
   user: IAuth,
   file: Express.Multer.File | undefined
 ) => {
-  if (!file?.path) {
+  if (!file) {
     throw new AppError(httpStatus.BAD_REQUEST, 'File is required!');
   }
 
-  const userNewData = await Auth.findByIdAndUpdate(
-    user._id,
-    { image: file.path.replace(/\\/g, '/') },
-    { new: true }
-  ).select('fullName email image role isProfile phoneNumber');
+  const uploaded = await uploadToCloudinary(file, 'profile_images');
 
-  if (!userNewData) {
-    await fs.promises.unlink(file?.path);
+  let userNewData: any;
+  try {
+    userNewData = await Auth.findByIdAndUpdate(
+      user._id,
+      { image: uploaded.secure_url },
+      { new: true }
+    ).select('fullName email image role isProfile phoneNumber');
 
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      'Something went wrong!'
-    );
+    if (!userNewData) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Something went wrong!'
+      );
+    }
+  } catch (err) {
+    await deleteImageFromCloudinary(uploaded.secure_url);
+    throw err;
   }
 
   // Delete the previous image if exists
   if (userNewData && user?.image && user?.image !== defaultUserImage) {
     try {
-      await fs.promises.unlink(user.image);
+      if (user.image.includes('/upload/')) {
+        await deleteImageFromCloudinary(user.image);
+      }
     } catch (error: unknown) {
       // eslint-disable-next-line no-console
       console.error('Error deleting old file:', error);

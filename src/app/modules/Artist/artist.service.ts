@@ -1,6 +1,4 @@
-/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import fs from 'fs';
 import httpStatus from 'http-status';
 import { startSession, Types } from 'mongoose';
 import { TAvailability } from '../../schema/slotValidation';
@@ -35,7 +33,6 @@ import Booking from '../Booking/booking.model';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
 import Folder from '../Folder/folder.model';
-import { deleteSomeMulterFiles } from '../Folder/folder.utils';
 import GuestSpot from '../GuestSpot/guestSpot.model';
 import Notification from '../notificationModule/notification.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
@@ -351,15 +348,26 @@ const updateArtistFlashesIntoDB = async (
     throw new AppError(httpStatus.BAD_REQUEST, 'Files are required!');
   }
 
-  return await Artist.findByIdAndUpdate(
-    artist._id,
-    {
-      $push: {
-        flashes: { $each: files.map((file) => file.path.replace(/\\/g, '/')) },
-      },
-    },
-    { new: true }
+  const uploaded = await Promise.all(
+    files.map((file) => uploadToCloudinary(file, 'folder_images'))
   );
+
+  const flashUrls = uploaded.map((u) => u.secure_url);
+
+  try {
+    return await Artist.findByIdAndUpdate(
+      artist._id,
+      {
+        $push: {
+          flashes: { $each: flashUrls },
+        },
+      },
+      { new: true }
+    );
+  } catch (err) {
+    await Promise.all(flashUrls.map((url) => deleteImageFromCloudinary(url)));
+    throw err;
+  }
 };
 
 // updateArtistPortfolioIntoDB
@@ -387,52 +395,31 @@ const updateArtistPortfolioIntoDB = async (
     throw new AppError(httpStatus.BAD_REQUEST, 'Files are required');
   }
 
-  return await Artist.findByIdAndUpdate(
-    artist._id,
-    {
-      $push: {
-        portfolio: {
-          $each: files.map((file) => file.path.replace(/\\/g, '/')),
+  const uploaded = await Promise.all(
+    files.map((file) => uploadToCloudinary(file, 'folder_images'))
+  );
+
+  const portfolioUrls = uploaded.map((u) => u.secure_url);
+
+  try {
+    return await Artist.findByIdAndUpdate(
+      artist._id,
+      {
+        $push: {
+          portfolio: {
+            $each: portfolioUrls,
+          },
         },
       },
-    },
-    { new: true }
-  );
+      { new: true }
+    );
+  } catch (err) {
+    await Promise.all(
+      portfolioUrls.map((url) => deleteImageFromCloudinary(url))
+    );
+    throw err;
+  }
 };
-
-// addArtistServiceIntoDB
-// const addArtistServiceIntoDB = async (
-//   user: IAuth,
-//   payload: TServicePayload,
-//   files: TServiceImages
-// ): Promise<IService> => {
-//   const artist = await Artist.findOne({ auth: user._id });
-//   if (!artist) {
-//     throw new AppError(httpStatus.BAD_REQUEST, 'Artist not found!');
-//   }
-
-//   const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
-//   const images = files?.images?.map(
-//     (image) => image.path.replace(/\\/g, '/') || ''
-//   );
-
-//   const totalDurationInMinutes = parseDurationToMinutes(payload.totalDuration);
-//   const sessionInMinutes = parseDurationToMinutes(payload.sessionDuration);
-//   const numberOfSessions = Math.ceil(totalDurationInMinutes / sessionInMinutes);
-
-//   const serviceData = {
-//     ...payload,
-//     artist: artist._id,
-//     totalDurationInMin: totalDurationInMinutes,
-//     sessionDurationInMin: sessionInMinutes,
-//     numberOfSessions: numberOfSessions,
-//     thumbnail: thumbnail,
-//     images: images,
-//   };
-
-//   const service = await Service.create(serviceData);
-//   return service;
-// };
 
 // getServicesByArtistFromDB
 const getServicesByArtistFromDB = async (user: IAuth) => {
@@ -515,12 +502,10 @@ const updateArtistServiceByIdIntoDB = async (
   let uploadedImages: string[] = [];
   if (files?.images?.length) {
     const uploads = await Promise.all(
-      files.images.map((file) =>
-        uploadToCloudinary(file, 'services_images')
-      )
+      files.images.map((file) => uploadToCloudinary(file, 'services_images'))
     );
 
-    uploadedImages = uploads.map((img:any) => img.secure_url);
+    uploadedImages = uploads.map((img: any) => img.secure_url);
   }
 
   // Final images list
@@ -592,8 +577,9 @@ const removeImageFromDB = async (user: IAuth, filePath: string) => {
     );
   }
 
-  // Check if the file exists and delete it
-  fs.unlink(filePath, () => {});
+  if (typeof filePath === 'string' && filePath.includes('/upload/')) {
+    await deleteImageFromCloudinary(filePath);
+  }
 
   return updatedArtist;
 };
@@ -924,38 +910,18 @@ const createConnectedAccountAndOnboardingLinkForArtistIntoDb = async (
 };
 
 // create service
-const createService = async (
+const createArtistServiceIntoDB = async (
   user: IAuth,
   payload: TServicePayload,
   files: TServiceImages
 ): Promise<IService> => {
   const artist = await Artist.findOne({ auth: user._id });
 
-  console.log({ files: files });
-
   if (!artist) {
-    try {
-      deleteSomeMulterFiles([
-        ...(files?.thumbnail || []),
-        ...(files?.images || []),
-      ]);
-    } catch (cleanupErr) {
-      console.error('Failed to cleanup uploaded files:', cleanupErr);
-    }
-
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
 
   if (!artist.stripeAccountId) {
-    try {
-      deleteSomeMulterFiles([
-        ...(files?.thumbnail || []),
-        ...(files?.images || []),
-      ]);
-    } catch (cleanupErr) {
-      console.error('Failed to cleanup uploaded files:', cleanupErr);
-    }
-
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Stripe account not created yet!'
@@ -963,59 +929,17 @@ const createService = async (
   }
 
   if (artist.stripeAccountId && !artist.isStripeReady) {
-    try {
-      deleteSomeMulterFiles([
-        ...(files?.thumbnail || []),
-        ...(files?.images || []),
-      ]);
-    } catch (cleanupErr) {
-      console.error('Failed to cleanup uploaded files:', cleanupErr);
-    }
-
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Stripe account exists but not ready to create service yet!'
     );
   }
 
-  // const thumbnail = files?.thumbnail[0]?.path.replace(/\\/g, '/') || '';
-  // const images =
-  //   files?.images?.map((image) => image.path.replace(/\\/g, '/') || '') || [];
-
-  // // Validate images length (2-5)
-  // if (images.length < 2 || images.length > 5) {
-  //   // Cleanup any uploaded files to avoid orphaned files on validation failure
-
-  //   try {
-  //     deleteSomeMulterFiles([
-  //       ...(files?.thumbnail || []),
-  //       ...(files?.images || []),
-  //     ]);
-  //   } catch (cleanupErr) {
-  //     console.error('Failed to cleanup uploaded files:', cleanupErr);
-  //   }
-
-  //   throw new AppError(
-  //     httpStatus.BAD_REQUEST,
-  //     'You must upload between 2 and 5 Service Images!'
-  //   );
-  // }
-
-  // const serviceData = {
-  //   ...payload,
-  //   artist: artist._id,
-  //   thumbnail,
-  //   images,
-  // };
-
-  // const service = await Service.create(serviceData);
-
   // Upload gallery images (multiple)
   const gallery = await Promise.all(
     files.images.map((file) => uploadToCloudinary(file, 'services_images'))
   );
 
-  console.log({ gallery: gallery });
   const images = gallery.map((res) => res.secure_url);
 
   // Upload thumbnail (single)
@@ -1359,7 +1283,6 @@ export const ArtistService = {
   confirmBoostPaymentIntoDb,
   getArtistProfileByHisIdFromDB,
   getArtistDashboardPage,
-  // addArtistServiceIntoDB,
   getServicesByArtistFromDB,
   updateArtistServiceByIdIntoDB,
   deleteArtistServiceFromDB,
@@ -1367,5 +1290,5 @@ export const ArtistService = {
   saveArtistAvailabilityIntoDB,
   setArtistTimeOffIntoDB,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
-  createService,
+  createArtistServiceIntoDB,
 };

@@ -175,10 +175,10 @@ const updateArtistPortfolio = asyncHandler(async (req, res) => {
   });
 });
 
-// addArtistService
-const addArtistService = asyncHandler(async (req, res) => {
+// createArtistService
+const createArtistService = asyncHandler(async (req, res) => {
   const files = req.files as TServiceImages;
-  const result = await ArtistService.createService(req.user, req.body, files);
+  const result = await ArtistService.createArtistServiceIntoDB(req.user, req.body, files);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -360,7 +360,7 @@ export const ArtistController = {
   updateArtistPrivacySecuritySettings,
   updateArtistFlashes,
   updateArtistPortfolio,
-  addArtistService,
+  createArtistService,
   getServicesByArtist,
   getArtistSchedule,
   updateArtistServiceById,

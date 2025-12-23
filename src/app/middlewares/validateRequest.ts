@@ -30,10 +30,15 @@ export const validateRequestFromFormData = (schema: AnyZodObject) => {
         const parsedData = await schema.parseAsync({
           body: JSON.parse(req.body.data),
           cookies: req.cookies,
+          // query: req.query,
+          // params: req.params,
         });
 
-        req.body = parsedData.body;
-        req.cookies = parsedData.cookies;
+        // overwrite validated values
+        req.body = parsedData.body || req.body;
+        // req.query = parsedData.query || req.query;
+        // req.params = parsedData.params || req.params;
+        req.cookies = parsedData.cookies || req.cookies;
 
         next();
       }

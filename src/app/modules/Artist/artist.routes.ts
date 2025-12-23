@@ -84,7 +84,7 @@ router
     ArtistController.updateArtistPortfolio
   );
 
-// addArtistService
+// createArtistService
 router.route('/service/create').post(
   auth(ROLE.ARTIST),
   upload.fields([
@@ -92,7 +92,7 @@ router.route('/service/create').post(
     { name: 'thumbnail', maxCount: 1 },
   ]),
   validateRequestFromFormData(ArtistServiceValidation.createServiceSchema),
-  ArtistController.addArtistService
+  ArtistController.createArtistService
 );
 
 // getArtistDashboardPage

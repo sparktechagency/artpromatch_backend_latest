@@ -15,6 +15,7 @@ import SecretReview from '../SecretReview/secretReview.model';
 import { ROLE } from '../Auth/auth.constant';
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import Service from '../Service/service.model';
+// import { deleteImageFromCloudinary } from '../../utils/deleteImageFromCloudinary';
 
 // Helper function to calculate growth rate
 const calculateGrowthRate = (current: number, previous: number): string => {
@@ -254,7 +255,7 @@ const getAllArtistsFoldersFromDB = async () => {
   return await Folder.find();
 };
 
-// // changeStatusOnFolder
+// changeStatusOnFolder
 // const changeStatusOnFolder = async (folderId: string, permission: boolean) => {
 //   const folder = await Folder.findById(folderId);
 
@@ -262,41 +263,26 @@ const getAllArtistsFoldersFromDB = async () => {
 //     throw new AppError(httpStatus.NOT_FOUND, 'Folder not found!');
 //   }
 
-//   const artist = await Artist.findOne({ auth: folder.auth });
-
-//   if (!artist) {
-//     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-//   }
-
 //   if (permission) {
-//     if (folder.for === 'portfolio') {
-//       await Artist.findByIdAndUpdate(artist?._id, {
-//         $addToSet: {
-//           portfolio: {
-//             folder: folder._id,
-//             position: artist?.portfolio?.length + 1,
-//           },
-//         },
-//       });
-//       return await Folder.findByIdAndUpdate(folderId, {
-//         isPublished: true,
-//       });
-//     } else if (folder.for === 'flash') {
-//       await Artist.findByIdAndUpdate(artist?._id, {
-//         $addToSet: {
-//           flashes: {
-//             folder: folder._id,
-//             position: artist?.flashes?.length + 1,
-//           },
-//         },
-//       });
-//       return await Folder.findByIdAndUpdate(folderId, {
-//         isPublished: true,
-//       });
-//     }
+//     return await Folder.findByIdAndUpdate(
+//       folderId,
+//       { isPublished: true },
+//       { new: true }
+//     );
 //   } else {
 //     const deletedFolder = await Folder.findByIdAndDelete(folderId);
-//     deletedFolder?.images?.forEach((path) => fs.unlink(path, () => {}));
+
+//     if (deletedFolder?.images?.length) {
+//       await Promise.all(
+//         deletedFolder.images.map((url) =>
+//           typeof url === 'string' && url.includes('/upload/')
+//             ? deleteImageFromCloudinary(url)
+//             : Promise.resolve()
+//         )
+//       );
+//     }
+
+//     return deletedFolder;
 //   }
 // };
 
@@ -317,17 +303,17 @@ const verifyArtistByAdminIntoDB = async (artistId: string) => {
 
 // verifyBusinessByAdminIntoDB
 const verifyBusinessByAdminIntoDB = async (businessId: string) => {
-  const result = await Business.findByIdAndUpdate(
-    businessId,
-    { isActive: true },
-    { new: true }
-  );
+  const business = await Business.findById(businessId).populate('auth');
 
-  if (!result) {
+  if (!business) {
     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
   }
 
-  return result;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const businessDoc = business.auth as any;
+  businessDoc.isActive = !businessDoc.isActive;
+  await businessDoc.save();
+  return null;
 };
 
 // fetchAllClientsFromDB
@@ -389,7 +375,7 @@ const fetchAllBusinessesFromDB = async (query: Record<string, unknown>) => {
     Business.find().populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile',
+        select: 'fullName image email phoneNumber isProfile isActive',
       },
     ]),
     query
