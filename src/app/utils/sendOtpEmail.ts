@@ -3,20 +3,26 @@ import nodemailer from 'nodemailer';
 import config from '../config';
 import AppError from './AppError';
 import path from 'path';
+import fs from 'fs';
 
-const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
-  try {
-    // Create a transporter for sending emails
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: config.nodemailer.email,
-        pass: config.nodemailer.password,
-      },
-    });
+type TSendOtpEmailOptions = {
+  email: string;
+  otp: string;
+  name?: string;
+  subject?: string;
+  logoCid?: string;
+  customMessage?: string;
+  attachments?: { filename: string; path: string }[];
+};
 
-    // Email HTML template with dynamic placeholders
-    const htmlTemplate = `
+// Utility function to generate the email HTML content dynamically
+const generateEmailHTML = (
+  otp: string,
+  name: string,
+  logoCid: string,
+  customMessage: string = ''
+) => {
+  return `
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -88,12 +94,12 @@ const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
 
             <div class="container">
               <div class="header">
-                <img src="cid:steady_hands_logo" alt="Steady Hands Logo"> <!-- Ensure this is the correct logo path -->
+                <img src="cid:${logoCid}" alt="Steady Hands Logo">
                 <h2>Thank You for Joining Steady Hands!</h2>
                 <p>We're excited to help you grow your studio.</p>
               </div>
 
-              <p>Hello ${fullName},</p>
+              <p>Hello ${name},</p>
               <p>We received a request to verify your email address. Your one-time password (OTP) is:</p>
 
               <div class="otp">
@@ -103,6 +109,12 @@ const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
               <p>Please enter this OTP to complete your email verification and start using Steady Hands to grow your studio.</p>
               <p><strong>Note:</strong> This OTP will expire in 5 minutes. Be sure to enter it before it expires.</p>
 
+              ${
+                customMessage
+                  ? `<p><strong>Additional Info:</strong> ${customMessage}</p>`
+                  : ''
+              }
+
               <div class="footer">
                 <p>Thank you for being a part of Steady Hands. If you did not request this, please ignore this email.</p>
               </div>
@@ -111,28 +123,119 @@ const sendOtpEmail = async (email: string, otp: string, fullName: string) => {
           </body>
           </html>
   `;
+};
+
+const sendOtpEmail = async (
+  emailOrOptions: string | TSendOtpEmailOptions,
+  otpArg?: string,
+  fullNameArg?: string
+) => {
+  try {
+    // Backward-compatible options resolution
+    const opts: TSendOtpEmailOptions =
+      typeof emailOrOptions === 'string'
+        ? {
+            email: emailOrOptions,
+            otp: otpArg as string,
+            name: fullNameArg ?? 'User',
+          }
+        : emailOrOptions;
+
+    const {
+      email,
+      otp,
+      name = 'User',
+      subject = 'Your OTP for Account Verification',
+      logoCid = 'art_pro_match_logo',
+      customMessage = '',
+      attachments = [],
+    } = opts;
+
+    // Create a transporter for sending emails
+    // const transporter = nodemailer.createTransport({
+    //   service: 'gmail',
+    //   auth: {
+    //     user: config.nodemailer.email,
+    //     pass: config.nodemailer.password,
+    //   },
+
+    //   // Ensure serverless does not hang indefinitely on blocked SMTP
+    //   pool: true,
+    //   maxConnections: 1,
+    //   connectionTimeout: 5000, // ms
+    //   greetingTimeout: 5000, // ms
+    //   socketTimeout: 5000, // ms
+    // });
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: config.nodemailer.email,
+        pass: config.nodemailer.password,
+      },
+      pool: true,
+      maxConnections: 1,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
+
+    // Email HTML template with dynamic placeholders
+    const htmlTemplate = generateEmailHTML(otp, name, logoCid, customMessage);
 
     // Email options: from, to, subject, and HTML body
-    const mailOptions = {
-      from: config.nodemailer.email, // Sender's email address
-      to: email, // Recipient's email address
-      subject: 'Your OTP for Account Verification',
+    const logoPath = path.join(__dirname, 'assets', 'logo.png');
+    const localLogoExists = fs.existsSync(logoPath);
+    const isProd = process.env.NODE_ENV === 'production';
+
+    const siteName = 'Art Pro Match';
+    const mailOptions: nodemailer.SendMailOptions = {
+      from: `${siteName} 📰 <${config.nodemailer.email}>`,
+      to: email,
+      subject: subject,
       html: htmlTemplate,
       attachments: [
-        {
-          filename: 'logo.png',
-          path: path.join(__dirname, 'assets', 'logo.png'),
-          cid: 'steady_hands_logo',
-        },
+        ...attachments,
+        ...(isProd
+          ? [
+              {
+                filename: 'logo.png',
+                path: 'https://res.cloudinary.com/dqk9g25o1/image/upload/v1766495346/logo_snbn3g.png',
+                cid: logoCid,
+              },
+            ]
+          : localLogoExists
+          ? [
+              {
+                filename: 'logo.png',
+                path: logoPath,
+                cid: logoCid,
+              },
+            ]
+          : []),
       ],
     };
 
-    // Send the email using Nodemailer
-    await transporter.sendMail(mailOptions);
+    // Send the email using Nodemailer with an explicit safety timeout
+    const SEND_TIMEOUT_MS = 8000;
+    await Promise.race([
+      transporter.sendMail(mailOptions),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Email send timeout')),
+          SEND_TIMEOUT_MS
+        )
+      ),
+    ]);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log(error);
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to send email');
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to send email'
+    );
   }
 };
 
