@@ -990,11 +990,16 @@ const confirmBookingByArtist = async (bookingId: string) => {
     'notificationChannels'
   );
 
+  const user = await Client.findOne({ _id: booking.client }, 'auth');
+  if (!user?.auth) {
+    throw new Error('User auth not found');
+  }
+  
   if (client?.notificationChannels.includes('app')) {
     sendNotificationBySocket({
       title: 'Confirmed Booking',
       message: `your booking is now confirmed by ${booking.artistInfo.fullName} for ${booking.serviceName}.`,
-      receiver: booking.client ?? '',
+      receiver: user?.auth,
       type: NOTIFICATION_TYPE.CONFIRMED_BOOKING,
     });
   }

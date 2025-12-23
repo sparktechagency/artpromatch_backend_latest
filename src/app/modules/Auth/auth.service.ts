@@ -352,7 +352,7 @@ const createProfileIntoDB = async (
   // const idCardBack = files?.idBackPart?.[0]?.path.replace(/\\/g, '/') || null;
   // const selfieWithId =
   //   files?.selfieWithId?.[0]?.path.replace(/\\/g, '/') || null;
-
+  
   // // Business-specific file extractions
   // const registrationCertificate =
   //   files?.registrationCertificate?.[0]?.path.replace(/\\/g, '/') || null;
