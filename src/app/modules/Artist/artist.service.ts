@@ -28,9 +28,10 @@ import Stripe from 'stripe';
 import config from '../../config';
 import { deleteImageFromCloudinary } from '../../utils/deleteImageFromCloudinary';
 
+import { uploadToCloudinary } from '../../utils/uploadFileToCloudinary';
 import { ROLE } from '../Auth/auth.constant';
-import Booking from '../Booking/booking.model';
 import { BOOKING_STATUS } from '../Booking/booking.constant';
+import Booking from '../Booking/booking.model';
 import { ArtistBoost } from '../BoostProfile/boost.profile.model';
 import Business from '../Business/business.model';
 import Folder from '../Folder/folder.model';
@@ -39,7 +40,6 @@ import Notification from '../notificationModule/notification.model';
 import { IWeeklySchedule } from '../Schedule/schedule.interface';
 import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
-import { uploadToCloudinary } from '../../utils/uploadFileToCloudinary';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
 
@@ -450,6 +450,45 @@ const getServicesByArtistFromDB = async (user: IAuth) => {
   ]);
 
   return result;
+};
+
+const getServiceDetailsFromDB = async (user: IAuth, serviceId: string) => {
+  const artist = await Artist.findOne({ auth: user._id });
+  if (!artist) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+  }
+
+  const result = await Service.aggregate([
+    {
+      $match: {
+        _id: new Types.ObjectId(serviceId),
+        artist: artist._id,
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        description: 1,
+        price: 1,
+        sessionType: 1,
+        bodyLocation: 1,
+        totalCompletedOrder: 1,
+        totalReviewCount: 1,
+        thumbnail: 1,
+        images: 1,
+        avgRating: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    },
+  ]);
+
+  if (!result.length) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Service not found!');
+  }
+
+  return result[0];
 };
 
 // updateArtistServiceByIdIntoDB
@@ -1298,6 +1337,7 @@ export const ArtistService = {
   updateArtistPrivacySecuritySettingsIntoDB,
   updateArtistFlashesIntoDB,
   updateArtistPortfolioIntoDB,
+  getServiceDetailsFromDB,
   getArtistMonthlySchedule,
   boostProfileIntoDb,
   confirmBoostPaymentIntoDb,

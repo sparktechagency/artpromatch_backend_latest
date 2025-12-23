@@ -95,6 +95,11 @@ router.route('/service/create').post(
   ArtistController.createArtistService
 );
 
+router.route('/service/details/:id').get(
+  auth(ROLE.ARTIST),
+  ArtistController.getArtistServiceDetails
+);
+
 // getArtistDashboardPage
 router
   .route('/dashboard')
