@@ -234,10 +234,10 @@ const signinIntoDB = async (payload: {
     user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
     await user.save();
 
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Verify your account with the new OTP in your phone!'
-    );
+    return {
+      userEmail: payload.email,
+      message: 'Verify your account with the new OTP in your phone!',
+    };
   }
 
   if (user.isSocialLogin) {

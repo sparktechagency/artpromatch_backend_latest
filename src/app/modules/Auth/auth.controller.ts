@@ -46,7 +46,7 @@ const signin = asyncHandler(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Signin successful!',
+    message: result.message || 'Signin successful!',
     data: result,
   });
 });
