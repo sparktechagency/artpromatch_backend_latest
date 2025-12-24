@@ -168,16 +168,14 @@ const sendOtpEmail = async (
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
-      secure: false,
+      secure: config.NODE_ENV === 'production',
       auth: {
         user: config.nodemailer.email,
         pass: config.nodemailer.password,
       },
-      // pool: true,
-      // maxConnections: 1,
-      // connectionTimeout: 5000,
-      // greetingTimeout: 5000,
-      // socketTimeout: 5000,
+      tls: {
+        rejectUnauthorized: false, // ⚠️ Allow self-signed certs (only for development)
+      },
     });
 
     // Email HTML template with dynamic placeholders
