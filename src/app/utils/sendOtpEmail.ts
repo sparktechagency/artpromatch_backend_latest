@@ -1,16 +1,63 @@
-/* eslint-disable no-console */
 import httpStatus from 'http-status';
 import nodemailer from 'nodemailer';
 import config from '../config';
 import AppError from './AppError';
 
-// Email HTML generator
-const generateEmailHTML = (
+const sendOtpEmail = async (
+  email: string,
   otp: string,
   name: string,
-  logoUrl: string,
+  subject: string = 'Your OTP for Account Verification',
   customMessage: string = ''
 ) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      // secure: config.NODE_ENV === 'production',
+      auth: {
+        user: config.nodemailer.email,
+        pass: config.nodemailer.password,
+      },
+      // tls: {
+      //   rejectUnauthorized: false, // ⚠️ Allow self-signed certs (only for development)
+      // },
+    });
+
+    const logoUrl =
+      'https://res.cloudinary.com/dqk9g25o1/image/upload/v1766495346/logo_snbn3g.png';
+
+    const html = generateEmailHTML({ otp, name, logoUrl, customMessage });
+
+    await transporter.sendMail({
+      from: `Art Pro Match <${config.nodemailer.email}>`,
+      to: email,
+      subject,
+      html,
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Email send error:', error);
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to send email'
+    );
+  }
+};
+
+// Email HTML generator
+const generateEmailHTML = ({
+  otp,
+  name,
+  logoUrl,
+  customMessage = '',
+}: {
+  otp: string;
+  name: string;
+  logoUrl: string;
+  customMessage?: string;
+}) => {
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -81,57 +128,6 @@ const generateEmailHTML = (
     </body>
     </html>
   `;
-};
-
-const sendOtpEmail = async (
-  email: string,
-  otp: string,
-  fullName: string,
-  subject: string = 'Your OTP for Account Verification',
-  customMessage: string = ''
-) => {
-  try {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      logger: true, // <--- Add this
-      debug: true, // <--- Add this
-      // secure: config.NODE_ENV === 'production',
-      auth: {
-        user: config.nodemailer.email,
-        pass: config.nodemailer.password,
-      },
-      // tls: {
-      //   rejectUnauthorized: false, // ⚠️ Allow self-signed certs (only for development)
-      // },
-    });
-
-    const logoUrl =
-      'https://res.cloudinary.com/dqk9g25o1/image/upload/v1766495346/logo_snbn3g.png';
-
-    const html = generateEmailHTML(otp, fullName, logoUrl, customMessage);
-
-    try {
-      await transporter.verify();
-      console.log('SMTP connection OK');
-    } catch (err) {
-      console.error('SMTP error:', err);
-    }
-
-    await transporter.sendMail({
-      from: `Art Pro Match <${config.nodemailer.email}>`,
-      to: email,
-      subject,
-      html,
-    });
-  } catch (error) {
-    console.error('Email send error:', error);
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      'Failed to send email'
-    );
-  }
 };
 
 export default sendOtpEmail;
