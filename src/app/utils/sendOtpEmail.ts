@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import httpStatus from 'http-status';
 import nodemailer from 'nodemailer';
 import config from '../config';
@@ -92,22 +93,31 @@ const sendOtpEmail = async (
   try {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
+      port: 465,
+      secure: true,
+      logger: true, // <--- Add this
+      debug: true, // <--- Add this
       // secure: config.NODE_ENV === 'production',
       auth: {
         user: config.nodemailer.email,
         pass: config.nodemailer.password,
       },
-      tls: {
-        rejectUnauthorized: false, // ⚠️ Allow self-signed certs (only for development)
-      },
+      // tls: {
+      //   rejectUnauthorized: false, // ⚠️ Allow self-signed certs (only for development)
+      // },
     });
 
     const logoUrl =
       'https://res.cloudinary.com/dqk9g25o1/image/upload/v1766495346/logo_snbn3g.png';
 
     const html = generateEmailHTML(otp, fullName, logoUrl, customMessage);
+
+    try {
+      await transporter.verify();
+      console.log('SMTP connection OK');
+    } catch (err) {
+      console.error('SMTP error:', err);
+    }
 
     await transporter.sendMail({
       from: `Art Pro Match <${config.nodemailer.email}>`,
@@ -116,7 +126,6 @@ const sendOtpEmail = async (
       html,
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Email send error:', error);
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
