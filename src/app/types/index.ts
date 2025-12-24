@@ -24,7 +24,6 @@ export type TSocialLoginPayload = {
   fcmToken: string;
   image?: string;
   fullName?: string;
-  phoneNumber?: string;
   address?: string;
 };
 
