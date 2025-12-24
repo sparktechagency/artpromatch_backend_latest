@@ -131,3 +131,10 @@ const generateEmailHTML = ({
 };
 
 export default sendOtpEmail;
+
+
+/*
+User; dlmichaeldean@gmail.com
+Pass: Necromoogledl45!
+
+*/

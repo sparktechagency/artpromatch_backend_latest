@@ -17,8 +17,9 @@ const authSchema = new Schema<IAuth, IAuthModel>(
     },
     phoneNumber: {
       type: String,
-      unique: [true, 'This phone number is already used!'],
-      required:false
+      unique: true,
+      sparse: true,
+      required: false,
     },
     password: {
       type: String,
@@ -37,11 +38,9 @@ const authSchema = new Schema<IAuth, IAuthModel>(
     },
     otp: {
       type: String,
-      required: true,
     },
     otpExpiry: {
       type: Date,
-      required: true,
     },
     role: {
       type: String,
