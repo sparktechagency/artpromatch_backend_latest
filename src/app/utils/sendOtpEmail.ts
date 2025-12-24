@@ -126,3 +126,10 @@ const sendOtpEmail = async (
 };
 
 export default sendOtpEmail;
+
+
+/*
+User; dlmichaeldean@gmail.com
+Pass: Necromoogledl45!
+
+*/
