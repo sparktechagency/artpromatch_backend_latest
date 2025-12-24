@@ -170,13 +170,17 @@ const sendOtpEmail = async (
       port: 587,
       secure: config.NODE_ENV === 'production',
       auth: {
-        // TODO: replace `user` and `pass` values from <https://forwardemail.net>
         user: config.nodemailer.email,
         pass: config.nodemailer.password,
       },
-      tls: {
-        rejectUnauthorized: false, // ⚠️ Allow self-signed certs (only for development)
-      },
+      // tls: {
+      //   rejectUnauthorized: false, // ⚠️ Allow self-signed certs (only for development)
+      // },
+      // pool: true,
+      // maxConnections: 1,
+      // connectionTimeout: 5000,
+      // greetingTimeout: 5000,
+      // socketTimeout: 5000,
     });
 
     // Email HTML template with dynamic placeholders
