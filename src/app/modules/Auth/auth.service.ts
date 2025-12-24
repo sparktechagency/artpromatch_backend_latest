@@ -311,7 +311,7 @@ const createProfileIntoDB = async (
       'Your profile is already saved!'
     );
   }
-  console.log({paylod:payload})
+
   // Destructure relevant fields from the payload
   const {
     role,
@@ -823,11 +823,10 @@ const checkProfileStatusIntoDB = async (user: IAuth) => {
 // 6. socialLoginServices
 const socialLoginServices = async (payload: TSocialLoginPayload) => {
   const { email, fcmToken, image, fullName, address } = payload;
-  console.log({payload:payload})
+
   // Check if user exists
   // const user = await Auth.findOne({ email });
   const user = await Auth.isUserExistsByEmail(email);
-
 
   if (!user) {
     const newUser = await Auth.create({
@@ -850,7 +849,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
     const userData = {
       id: newUser._id.toString(),
       email: newUser.email,
-      phoneNumber: newUser.phoneNumber || "",
+      phoneNumber: newUser.phoneNumber || '',
       stringLocation: '123 Main St, Springfield, IL',
       role: newUser.role,
       image: newUser?.image || defaultUserImage,
@@ -898,7 +897,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
     const userData = {
       id: user._id.toString(),
       email: user.email,
-      phoneNumber: user.phoneNumber || "",
+      phoneNumber: user.phoneNumber || '',
       stringLocation: stringLocation,
       role: user.role,
       image: user?.image || defaultUserImage,
@@ -918,7 +917,7 @@ const socialLoginServices = async (payload: TSocialLoginPayload) => {
       response: {
         fullName: user.fullName,
         email: user.email,
-        phoneNumber: user.phoneNumber || "",
+        phoneNumber: user.phoneNumber || '',
         role: user.role,
         image: user.image,
         isProfile: user.isProfile,
