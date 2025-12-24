@@ -31,7 +31,7 @@ const sendOtpEmail = async (
     const html = generateEmailHTML({ otp, name, logoUrl, customMessage });
 
     await transporter.sendMail({
-      from: `Art Pro Match <${config.nodemailer.email}>`,
+      from: `Steady Hands <${config.nodemailer.email}>`,
       to: email,
       subject,
       html,
@@ -109,7 +109,7 @@ const generateEmailHTML = ({
       <div class="container">
         <div class="header">
           <img src="${logoUrl}" alt="Logo" />
-          <h2>Welcome to Art Pro Match</h2>
+          <h2>Welcome to Steady Hands</h2>
         </div>
 
         <p>Hello ${name},</p>
