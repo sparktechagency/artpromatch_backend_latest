@@ -170,6 +170,7 @@ const sendOtpEmail = async (
       port: 587,
       secure: config.NODE_ENV === 'production',
       auth: {
+        // TODO: replace `user` and `pass` values from <https://forwardemail.net>
         user: config.nodemailer.email,
         pass: config.nodemailer.password,
       },
