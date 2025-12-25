@@ -131,14 +131,6 @@ router
   .route('/remove-image')
   .delete(auth(ROLE.ARTIST), ArtistController.removeImage);
 
-// saveArtistAvailability
-router
-  .route('/availability')
-  .post(
-    auth(ROLE.ARTIST),
-    validateRequest(SlotValidation.availabilitySchema),
-    ArtistController.saveArtistAvailability
-  );
 
 // getArtistSchedule
 router
@@ -165,16 +157,8 @@ router
 //   .route('/availability/:id')
 //   .get(ArtistController.getAvailabilityExcludingTimeOff)
 
-// setArtistTimeOff
-router
-  .route('/days-off')
-  .patch(
-    auth(ROLE.ARTIST),
-    validateRequest(ArtistValidation.setOffDaysSchema),
-    ArtistController.setArtistTimeOff
-  );
 
-// createConnectedAccountAndOnboardingLinkForArtist
+//createConnectedAccountAndOnboardingLinkForArtist
 router
   .route('/create-onboarding-account')
   .post(

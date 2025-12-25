@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import config from '../../config';
-import { asyncHandler } from '../../utils';
+import { AppError, asyncHandler } from '../../utils';
 import sendResponse from '../../utils/sendResponse';
 import { TServiceImages } from '../Service/service.interface';
 import { ArtistService } from './artist.service';
@@ -180,6 +180,17 @@ const updateArtistPortfolio = asyncHandler(async (req, res) => {
 // createArtistService
 const createArtistService = asyncHandler(async (req, res) => {
   const files = req.files as TServiceImages;
+  console.log({files:files});
+  console.log({payload: req.body})
+
+  if(files.thumbnail[0]){
+    throw new AppError(httpStatus.BAD_REQUEST, "Thumnail is required");
+  }
+
+  if(files.images.length && files.images.length > 2){
+     throw new AppError(httpStatus.BAD_REQUEST, "At least Two images must be uploaded");
+  }
+
   const result = await ArtistService.createArtistServiceIntoDB(req.user, req.body, files);
 
   sendResponse(res, {
@@ -279,30 +290,6 @@ const removeImage = asyncHandler(async (req, res) => {
   });
 });
 
-// saveArtistAvailability
-const saveArtistAvailability = asyncHandler(async (req, res) => {
-  const result = await ArtistService.saveArtistAvailabilityIntoDB(
-    req.user,
-    req.body
-  );
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Saved availability successfully!',
-    data: result,
-  });
-});
-
-// setArtistTimeOff
-const setArtistTimeOff = asyncHandler(async (req, res) => {
-  const result = await ArtistService.setArtistTimeOffIntoDB(req.user, req.body);
-
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'Time off updated successfully!',
-    data: result,
-  });
-});
 
 // createConnectedAccountAndOnboardingLinkForArtist
 const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
@@ -380,8 +367,6 @@ export const ArtistController = {
   updateArtistServiceById,
   deleteArtistService,
   removeImage,
-  saveArtistAvailability,
-  setArtistTimeOff,
   createConnectedAccountAndOnboardingLinkForArtist,
   deleteAccount,
   getArtistDashboardPage,

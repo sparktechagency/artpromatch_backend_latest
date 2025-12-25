@@ -1,21 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from 'http-status';
 import { startSession, Types } from 'mongoose';
-import { TAvailability } from '../../schema/slotValidation';
 import { AppError } from '../../utils';
 import ArtistPreferences from '../ArtistPreferences/artistPreferences.model';
 import { IAuth } from '../Auth/auth.interface';
 import Auth from '../Auth/auth.model';
-import { formatDay, normalizeWeeklySchedule } from '../Schedule/schedule.utils';
 import {
   IService,
   TServiceImages,
   TServicePayload,
 } from '../Service/service.interface';
-import { IArtist } from './artist.interface';
 import Artist from './artist.model';
 import {
-  TSetOffDays,
   TUpdateArtistNotificationPayload,
   TUpdateArtistPayload,
   TUpdateArtistPreferencesPayload,
@@ -37,8 +33,6 @@ import Business from '../Business/business.model';
 import Folder from '../Folder/folder.model';
 import GuestSpot from '../GuestSpot/guestSpot.model';
 import Notification from '../notificationModule/notification.model';
-import { IWeeklySchedule } from '../Schedule/schedule.interface';
-import ArtistSchedule from '../Schedule/schedule.model';
 import Service from '../Service/service.model';
 
 const stripe = new Stripe(config.stripe.stripe_secret_key as string);
@@ -643,153 +637,6 @@ const removeImageFromDB = async (user: IAuth, filePath: string) => {
   return updatedArtist;
 };
 
-// saveArtistAvailabilityIntoDB
-const saveArtistAvailabilityIntoDB = async (
-  user: IAuth,
-  payload: TAvailability
-) => {
-  const { weeklySchedule: inputSchedule } = payload;
-
-  const artist: IArtist = await Artist.findOne({ auth: user._id }).select(
-    '_id'
-  );
-
-  if (!artist) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
-  }
-
-  let schedule = await ArtistSchedule.findOne({ artistId: artist._id });
-
-  const normalizedSchedule = normalizeWeeklySchedule(
-    inputSchedule,
-    schedule?.weeklySchedule
-  );
-
-  if (schedule) {
-    schedule.weeklySchedule = normalizedSchedule;
-  } else {
-    schedule = new ArtistSchedule({
-      artistId: artist._id,
-      weeklySchedule: normalizedSchedule,
-    });
-  }
-
-  await schedule.save();
-  const updatedSchedule: Partial<Record<keyof IWeeklySchedule, any>> = {};
-  for (const day of Object.keys(inputSchedule) as (keyof IWeeklySchedule)[]) {
-    updatedSchedule[day] = formatDay(schedule.weeklySchedule[day]);
-  }
-
-  return updatedSchedule;
-};
-
-// update time off
-const setArtistTimeOffIntoDB = async (user: IAuth, payload: TSetOffDays) => {
-  const artist = await Artist.findOne({ auth: user._id }).select('_id');
-  if (!artist) throw new AppError(httpStatus.NOT_FOUND, 'Artist not found');
-
-  const { startDate, endDate } = payload;
-
-  if (endDate <= startDate) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'End date must be after start date'
-    );
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const schedule = await ArtistSchedule.findOne({ _id: artist._id });
-  if (!schedule)
-    throw new AppError(httpStatus.NOT_FOUND, 'Artist schedule not found');
-
-  const existing = schedule.offDays;
-
-  /**
-   * Case 1: offDays already active (ongoing right now)
-   */
-  if (
-    existing?.startDate &&
-    existing.startDate < today &&
-    existing.endDate &&
-    today <= existing.endDate
-  ) {
-    if (endDate <= existing.endDate) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'End date must extend current Off Days'
-      );
-    }
-
-    const hasBookings = await Booking.exists({
-      artist: artist._id,
-      originalDate: { $gte: existing.endDate, $lt: endDate },
-      status: { $in: ['pending', 'confirmed'] },
-    });
-
-    if (hasBookings) {
-      throw new AppError(
-        httpStatus.CONFLICT,
-        'Cannot extend Off Days — bookings exist in new range'
-      );
-    }
-
-    schedule.offDays.endDate = endDate;
-    await schedule.save();
-    return schedule.offDays;
-  }
-
-  /**
-   * Case 2: Old offDays expired — override if no conflicts
-   */
-  if (existing?.endDate && existing.endDate < today) {
-    const hasBookings = await Booking.exists({
-      artist: artist._id,
-      originalDate: { $gte: startDate, $lt: endDate },
-      status: { $in: ['pending', 'confirmed'] },
-    });
-
-    if (hasBookings) {
-      throw new AppError(
-        httpStatus.CONFLICT,
-        'Cannot override expired Off Days — bookings exist in new period'
-      );
-    }
-
-    schedule.offDays = { startDate, endDate };
-    await schedule.save();
-    return schedule.offDays;
-  }
-
-  /**
-   * Case 3: New future offDays
-   */
-  if (startDate < today) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Start date cannot be in the past'
-    );
-  }
-
-  const hasBookings = await Booking.exists({
-    artist: artist._id,
-    originalDate: { $gte: startDate, $lt: endDate },
-    status: { $in: ['pending', 'confirmed'] },
-  });
-
-  if (hasBookings) {
-    throw new AppError(
-      httpStatus.CONFLICT,
-      'Cannot set Off Days — bookings exist in this period'
-    );
-  }
-
-  schedule.offDays = { startDate, endDate };
-  await schedule.save();
-  return schedule.offDays;
-};
-
 const getArtistMonthlySchedule = async (
   user: IAuth,
   year: number,
@@ -975,7 +822,7 @@ const createArtistServiceIntoDB = async (
   files: TServiceImages
 ): Promise<IService> => {
   const artist = await Artist.findOne({ auth: user._id });
-
+  console.log({ payload: payload });
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
@@ -1020,6 +867,15 @@ const createArtistServiceIntoDB = async (
   };
 
   const service = await Service.create(serviceData);
+  if (!service) {
+    if (thumbnail) {
+      await deleteImageFromCloudinary(thumbnail as string);
+    }
+    if (images.length > 0) {
+      images?.map(async (image) => await deleteImageFromCloudinary(image));
+    }
+    throw new AppError(httpStatus.BAD_REQUEST, "Failed to create service")
+  }
 
   return service;
 };
@@ -1347,8 +1203,6 @@ export const ArtistService = {
   updateArtistServiceByIdIntoDB,
   deleteArtistServiceFromDB,
   removeImageFromDB,
-  saveArtistAvailabilityIntoDB,
-  setArtistTimeOffIntoDB,
   createConnectedAccountAndOnboardingLinkForArtistIntoDb,
   createArtistServiceIntoDB,
 };
