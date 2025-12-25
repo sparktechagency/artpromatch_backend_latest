@@ -18,6 +18,8 @@ export const stripeWebhookHandler = asyncHandler(
     const sig = req.headers['stripe-signature'] as string;
     const webhookSecret = config.stripe.stripe_webhook_secret as string;
 
+    console.log('webhookSecret', webhookSecret);
+
     let event: Stripe.Event;
 
     try {
@@ -32,6 +34,8 @@ export const stripeWebhookHandler = asyncHandler(
       }
       throw new AppError(httpStatus.BAD_REQUEST, 'Invalid webhook signature');
     }
+
+    console.log('Event', event?.type);
 
     switch (event.type) {
       case 'checkout.session.completed': {
