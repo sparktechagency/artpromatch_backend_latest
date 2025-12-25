@@ -128,7 +128,7 @@ export const notificationTemplates: Record<
       'New Booking Request',
       `Hello ${fullName}, you have a new booking request for <b>${serviceName}</b>. Please review and confirm.`,
       'View Booking',
-      `${config.client_url}/bookings`
+      `${config.artist_domain_url}/bookings`
     );
   },
 
@@ -138,7 +138,7 @@ export const notificationTemplates: Record<
       'Booking Confirmed',
       `Hi ${fullName}, your booking for <b>${serviceName}</b> on <b>${date}</b> has been confirmed.`,
       'View Details',
-      `${config.client_url}/bookings`
+      `${config.client_domain_url}/bookings`
     );
   },
 
@@ -177,7 +177,7 @@ export const notificationTemplates: Record<
         fullName ? ' ' + fullName : ''
       }, you have a new request to join the studio. Please review the details.`,
       'Review Request',
-      `${config.client_url}/studio-requests`
+      `${config.client_domain_url}/studio-requests`
     );
   },
 };

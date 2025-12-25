@@ -169,12 +169,12 @@ const handlePaymentIntentAuthorized = async (
       clientInfo: {
         fullName: client?.auth?.fullName,
         email: client?.auth?.email,
-        phone: client?.auth?.phoneNumber || "",
+        phone: client?.auth?.phoneNumber || '',
       },
       artistInfo: {
         fullName: artist?.auth?.fullName,
         email: artist?.auth?.email,
-        phone: artist?.auth?.phoneNumber || "",
+        phone: artist?.auth?.phoneNumber || '',
       },
       payment: {
         client: {
@@ -1149,6 +1149,7 @@ const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
     otp,
     client.auth.fullName
   );
+  
   return otp;
 };
 
