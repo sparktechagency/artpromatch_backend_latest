@@ -93,12 +93,12 @@ const bookingSchema = new Schema<IBooking>(
     clientInfo: {
       fullName: { type: String, required: true },
       email: { type: String, required: true },
-      phone: { type: String, required: true },
+      phone: { type: String, required: false },
     },
     artistInfo: {
       fullName: { type: String, required: true },
       email: { type: String, required: true },
-      phone: { type: String, required: true },
+      phone: { type: String, required: false },
     },
 
     scheduledDurationInMin: { type: Number, default: 0 },
