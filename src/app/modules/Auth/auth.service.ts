@@ -1017,7 +1017,7 @@ const changePasswordIntoDB = async (
   );
 
   if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not exists!');
+    throw new AppError(httpStatus.NOT_FOUND, 'User not exists');
   }
 
   if (user.isSocialLogin) {
