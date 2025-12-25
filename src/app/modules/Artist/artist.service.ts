@@ -822,7 +822,7 @@ const createArtistServiceIntoDB = async (
   files: TServiceImages
 ): Promise<IService> => {
   const artist = await Artist.findOne({ auth: user._id });
-
+  
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
@@ -857,7 +857,7 @@ const createArtistServiceIntoDB = async (
     );
     thumbnail = thumbResult.secure_url;
   }
-
+  
   // Save to database
   const serviceData = {
     ...payload,
@@ -865,7 +865,7 @@ const createArtistServiceIntoDB = async (
     thumbnail,
     images,
   };
-
+  
   const service = await Service.create(serviceData);
   if (!service) {
     if (thumbnail) {

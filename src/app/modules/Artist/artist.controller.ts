@@ -125,8 +125,6 @@ const updateArtistFlashes = asyncHandler(async (req, res) => {
   });
 });
 
-
-
 // boost profile
 const boostProfile = asyncHandler(async (req, res) => {
   const result = await ArtistService.boostProfileIntoDb(req.user);
@@ -181,16 +179,25 @@ const updateArtistPortfolio = asyncHandler(async (req, res) => {
 const createArtistService = asyncHandler(async (req, res) => {
   const files = req.files as TServiceImages;
 
-
-  if(!files.thumbnail[0]){
-    throw new AppError(httpStatus.BAD_REQUEST, "Thumbnail is required");
+  if (!files.thumbnail[0]) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Thumbnail is required');
   }
 
-  if(files.images.length && files.images.length > 2){
-     throw new AppError(httpStatus.BAD_REQUEST, "At least Two images must be uploaded");
+  if (
+    files.images.length &&
+    (files.images.length < 2 || files.images.length > 5)
+  ) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Images must be between two to five'
+    );
   }
 
-  const result = await ArtistService.createArtistServiceIntoDB(req.user, req.body, files);
+  const result = await ArtistService.createArtistServiceIntoDB(
+    req.user,
+    req.body,
+    files
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -201,7 +208,10 @@ const createArtistService = asyncHandler(async (req, res) => {
 
 // createArtistService
 const getArtistServiceDetails = asyncHandler(async (req, res) => {
-  const result = await ArtistService.getServiceDetailsFromDB(req.user, req.params.id);
+  const result = await ArtistService.getServiceDetailsFromDB(
+    req.user,
+    req.params.id
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -288,7 +298,6 @@ const removeImage = asyncHandler(async (req, res) => {
     data: result,
   });
 });
-
 
 // createConnectedAccountAndOnboardingLinkForArtist
 const createConnectedAccountAndOnboardingLinkForArtist = asyncHandler(
