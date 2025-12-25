@@ -929,8 +929,8 @@ const boostProfileIntoDb = async (user: IAuth) => {
           boostId: boost[0]?._id?.toString(),
           artistId: artist._id.toString(),
         },
-        success_url: `${config.client_url}/boost/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${config.client_url}/boost/cancel`,
+        success_url: `${config.artist_domain_url}/boost/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${config.artist_domain_url}/boost/cancel`,
       },
       { idempotencyKey: `boost_${boost[0].id.toString()}` }
     );
