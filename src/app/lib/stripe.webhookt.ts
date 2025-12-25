@@ -70,6 +70,12 @@ export const stripeWebhookHandler = asyncHandler(
 
       case 'payment_intent.amount_capturable_updated': {
         const pi = event.data.object as Stripe.PaymentIntent;
+        const booking = await Booking.findOne({
+          'payment.client.paymentIntentId': pi,
+        });
+        if (booking) {
+          return;
+        }
         await BookingService.handlePaymentIntentAuthorized(pi);
 
         break;

@@ -33,8 +33,8 @@ const createServiceSchema = z.object({
 
     description: z
       .string({ required_error: 'Description is required' })
-      .min(500, { message: 'Description must be at least 500 characters' })
-      .max(1500, { message: 'Description must be at most 1500 characters' }),
+      .min(250, { message: 'Description must be at least 250 characters' })
+      .max(1200, { message: 'Description must be at most 1200 characters' }),
 
     bodyLocation: z.nativeEnum(TattooBodyParts, {
       required_error: 'Body Location is required',
@@ -59,8 +59,8 @@ const updateServiceSchema = z.object({
 
     description: z
       .string({ required_error: 'Description is required' })
-      .min(500, { message: 'Description must be at least 500 characters' })
-      .max(1500, { message: 'Description must be at most 1500 characters' }),
+      .min(250, { message: 'Description must be at least 250 characters' })
+      .max(1200, { message: 'Description must be at most 1200 characters' }),
 
     bodyLocation: z.nativeEnum(TattooBodyParts, {
       required_error: 'Body Location is required',
