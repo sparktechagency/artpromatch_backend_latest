@@ -822,7 +822,7 @@ const createArtistServiceIntoDB = async (
   files: TServiceImages
 ): Promise<IService> => {
   const artist = await Artist.findOne({ auth: user._id });
-  console.log({ payload: payload });
+
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
