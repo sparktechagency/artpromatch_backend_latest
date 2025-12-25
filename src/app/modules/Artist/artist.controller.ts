@@ -180,11 +180,10 @@ const updateArtistPortfolio = asyncHandler(async (req, res) => {
 // createArtistService
 const createArtistService = asyncHandler(async (req, res) => {
   const files = req.files as TServiceImages;
-  console.log({files:files});
-  console.log({payload: req.body})
 
-  if(files.thumbnail[0]){
-    throw new AppError(httpStatus.BAD_REQUEST, "Thumnail is required");
+
+  if(!files.thumbnail[0]){
+    throw new AppError(httpStatus.BAD_REQUEST, "Thumbnail is required");
   }
 
   if(files.images.length && files.images.length > 2){
