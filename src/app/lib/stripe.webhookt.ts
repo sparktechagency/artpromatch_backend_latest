@@ -70,12 +70,16 @@ export const stripeWebhookHandler = asyncHandler(
 
       case 'payment_intent.amount_capturable_updated': {
         const pi = event.data.object as Stripe.PaymentIntent;
+
         const booking = await Booking.findOne({
-          'payment.client.paymentIntentId': pi,
+          'payment.client.paymentIntentId': pi.id,
         });
+
         if (booking) {
+          console.warn('Booking already exists for PI', pi.id);
           return;
         }
+
         await BookingService.handlePaymentIntentAuthorized(pi);
 
         break;
