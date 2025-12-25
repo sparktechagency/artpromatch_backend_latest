@@ -169,12 +169,12 @@ const handlePaymentIntentAuthorized = async (
       clientInfo: {
         fullName: client?.auth?.fullName,
         email: client?.auth?.email,
-        phone: client?.auth?.phoneNumber,
+        phone: client?.auth?.phoneNumber || "",
       },
       artistInfo: {
         fullName: artist?.auth?.fullName,
         email: artist?.auth?.email,
-        phone: artist?.auth?.phoneNumber,
+        phone: artist?.auth?.phoneNumber || "",
       },
       payment: {
         client: {
@@ -994,7 +994,7 @@ const confirmBookingByArtist = async (bookingId: string) => {
   if (!user?.auth) {
     throw new Error('User auth not found');
   }
-  
+
   if (client?.notificationChannels.includes('app')) {
     sendNotificationBySocket({
       title: 'Confirmed Booking',

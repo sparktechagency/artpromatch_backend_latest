@@ -49,12 +49,12 @@ export interface IBooking extends Document {
   clientInfo: {
     fullName: string;
     email: string;
-    phone: string;
+    phone?: string;
   };
   artistInfo: {
     fullName: string;
     email: string;
-    phone: string;
+    phone?: string;
   };
   sessions: IBookingSession[];
   scheduledDurationInMin: number;
