@@ -3,11 +3,22 @@ import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
 import { FaqService } from './faq.service';
 
-const createFaq = asyncHandler(async (req, res) => {
-  const result = await FaqService.createFaqintoDb(req.body);
+const createFaqByAdmin = asyncHandler(async (req, res) => {
+  const result = await FaqService.createFaqByAdminIntoDb(req.body);
+
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     message: 'Frequently Asked Question Created Successfully!',
+    data: result,
+  });
+});
+
+const createFaqByUser = asyncHandler(async (req, res) => {
+  const result = await FaqService.createFaqByUserIntoDb(req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    message: 'Question Created Successfully!',
     data: result,
   });
 });
@@ -51,7 +62,8 @@ const deleteFaq = asyncHandler(async (req, res) => {
 });
 
 export const faqController = {
-  createFaq,
+  createFaqByAdmin,
+  createFaqByUser,
   updateFaq,
   deleteFaq,
   getAllFaqForAdmin,

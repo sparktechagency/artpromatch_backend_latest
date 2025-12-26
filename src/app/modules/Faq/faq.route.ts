@@ -6,12 +6,18 @@ import { FaqValidation } from './faq.zod.validation';
 
 const router = Router();
 
-// createFaq
+// createFaqByAdmin
 router.post(
   '/create',
   auth(ROLE.ADMIN, ROLE.SUPER_ADMIN),
-  validateRequest(FaqValidation.createFaqSchema),
-  faqController.createFaq
+  validateRequest(FaqValidation.createFaqSchemaByAdmin),
+  faqController.createFaqByAdmin
+);
+
+router.post(
+  '/create/by-user',
+  validateRequest(FaqValidation.createFaqSchemaByUser),
+  faqController.createFaqByUser
 );
 
 // getAllFaqForAdmin

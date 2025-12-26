@@ -5,8 +5,19 @@ import { Faq } from './faq.model';
 import { TCreateFaqPayload, TUpdatedFaqPayload } from './faq.zod.validation';
 import { PipelineStage } from 'mongoose';
 
-const createFaqintoDb = async (payload: TCreateFaqPayload) => {
+const createFaqByAdminIntoDb = async (payload: TCreateFaqPayload) => {
+  payload.isPublished = true;
+
   const faq = await Faq.create(payload);
+
+  return faq;
+};
+
+const createFaqByUserIntoDb = async (payload: TCreateFaqPayload) => {
+  payload.isPublished = false;
+
+  const faq = await Faq.create(payload);
+
   return faq;
 };
 
@@ -81,7 +92,8 @@ const deleteFaqFromDb = async (id: string) => {
 };
 
 export const FaqService = {
-  createFaqintoDb,
+  createFaqByAdminIntoDb,
+  createFaqByUserIntoDb,
   updateFaqIntoDb,
   deleteFaqFromDb,
   getAllFaqForAdmin,
