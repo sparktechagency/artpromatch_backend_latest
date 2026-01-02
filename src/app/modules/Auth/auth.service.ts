@@ -235,6 +235,7 @@ const signinIntoDB = async (payload: {
     await user.save();
 
     return {
+      status: 'unverified',
       userEmail: payload.email,
       message: 'Verify your account with the new OTP in your phone!',
     };
