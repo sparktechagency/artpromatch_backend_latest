@@ -1407,14 +1407,14 @@ const deleteSpecificUserAccount = async (
 
     const currentUser = await Auth.findOne({
       _id: user._id,
-      email: email,
+      email,
     }).session(session);
 
     if (!currentUser) {
       throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
     }
 
-    const isPasswordCorrect = currentUser.isPasswordMatched(password);
+    const isPasswordCorrect = await currentUser.isPasswordMatched(password);
 
     if (!isPasswordCorrect) {
       throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials');
