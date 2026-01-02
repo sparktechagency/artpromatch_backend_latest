@@ -252,7 +252,10 @@ const signinIntoDB = async (payload: {
   if (!isPasswordCorrect) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials!');
   }
-
+  
+  user.isDeactivated = false;
+  user.deactivationReason = "";
+  user.deactivatedAt = null;
   user.fcmToken = payload.fcmToken;
   await user.save();
 

@@ -546,6 +546,8 @@ const updateArtistServiceByIdIntoDB = async (
   const images = [...keptImages, ...uploadedImages];
 
   /* -------------------- UPDATE -------------------- */
+
+  
   const result = await Service.findByIdAndUpdate(
     id,
     {

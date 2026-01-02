@@ -325,6 +325,8 @@ const deleteAccount = asyncHandler(async (req, res) => {
   });
 });
 
+
+
 // get availibility
 // const getAvailabilityExcludingTimeOff = asyncHandler(async (req, res) => {
 //   const artistId = req.params.id;
