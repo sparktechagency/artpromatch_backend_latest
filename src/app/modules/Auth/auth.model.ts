@@ -128,6 +128,7 @@ authSchema.statics.isUserExistsByEmail = async function (
 authSchema.methods.isPasswordMatched = async function (
   plainTextPassword: string
 ): Promise<boolean> {
+  
   return await bcrypt.compare(plainTextPassword, this.password);
 };
 
