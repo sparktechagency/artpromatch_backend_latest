@@ -1358,13 +1358,15 @@ const deactivateUserAccountFromDB = async (
 ) => {
   const { email, password, deactivationReason } = payload;
 
-  const currentUser = await Auth.findOne({ _id: user._id, email: email });
-
+  const currentUser = await Auth.findOne({
+    _id: user._id,
+    email,
+  }).select('+password'); 
   if (!currentUser) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
 
-  const isPasswordCorrect = currentUser.isPasswordMatched(password);
+  const isPasswordCorrect = await currentUser.isPasswordMatched(password);
 
   if (!isPasswordCorrect) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials');
@@ -1375,15 +1377,19 @@ const deactivateUserAccountFromDB = async (
     {
       $set: {
         isDeactivated: true,
-        deactivationReason: deactivationReason,
+        deactivationReason,
         deactivatedAt: new Date(),
       },
     },
-    { new: true, select: 'email fullName isDeactivated deactivationReason' }
+    {
+      new: true,
+      select: 'email fullName isDeactivated deactivationReason',
+    }
   );
 
   return result;
 };
+
 
 // 15. deleteSpecificUserAccount
 const deleteSpecificUserAccount = async (
@@ -1402,14 +1408,14 @@ const deleteSpecificUserAccount = async (
 
     const currentUser = await Auth.findOne({
       _id: user._id,
-      email: email,
+      email,
     }).session(session);
 
     if (!currentUser) {
       throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
     }
 
-    const isPasswordCorrect = currentUser.isPasswordMatched(password);
+    const isPasswordCorrect = await currentUser.isPasswordMatched(password);
 
     if (!isPasswordCorrect) {
       throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials');
