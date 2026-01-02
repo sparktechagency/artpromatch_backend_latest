@@ -21,7 +21,7 @@ export interface IAuth extends Document {
   isVerifiedByOTP: boolean;
   isDeactivated: boolean;
   deactivationReason: string;
-  deactivatedAt: Date;
+  deactivatedAt: Date | null;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: Date;
