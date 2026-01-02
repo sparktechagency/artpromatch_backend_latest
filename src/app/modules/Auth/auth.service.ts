@@ -1406,10 +1406,16 @@ const deleteSpecificUserAccount = async (
 
     const { email, password } = payload;
 
+    if (!password) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Password is required');
+    }
+
     const currentUser = await Auth.findOne({
       _id: user._id,
       email,
-    }).session(session);
+    })
+      .select('+password') // ✅ FIX #1
+      .session(session);
 
     if (!currentUser) {
       throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -1421,19 +1427,21 @@ const deleteSpecificUserAccount = async (
       throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials');
     }
 
+    // Soft-delete flags
     currentUser.isDeleted = true;
     currentUser.isDeactivated = false;
     currentUser.isProfile = false;
 
-    if (user.role === ROLE.ARTIST || ROLE.BUSINESS) {
+    // ✅ FIX #2
+    if (user.role === ROLE.ARTIST || user.role === ROLE.BUSINESS) {
       currentUser.isActive = false;
     }
 
-    if (currentUser.deactivationReason) {
-      currentUser.deactivationReason = '';
-    }
+    currentUser.deactivationReason = '';
 
     await currentUser.save({ session });
+
+    // ===== ROLE-BASED CLEANUP =====
 
     if (user.role === ROLE.CLIENT) {
       const client = await Client.findOne({ auth: user._id })
@@ -1441,85 +1449,45 @@ const deleteSpecificUserAccount = async (
         .session(session);
 
       if (client) {
-        const result = await Client.deleteOne({ _id: client._id }, { session });
-
-        if (result.deletedCount === 0)
-          throw new AppError(
-            httpStatus.INTERNAL_SERVER_ERROR,
-            'Client deletion failed!'
-          );
-
-        const prefResult = await ClientPreferences.deleteOne(
+        await Client.deleteOne({ _id: client._id }, { session });
+        await ClientPreferences.deleteOne(
           { clientId: client._id },
           { session }
         );
-
-        if (prefResult.deletedCount === 0)
-          throw new AppError(
-            httpStatus.INTERNAL_SERVER_ERROR,
-            'Client deletion failed here!'
-          );
       }
-    } else if (user.role === ROLE.ARTIST) {
+    }
+
+    if (user.role === ROLE.ARTIST) {
       const artist = await Artist.findOne({ auth: user._id })
         .select('_id')
         .session(session);
 
       if (artist) {
-        const result = await Artist.deleteOne({ _id: artist._id }, { session });
-        if (result.deletedCount === 0) {
-          throw new AppError(
-            httpStatus.INTERNAL_SERVER_ERROR,
-            'Artist deletion failed!'
-          );
-        }
-
-        const prefResult = await ArtistPreferences.deleteOne(
+        await Artist.deleteOne({ _id: artist._id }, { session });
+        await ArtistPreferences.deleteOne(
           { artistId: artist._id },
           { session }
         );
-
-        if (prefResult.deletedCount === 0) {
-          throw new AppError(
-            httpStatus.INTERNAL_SERVER_ERROR,
-            'Artist deletion failed here!'
-          );
-        }
       }
-    } else if (user.role === ROLE.BUSINESS) {
+    }
+
+    if (user.role === ROLE.BUSINESS) {
       const business = await Business.findOne({ auth: user._id })
         .select('_id')
         .session(session);
 
       if (business) {
-        const result = await BusinessPreferences.deleteOne(
+        await BusinessPreferences.deleteOne(
           { businessId: business._id },
           { session }
         );
-
-        if (result.deletedCount === 0) {
-          throw new AppError(
-            httpStatus.INTERNAL_SERVER_ERROR,
-            'Business deletion failed!'
-          );
-        }
-
-        const prefResult = await Business.deleteOne(
-          { _id: business._id },
-          { session }
-        );
-
-        if (prefResult.deletedCount === 0) {
-          throw new AppError(
-            httpStatus.INTERNAL_SERVER_ERROR,
-            'Business deletion failed here!'
-          );
-        }
+        await Business.deleteOne({ _id: business._id }, { session });
       }
     }
 
     await session.commitTransaction();
-    await session.endSession();
+    session.endSession();
+
     return {
       email: currentUser.email,
       id: currentUser._id,
@@ -1527,10 +1495,11 @@ const deleteSpecificUserAccount = async (
     };
   } catch (error) {
     await session.abortTransaction();
-    await session.endSession();
+    session.endSession();
     throw error;
   }
 };
+
 
 // 16. getNewAccessTokenFromServer
 const getNewAccessTokenFromServer = async (refreshToken: string) => {
