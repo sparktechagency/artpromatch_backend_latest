@@ -255,7 +255,7 @@ const signinIntoDB = async (payload: {
   
   user.isDeactivated = false;
   user.deactivationReason = "";
-  user. deactivatedAt = null;
+  user.deactivatedAt = null;
   user.fcmToken = payload.fcmToken;
   await user.save();
 
