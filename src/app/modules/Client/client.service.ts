@@ -279,15 +279,31 @@ const getAllNormalServicesFromDB = async (
     const [longitude, latitude] = client.location.coordinates; // Client longitude and latitude
     const radius = client.radius; // Client's search radius (in kilometers)
 
-    // Step 2: Extract filters
-    const artistType =
+    // Step 2: Extract filters (default from client when not provided)
+    const queryArtistType =
       (query.artistType as string) || (query.type as string) || '';
 
-    const tattooCategory = (query.tattooCategory as string) || '';
-    const tattooCategories = tattooCategory
-      .split(',')
-      .map((c) => c.trim())
-      .filter(Boolean);
+    const effectiveArtistType =
+      queryArtistType !== ''
+        ? queryArtistType === 'All'
+          ? ''
+          : queryArtistType
+        : (client.preferredArtistType as string) || '';
+
+    const queryTattooCategory = (query.tattooCategory as string) || '';
+
+    const tattooCategories =
+      queryTattooCategory !== ''
+        ? queryTattooCategory === 'All'
+          ? []
+          : queryTattooCategory
+              .split(',')
+              .map((c) => c.trim())
+              .filter(Boolean)
+        : Array.isArray(client.favoriteTattoos)
+        ? (client.favoriteTattoos as string[])
+        : [];
+
     const searchTerm = (query.searchTerm as string) || '';
 
     // Step 3: Pagination
@@ -298,8 +314,8 @@ const getAllNormalServicesFromDB = async (
     // Step 4: Artist filter (type + category)
     const artistFilter: Record<string, unknown> = {};
 
-    if (artistType && artistType !== 'All') {
-      artistFilter.type = { $regex: new RegExp(artistType, 'i') };
+    if (effectiveArtistType && effectiveArtistType !== 'All') {
+      artistFilter.type = { $regex: new RegExp(effectiveArtistType, 'i') };
     }
 
     if (tattooCategories.length && !tattooCategories.includes('All')) {
@@ -344,13 +360,14 @@ const getAllNormalServicesFromDB = async (
     // If no artists found within radius, return empty result
     if (!artistIds.length) {
       return {
-        data: [],
-        meta: {
-          page,
-          limit,
-          total: 0,
-          totalPage: 0,
+        data: {
+          sortedServices: [],
+          favoriteTattoos: Array.isArray(client.favoriteTattoos)
+            ? (client.favoriteTattoos as string[])
+            : [],
+          // preferredArtistType: (client.preferredArtistType as string) || '',
         },
+        meta: { page, limit, total: 0, totalPage: 0 },
       };
     }
 
@@ -449,13 +466,14 @@ const getAllNormalServicesFromDB = async (
     const totalPage = Math.ceil(total / limit);
 
     return {
-      data: sortedServices,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPage,
+      data: {
+        sortedServices,
+        favoriteTattoos: Array.isArray(client.favoriteTattoos)
+          ? (client.favoriteTattoos as string[])
+          : [],
+        // preferredArtistType: (client.preferredArtistType as string) || '',
       },
+      meta: { page, limit, total, totalPage },
     };
   }
 
@@ -508,7 +526,7 @@ const getAllNormalServicesFromDB = async (
     return 0;
   });
 
-  return { data: sortedData, meta };
+  return { data: { sortedServices: sortedData }, meta };
 };
 
 // getAllGuestServicesFromDB
@@ -550,13 +568,30 @@ const getAllGuestServicesFromDB = async (
   }
 
   // Step 2: Extract filters
-  const artistType =
+  const queryArtistType =
     (query.artistType as string) || (query.type as string) || '';
-  const tattooCategory = (query.tattooCategory as string) || '';
-  const tattooCategories = tattooCategory
-    .split(',')
-    .map((c) => c.trim())
-    .filter(Boolean);
+
+  const effectiveArtistType =
+    queryArtistType !== ''
+      ? queryArtistType === 'All'
+        ? ''
+        : queryArtistType
+      : (client.preferredArtistType as string) || '';
+
+  const queryTattooCategory = (query.tattooCategory as string) || '';
+
+  const tattooCategories =
+    queryTattooCategory !== ''
+      ? queryTattooCategory === 'All'
+        ? []
+        : queryTattooCategory
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean)
+      : Array.isArray(client.favoriteTattoos)
+      ? (client.favoriteTattoos as string[])
+      : [];
+
   const searchTerm = (query.searchTerm as string) || '';
 
   // Step 3: Pagination
@@ -567,8 +602,8 @@ const getAllGuestServicesFromDB = async (
   // Step 4: Artist filter (type + category)
   const artistFilter: Record<string, unknown> = {};
 
-  if (artistType && artistType !== 'All') {
-    artistFilter.type = { $regex: new RegExp(artistType, 'i') };
+  if (effectiveArtistType && effectiveArtistType !== 'All') {
+    artistFilter.type = { $regex: new RegExp(effectiveArtistType, 'i') };
   }
 
   if (tattooCategories.length && !tattooCategories.includes('All')) {
@@ -598,13 +633,14 @@ const getAllGuestServicesFromDB = async (
   // If no guest artists within radius, return empty result
   if (!artistIds.length) {
     return {
-      data: [],
-      meta: {
-        page,
-        limit,
-        total: 0,
-        totalPage: 0,
+      data: {
+        sortedServices: [],
+        favoriteTattoos: Array.isArray(client.favoriteTattoos)
+          ? (client.favoriteTattoos as string[])
+          : [],
+        // preferredArtistType: (client.preferredArtistType as string) || '',
       },
+      meta: { page, limit, total: 0, totalPage: 0 },
     };
   }
 
@@ -715,7 +751,7 @@ const getAllGuestServicesFromDB = async (
   const totalPage = Math.ceil(total / limit);
 
   return {
-    data: sortedServices,
+    data: { sortedServices, favoriteTattoos: client.favoriteTattoos },
     meta: {
       page,
       limit,
