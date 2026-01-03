@@ -288,7 +288,7 @@ const getAllNormalServicesFromDB = async (
         ? queryArtistType === 'All'
           ? ''
           : queryArtistType
-        : (client.preferredArtistType as string) || '';
+        : '';
 
     const queryTattooCategory = (query.tattooCategory as string) || '';
 
@@ -357,6 +357,22 @@ const getAllNormalServicesFromDB = async (
     );
     const artistIds = availableArtists.map((a) => a._id);
 
+    // Collect available expertise within radius ONLY (no artist/type/category filters)
+    const radiusOnlyArtists = await Artist.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [longitude, latitude] },
+          distanceField: 'distance',
+          maxDistance: radius * 1000,
+          spherical: true,
+        },
+      },
+      { $project: { _id: 1, expertise: 1 } },
+    ]);
+    const availableExpertise = Array.from(
+      new Set(radiusOnlyArtists.flatMap((a) => a?.expertise || []))
+    );
+
     // If no artists found within radius, return empty result
     if (!artistIds.length) {
       return {
@@ -365,6 +381,7 @@ const getAllNormalServicesFromDB = async (
           favoriteTattoos: Array.isArray(client.favoriteTattoos)
             ? (client.favoriteTattoos as string[])
             : [],
+          availableExpertise,
           // preferredArtistType: (client.preferredArtistType as string) || '',
         },
         meta: { page, limit, total: 0, totalPage: 0 },
@@ -471,6 +488,7 @@ const getAllNormalServicesFromDB = async (
         favoriteTattoos: Array.isArray(client.favoriteTattoos)
           ? (client.favoriteTattoos as string[])
           : [],
+        availableExpertise,
         // preferredArtistType: (client.preferredArtistType as string) || '',
       },
       meta: { page, limit, total, totalPage },
@@ -576,7 +594,7 @@ const getAllGuestServicesFromDB = async (
       ? queryArtistType === 'All'
         ? ''
         : queryArtistType
-      : (client.preferredArtistType as string) || '';
+      : '';
 
   const queryTattooCategory = (query.tattooCategory as string) || '';
 
@@ -630,6 +648,22 @@ const getAllGuestServicesFromDB = async (
   );
   const artistIds = artists.map((a) => a._id);
 
+  // Collect available expertise within radius ONLY (no artist/type/category filters)
+  const guestRadiusOnlyArtists = await Artist.aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [longitude, latitude] },
+        distanceField: 'distance',
+        maxDistance: radius * 1000,
+        spherical: true,
+      },
+    },
+    { $project: { _id: 1, expertise: 1 } },
+  ]);
+  const guestAvailableExpertise = Array.from(
+    new Set(guestRadiusOnlyArtists.flatMap((a) => a?.expertise || []))
+  );
+
   // If no guest artists within radius, return empty result
   if (!artistIds.length) {
     return {
@@ -638,6 +672,7 @@ const getAllGuestServicesFromDB = async (
         favoriteTattoos: Array.isArray(client.favoriteTattoos)
           ? (client.favoriteTattoos as string[])
           : [],
+        availableExpertise: guestAvailableExpertise,
         // preferredArtistType: (client.preferredArtistType as string) || '',
       },
       meta: { page, limit, total: 0, totalPage: 0 },
@@ -751,7 +786,11 @@ const getAllGuestServicesFromDB = async (
   const totalPage = Math.ceil(total / limit);
 
   return {
-    data: { sortedServices, favoriteTattoos: client.favoriteTattoos },
+    data: {
+      sortedServices,
+      favoriteTattoos: client.favoriteTattoos,
+      availableExpertise: guestAvailableExpertise,
+    },
     meta: {
       page,
       limit,

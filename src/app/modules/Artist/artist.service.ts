@@ -54,16 +54,16 @@ const getAllArtistsFromDB = async (query: Record<string, any>, user: IAuth) => {
 
     [lon, lat] = loggedInArtist.currentLocation.coordinates;
   } else if (user.role === ROLE.BUSINESS) {
-    const loggedInArtist = await Business.findOne({ auth: user._id });
+    const loggedInBusiness = await Business.findOne({ auth: user._id });
 
-    if (!loggedInArtist || !loggedInArtist.location) {
+    if (!loggedInBusiness || !loggedInBusiness.location) {
       throw new AppError(
         httpStatus.NOT_FOUND,
         'Logged in business location not found!'
       );
     }
 
-    [lon, lat] = loggedInArtist.location.coordinates;
+    [lon, lat] = loggedInBusiness.location.coordinates;
   }
 
   const page = Number(query.page) || 1;
@@ -163,8 +163,24 @@ const getAllArtistsFromDB = async (query: Record<string, any>, user: IAuth) => {
   // Step 8: Meta
   const totalPage = Math.ceil(total / limit);
 
+  // Step 9: Collect available expertise within radius ONLY (no other filters)
+  const radiusOnlyArtists = await Artist.aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [lon, lat] },
+        distanceField: 'distance',
+        spherical: true,
+      },
+    },
+    { $project: { _id: 1, expertise: 1 } },
+  ]);
+
+  const availableExpertise = Array.from(
+    new Set(radiusOnlyArtists.flatMap((a) => a?.expertise || []))
+  );
+
   return {
-    data: artists,
+    data: { artists, availableExpertise },
     meta: {
       total,
       totalPage,
