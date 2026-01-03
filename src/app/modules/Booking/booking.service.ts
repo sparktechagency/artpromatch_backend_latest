@@ -336,6 +336,7 @@ const getClientBookings = async (
             bodyPart: 1,
             price: 1,
             preferredDate: 1,
+            isReviewed:1,
             status: 1,
             paymentStatus: 1,
             sessions: {
@@ -471,6 +472,7 @@ const getArtistBookings = async (
             bodyPart: 1,
             price: 1,
             preferredDate: 1,
+            isReviewed:1,
             status: 1,
             paymentStatus: 1,
             sessions: {
@@ -914,6 +916,7 @@ const reviewAfterAServiceIsCompletedIntoDB = async (
     // booking review & rating
     booking.review = review;
     booking.rating = rating;
+    booking.isReviewed = true;
     await booking.save({ session });
 
     const newReview = await SecretReview.create(
@@ -1136,7 +1139,7 @@ const artistMarksCompletedIntoDb = async (user: IAuth, bookingId: string) => {
 
   // Generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
+  console.log({otp:otp})
   booking.otp = otp;
   booking.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
