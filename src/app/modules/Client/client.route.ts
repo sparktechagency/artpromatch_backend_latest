@@ -53,11 +53,6 @@ router
   .route('/guest-services')
   .get(auth(), ClientController.getAllGuestServices);
 
-// getAllServices
-router
-  .route('/all-services-for-business')
-  .get(auth(), ClientController.getAllServicesForBusiness);
-
 // updateClientRadius
 router
   .route('/radius')

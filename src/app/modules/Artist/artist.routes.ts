@@ -4,14 +4,15 @@ import { auth, validateRequest } from '../../middlewares';
 import { ROLE } from '../Auth/auth.constant';
 import { ArtistValidation } from './artist.validation';
 import { upload } from '../../lib';
-import { SlotValidation } from '../../schema/slotValidation';
 import { ArtistServiceValidation } from '../Service/service.zod';
 import { validateRequestFromFormData } from '../../middlewares/validateRequest';
 
 const router = Router();
 
 // getAllArtists
-router.route('/').get(auth(ROLE.ARTIST, ROLE.BUSINESS), ArtistController.getAllArtists);
+router
+  .route('/')
+  .get(auth(ROLE.ARTIST, ROLE.BUSINESS), ArtistController.getAllArtists);
 
 // getOwnArtistData
 router.route('/own').get(auth(ROLE.ARTIST), ArtistController.getOwnArtistData);
@@ -95,10 +96,9 @@ router.route('/service/create').post(
   ArtistController.createArtistService
 );
 
-router.route('/service/details/:id').get(
-  auth(ROLE.ARTIST),
-  ArtistController.getArtistServiceDetails
-);
+router
+  .route('/service/details/:id')
+  .get(auth(ROLE.ARTIST), ArtistController.getArtistServiceDetails);
 
 // getArtistDashboardPage
 router
@@ -131,7 +131,6 @@ router
   .route('/remove-image')
   .delete(auth(ROLE.ARTIST), ArtistController.removeImage);
 
-
 // getArtistSchedule
 router
   .route('/schedule')
@@ -156,7 +155,6 @@ router
 // router
 //   .route('/availability/:id')
 //   .get(ArtistController.getAvailabilityExcludingTimeOff)
-
 
 //createConnectedAccountAndOnboardingLinkForArtist
 router

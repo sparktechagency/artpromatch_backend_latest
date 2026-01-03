@@ -279,10 +279,31 @@ const getAllNormalServicesFromDB = async (
     const [longitude, latitude] = client.location.coordinates; // Client longitude and latitude
     const radius = client.radius; // Client's search radius (in kilometers)
 
-    // Step 2: Extract filters
-    const artistType =
+    // Step 2: Extract filters (default from client when not provided)
+    const queryArtistType =
       (query.artistType as string) || (query.type as string) || '';
-    const tattooCategory = (query.tattooCategory as string) || '';
+
+    const effectiveArtistType =
+      queryArtistType !== ''
+        ? queryArtistType === 'All'
+          ? ''
+          : queryArtistType
+        : (client.preferredArtistType as string) || '';
+
+    const queryTattooCategory = (query.tattooCategory as string) || '';
+
+    const tattooCategories =
+      queryTattooCategory !== ''
+        ? queryTattooCategory === 'All'
+          ? []
+          : queryTattooCategory
+              .split(',')
+              .map((c) => c.trim())
+              .filter(Boolean)
+        : Array.isArray(client.favoriteTattoos)
+        ? (client.favoriteTattoos as string[])
+        : [];
+
     const searchTerm = (query.searchTerm as string) || '';
 
     // Step 3: Pagination
@@ -293,12 +314,12 @@ const getAllNormalServicesFromDB = async (
     // Step 4: Artist filter (type + category)
     const artistFilter: Record<string, unknown> = {};
 
-    if (artistType && artistType !== 'All') {
-      artistFilter.type = { $regex: new RegExp(artistType, 'i') };
+    if (effectiveArtistType && effectiveArtistType !== 'All') {
+      artistFilter.type = { $regex: new RegExp(effectiveArtistType, 'i') };
     }
 
-    if (tattooCategory && tattooCategory !== 'All') {
-      artistFilter.expertise = { $in: [tattooCategory] };
+    if (tattooCategories.length && !tattooCategories.includes('All')) {
+      artistFilter.expertise = { $in: tattooCategories };
     }
 
     // Step 5: Get nearby artists matching both filters
@@ -339,13 +360,14 @@ const getAllNormalServicesFromDB = async (
     // If no artists found within radius, return empty result
     if (!artistIds.length) {
       return {
-        data: [],
-        meta: {
-          page,
-          limit,
-          total: 0,
-          totalPage: 0,
+        data: {
+          sortedServices: [],
+          favoriteTattoos: Array.isArray(client.favoriteTattoos)
+            ? (client.favoriteTattoos as string[])
+            : [],
+          // preferredArtistType: (client.preferredArtistType as string) || '',
         },
+        meta: { page, limit, total: 0, totalPage: 0 },
       };
     }
 
@@ -444,13 +466,14 @@ const getAllNormalServicesFromDB = async (
     const totalPage = Math.ceil(total / limit);
 
     return {
-      data: sortedServices,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPage,
+      data: {
+        sortedServices,
+        favoriteTattoos: Array.isArray(client.favoriteTattoos)
+          ? (client.favoriteTattoos as string[])
+          : [],
+        // preferredArtistType: (client.preferredArtistType as string) || '',
       },
+      meta: { page, limit, total, totalPage },
     };
   }
 
@@ -503,7 +526,7 @@ const getAllNormalServicesFromDB = async (
     return 0;
   });
 
-  return { data: sortedData, meta };
+  return { data: { sortedServices: sortedData }, meta };
 };
 
 // getAllGuestServicesFromDB
@@ -545,9 +568,30 @@ const getAllGuestServicesFromDB = async (
   }
 
   // Step 2: Extract filters
-  const artistType =
+  const queryArtistType =
     (query.artistType as string) || (query.type as string) || '';
-  const tattooCategory = (query.tattooCategory as string) || '';
+
+  const effectiveArtistType =
+    queryArtistType !== ''
+      ? queryArtistType === 'All'
+        ? ''
+        : queryArtistType
+      : (client.preferredArtistType as string) || '';
+
+  const queryTattooCategory = (query.tattooCategory as string) || '';
+
+  const tattooCategories =
+    queryTattooCategory !== ''
+      ? queryTattooCategory === 'All'
+        ? []
+        : queryTattooCategory
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean)
+      : Array.isArray(client.favoriteTattoos)
+      ? (client.favoriteTattoos as string[])
+      : [];
+
   const searchTerm = (query.searchTerm as string) || '';
 
   // Step 3: Pagination
@@ -558,12 +602,12 @@ const getAllGuestServicesFromDB = async (
   // Step 4: Artist filter (type + category)
   const artistFilter: Record<string, unknown> = {};
 
-  if (artistType && artistType !== 'All') {
-    artistFilter.type = { $regex: new RegExp(artistType, 'i') };
+  if (effectiveArtistType && effectiveArtistType !== 'All') {
+    artistFilter.type = { $regex: new RegExp(effectiveArtistType, 'i') };
   }
 
-  if (tattooCategory && tattooCategory !== 'All') {
-    artistFilter.expertise = { $in: [tattooCategory] };
+  if (tattooCategories.length && !tattooCategories.includes('All')) {
+    artistFilter.expertise = { $in: tattooCategories };
   }
 
   // Step 5: Get nearby artists matching both filters AND having active GuestSpot
@@ -589,13 +633,14 @@ const getAllGuestServicesFromDB = async (
   // If no guest artists within radius, return empty result
   if (!artistIds.length) {
     return {
-      data: [],
-      meta: {
-        page,
-        limit,
-        total: 0,
-        totalPage: 0,
+      data: {
+        sortedServices: [],
+        favoriteTattoos: Array.isArray(client.favoriteTattoos)
+          ? (client.favoriteTattoos as string[])
+          : [],
+        // preferredArtistType: (client.preferredArtistType as string) || '',
       },
+      meta: { page, limit, total: 0, totalPage: 0 },
     };
   }
 
@@ -706,7 +751,7 @@ const getAllGuestServicesFromDB = async (
   const totalPage = Math.ceil(total / limit);
 
   return {
-    data: sortedServices,
+    data: { sortedServices, favoriteTattoos: client.favoriteTattoos },
     meta: {
       page,
       limit,
@@ -714,232 +759,6 @@ const getAllGuestServicesFromDB = async (
       totalPage,
     },
   };
-};
-
-// getAllServicesForBusinessFromDB
-const getAllServicesForBusinessFromDB = async (
-  user: IAuth | null,
-  query: Record<string, unknown>
-) => {
-  if (user) {
-    // Step 1: Find Client and check existence
-    const client = await Client.findOne({ auth: user._id });
-    if (!client) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Your Client ID not found!');
-    }
-
-    const [longitude, latitude] = client.location.coordinates; // Client longitude and latitude
-    const radius = client.radius; // Client's search radius (in kilometers)
-
-    // Step 2: Extract filters
-    const artistType =
-      (query.artistType as string) || (query.type as string) || '';
-    const tattooCategory = (query.tattooCategory as string) || '';
-    const searchTerm = (query.searchTerm as string) || '';
-
-    // Step 3: Pagination
-    const page = parseInt(query.page as string, 10) || 1;
-    const limit = parseInt(query.limit as string, 10) || 12;
-    const skip = (page - 1) * limit;
-
-    // Step 4: Artist filter (type + category)
-    const artistFilter: Record<string, unknown> = {};
-
-    if (artistType && artistType !== 'All') {
-      artistFilter.type = { $regex: new RegExp(artistType, 'i') };
-    }
-
-    if (tattooCategory && tattooCategory !== 'All') {
-      artistFilter.expertise = { $in: [tattooCategory] };
-    }
-
-    // Step 5: Get nearby artists matching both filters
-    const artists = await Artist.aggregate([
-      {
-        $geoNear: {
-          near: { type: 'Point', coordinates: [longitude, latitude] },
-          distanceField: 'distance',
-          maxDistance: radius * 1000,
-          spherical: true,
-        },
-      },
-      { $match: artistFilter },
-      { $project: { _id: 1, distance: 1 } },
-    ]);
-
-    const artistDistanceMap = new Map(
-      artists.map((a) => [a._id.toString(), a.distance])
-    );
-    const artistIds = artists.map((a) => a._id);
-
-    // If no artists found within radius, return empty result
-    if (!artistIds.length) {
-      return {
-        data: [],
-        meta: {
-          page,
-          limit,
-          total: 0,
-          totalPage: 0,
-        },
-      };
-    }
-
-    // Step 6: Build search filter
-    const searchFilter: Record<string, unknown> = {};
-    if (searchTerm) {
-      const regex = new RegExp(searchTerm, 'i');
-      const numVal = Number(searchTerm);
-      const orConditions: Record<string, unknown>[] = [
-        { title: regex },
-        { description: regex },
-        { bodyLocation: regex },
-      ];
-
-      // id searchTerm is numeric then numeric match will be added
-      if (!isNaN(numVal)) {
-        orConditions.push(
-          { price: numVal },
-          { totalCompletedOrder: numVal },
-          { totalReviewCount: numVal },
-          { avgRating: numVal }
-        );
-      }
-
-      searchFilter.$or = orConditions;
-    }
-
-    // Step 7: Query services belonging to matched artists
-    const services = await Service.find({
-      artist: { $in: artistIds },
-      ...searchFilter,
-    })
-      .populate({
-        path: 'artist',
-        populate: {
-          path: 'auth',
-          model: 'Auth',
-          select: 'email fullName image role',
-        },
-      })
-      .skip(skip)
-      .limit(limit)
-      .lean(); // return plain JS objects for easier modification
-
-    // Step 8: Inject distance into artist objects
-    const servicesWithDistance = services.map((service) => {
-      const artistId = service.artist?._id?.toString();
-      const distance = artistId ? artistDistanceMap.get(artistId) : null;
-      return {
-        ...service,
-        artist: {
-          ...service.artist,
-          distance,
-        },
-      };
-    });
-
-    // Step 8.1: Prioritize boosted artists, then sort by distance
-    const sortedServices = servicesWithDistance.sort((a, b) => {
-      const aBoost =
-        a?.artist && 'boost' in a.artist && a.artist.boost
-          ? (a.artist.boost as { isActive?: boolean }).isActive === true
-            ? 1
-            : 0
-          : 0;
-
-      const bBoost =
-        b?.artist && 'boost' in b.artist && b.artist.boost
-          ? (b.artist.boost as { isActive?: boolean }).isActive === true
-            ? 1
-            : 0
-          : 0;
-
-      // boosted artists first
-      if (aBoost !== bBoost) return bBoost - aBoost;
-
-      const aDistance =
-        a?.artist && 'distance' in a.artist && a.artist.distance != null
-          ? (a.artist.distance as number)
-          : Infinity;
-      const bDistance =
-        b?.artist && 'distance' in b.artist && b.artist.distance != null
-          ? (b.artist.distance as number)
-          : Infinity;
-
-      return aDistance - bDistance;
-    });
-
-    // Step 9: Total count for pagination
-    const total = await Service.countDocuments({
-      artist: { $in: artistIds },
-      ...searchFilter,
-    });
-
-    // const total = services.length || 0;
-    const totalPage = Math.ceil(total / limit);
-
-    return {
-      data: sortedServices,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPage,
-      },
-    };
-  }
-
-  // Step 10: Public fallback (no user) - show all services (no radius / distance), boosted first
-  const serviceQuery = new QueryBuilder(
-    Service.find().populate({
-      path: 'artist',
-      select: 'type expertise stringLocation hourlyRate description boost',
-      populate: {
-        path: 'auth',
-        select: 'fullName image',
-      },
-    }),
-    query
-  )
-    .search([
-      'title',
-      'description',
-      'price',
-      'bodyLocation',
-      'totalCompletedOrder',
-      'totalReviewCount',
-      'avgRating',
-    ])
-    .filter()
-    .sort()
-    .paginate();
-
-  const data = await serviceQuery.modelQuery;
-  const meta = await serviceQuery.countTotal();
-
-  // Prioritize boosted artists in the returned page
-  const sortedData = data.sort((a, b) => {
-    const aBoost =
-      a?.artist && 'boost' in a.artist && a.artist.boost
-        ? (a.artist.boost as { isActive?: boolean }).isActive === true
-          ? 1
-          : 0
-        : 0;
-
-    const bBoost =
-      b?.artist && 'boost' in b.artist && b.artist.boost
-        ? (b.artist.boost as { isActive?: boolean }).isActive === true
-          ? 1
-          : 0
-        : 0;
-
-    if (aBoost !== bBoost) return bBoost - aBoost;
-
-    return 0;
-  });
-
-  return { data: sortedData, meta };
 };
 
 // updateClientRadiusIntoDB
@@ -965,6 +784,5 @@ export const ClientService = {
   getDiscoverArtistsFromDB,
   getAllNormalServicesFromDB,
   getAllGuestServicesFromDB,
-  getAllServicesForBusinessFromDB,
   updateClientRadiusIntoDB,
 };

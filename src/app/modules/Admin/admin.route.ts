@@ -75,9 +75,18 @@ router
     AdminController.fetchAllSecretReviews
   );
 
+// 12. getAllServices
 router
   .route('/services')
   .get(auth(ROLE.SUPER_ADMIN, ROLE.ADMIN), AdminController.getAllServices);
+
+// 13. blockUnblockAnyUser
+router
+  .route('/block-unblock-user/:userAuthId')
+  .patch(
+    auth(ROLE.SUPER_ADMIN, ROLE.ADMIN),
+    AdminController.blockUnblockAnyUser
+  );
 
 // // changeStatusOnFolder
 // router

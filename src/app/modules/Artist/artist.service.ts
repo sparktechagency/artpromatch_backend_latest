@@ -93,13 +93,16 @@ const getAllArtistsFromDB = async (query: Record<string, any>, user: IAuth) => {
   }
 
   // Step 4: Tattoo Category Filter (Expertise)
-  if (query.tattooCategory && query.tattooCategory !== 'All') {
-    searchFilter.expertise = {
-      $elemMatch: {
-        $regex: query.tattooCategory,
-        $options: 'i',
-      },
-    };
+  const tattooCategory = (query.tattooCategory as string) || '';
+  const tattooCategories = tattooCategory
+    .split(',')
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  if (tattooCategories.length && !tattooCategories.includes('All')) {
+    const regexes = tattooCategories.map((c) => new RegExp(c, 'i'));
+    // Match any expertise that matches any of the provided categories (case-insensitive)
+    searchFilter.expertise = { $in: regexes };
   }
 
   // Step 5: SearchTerm Filter (stringLocation, expertise, fullName)
@@ -546,8 +549,6 @@ const updateArtistServiceByIdIntoDB = async (
   const images = [...keptImages, ...uploadedImages];
 
   /* -------------------- UPDATE -------------------- */
-
-  
   const result = await Service.findByIdAndUpdate(
     id,
     {
@@ -824,7 +825,7 @@ const createArtistServiceIntoDB = async (
   files: TServiceImages
 ): Promise<IService> => {
   const artist = await Artist.findOne({ auth: user._id });
-  
+
   if (!artist) {
     throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
   }
@@ -859,7 +860,7 @@ const createArtistServiceIntoDB = async (
     );
     thumbnail = thumbResult.secure_url;
   }
-  
+
   // Save to database
   const serviceData = {
     ...payload,
@@ -867,7 +868,7 @@ const createArtistServiceIntoDB = async (
     thumbnail,
     images,
   };
-  
+
   const service = await Service.create(serviceData);
   if (!service) {
     if (thumbnail) {
@@ -876,7 +877,7 @@ const createArtistServiceIntoDB = async (
     if (images.length > 0) {
       images?.map(async (image) => await deleteImageFromCloudinary(image));
     }
-    throw new AppError(httpStatus.BAD_REQUEST, "Failed to create service")
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create service');
   }
 
   return service;
