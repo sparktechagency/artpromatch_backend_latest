@@ -98,7 +98,7 @@ const getAllBookingsForAdmin = asyncHandler(async (req, res) => {
   });
 });
 
-// fetchAllClients
+// 8. fetchAllClients
 const fetchAllClients = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllClientsFromDB(req.query);
 
@@ -110,7 +110,7 @@ const fetchAllClients = asyncHandler(async (req, res) => {
   });
 });
 
-// fetchAllArtists
+// 9. fetchAllArtists
 const fetchAllArtists = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllArtistsFromDB(req.query);
 
@@ -122,7 +122,7 @@ const fetchAllArtists = asyncHandler(async (req, res) => {
   });
 });
 
-// fetchAllBusinesses
+// 10. fetchAllBusinesses
 const fetchAllBusinesses = asyncHandler(async (req, res) => {
   const result = await AdminService.fetchAllBusinessesFromDB(req.query);
 
@@ -134,6 +134,19 @@ const fetchAllBusinesses = asyncHandler(async (req, res) => {
   });
 });
 
+// 11. fetchAllSecretReviews
+const fetchAllSecretReviews = asyncHandler(async (req, res) => {
+  const result = await AdminService.fetchAllSecretReviewsFromDB(req.query);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Reviews retrieved successFully!',
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
+// 12. getAllServices
 const getAllServices = asyncHandler(async (req, res) => {
   const result = await AdminService.getAllServicesForAdminIntoDb(req.query);
 
@@ -145,15 +158,15 @@ const getAllServices = asyncHandler(async (req, res) => {
   });
 });
 
-// fetchAllSecretReviews
-const fetchAllSecretReviews = asyncHandler(async (req, res) => {
-  const result = await AdminService.fetchAllSecretReviewsFromDB(req.query);
+// 13. blockUnblockAnyUser
+const blockUnblockAnyUser = asyncHandler(async (req, res) => {
+  const userAuthId = req.params.userAuthId;
+  const result = await AdminService.blockUnblockAnyUserIntoDB(userAuthId);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    message: 'Reviews retrieved successFully!',
-    data: result.data,
-    meta: result.meta,
+    message: 'Business verified successfully!',
+    data: result,
   });
 });
 
@@ -183,5 +196,6 @@ export const AdminController = {
   fetchAllArtists,
   fetchAllBusinesses,
   fetchAllSecretReviews,
-  getAllServices
+  getAllServices,
+  blockUnblockAnyUser,
 };

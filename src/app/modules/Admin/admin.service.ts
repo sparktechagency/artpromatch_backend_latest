@@ -322,7 +322,7 @@ const fetchAllClientsFromDB = async (query: Record<string, unknown>) => {
     Client.find().populate([
       {
         path: 'auth',
-        select: 'fullName image email phoneNumber isProfile',
+        select: 'fullName image email phoneNumber isProfile isActive',
       },
     ]),
     query
@@ -828,6 +828,18 @@ const getAllServicesForAdminIntoDb = async (query: {
   };
 };
 
+const blockUnblockAnyUserIntoDB = async (userAuthId: string) => {
+  const user = await Auth.findById(userAuthId);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  user.isActive = !user.isActive;
+  await user.save();
+  return null;
+};
+
 export const AdminService = {
   fetchDasboardPageData,
   getYearlyRevenueStats,
@@ -842,4 +854,5 @@ export const AdminService = {
   fetchAllSecretReviewsFromDB,
   getAllBookingsForAdminIntoDb,
   getAllServicesForAdminIntoDb,
+  blockUnblockAnyUserIntoDB,
 };
