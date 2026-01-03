@@ -153,6 +153,7 @@ const bookingSchema = new Schema<IBooking>(
     rating: { type: Number, min: 1, max: 5 },
 
     isInGuestSpot: { type: Boolean, default: false },
+    isReviewed: { type: Boolean, default: false },
   },
   { timestamps: true, versionKey: false }
 );
