@@ -29,7 +29,9 @@ const createAuthSchema = z.object({
       .string({
         required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format!' }),
+      .trim()
+      .email({ message: 'Invalid email format!' })
+      .toLowerCase(),
 
     password: z
       .string({
@@ -72,7 +74,9 @@ const sendSignupOtpAgainSchema = z.object({
       .string({
         required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format!' }),
+      .trim()
+      .email({ message: 'Invalid email format!' })
+      .toLowerCase(),
   }),
 });
 
@@ -83,7 +87,9 @@ const verifySignupOtpSchema = z.object({
       .string({
         required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format!' }),
+      .trim()
+      .email({ message: 'Invalid email format!' })
+      .toLowerCase(),
     otp: z
       .string({
         required_error: 'Password is required!',
@@ -100,7 +106,9 @@ const signinSchema = z.object({
       .string({
         required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format!' }),
+      .trim()
+      .email({ message: 'Invalid email format!' })
+      .toLowerCase(),
 
     password: z
       .string({
@@ -185,7 +193,11 @@ const createProfileSchema = z.object({
       businessType: z.enum(['Studio', 'Event Organizer', 'Both']).optional(),
       servicesOffered: z.array(zodEnumFromObject(SERVICES_OFFERED)).optional(),
       contactNumber: z.string().optional(),
-      contactEmail: z.string().email('Invalid email address!').optional(),
+      contactEmail: z
+        .string()
+        .trim()
+        .email('Invalid email address!')
+        .optional(),
       // Operating Hours (Weekly)
       operatingHours: z
         .record(
@@ -218,7 +230,7 @@ const createProfileSchema = z.object({
     .strict()
     .superRefine((data, ctx) => {
       if (data.role === ROLE.ARTIST) {
-        if (!data.artistType) {
+        if (!data.artistType?.trim()) {
           ctx.addIssue({
             path: ['artistType'],
             code: z.ZodIssueCode.custom,
@@ -268,7 +280,7 @@ const createProfileSchema = z.object({
           });
         }
 
-        if (!data.businessType) {
+        if (!data.businessType?.trim()) {
           ctx.addIssue({
             path: ['businessType'],
             code: z.ZodIssueCode.custom,
@@ -292,7 +304,7 @@ const createProfileSchema = z.object({
           });
         }
 
-        if (!data.contactNumber) {
+        if (!data.contactNumber?.trim()) {
           ctx.addIssue({
             path: ['contactNumber'],
             code: z.ZodIssueCode.custom,
@@ -300,12 +312,14 @@ const createProfileSchema = z.object({
           });
         }
 
-        if (!data.contactEmail) {
+        if (!data.contactEmail?.trim()) {
           ctx.addIssue({
             path: ['contactEmail'],
             code: z.ZodIssueCode.custom,
             message: 'Email address is required!',
           });
+        } else {
+          data?.contactEmail?.toLowerCase();
         }
       }
     }),
@@ -315,9 +329,13 @@ const createProfileSchema = z.object({
 const socialSigninSchema = z.object({
   body: z.object({
     email: z
-      .string()
-      .email('Invalid email address!')
-      .nonempty('Email is required!'),
+      .string({
+        required_error: 'Email is required!',
+      })
+      .trim()
+      .email({ message: 'Invalid email format!' })
+      .nonempty('Email is required!')
+      .toLowerCase(),
     fcmToken: z.string().nonempty('FCM Token is required!'),
     image: z.string().url('Image URL must be a valid URL!'),
     fullName: z.string(),
@@ -371,7 +389,8 @@ const forgotPasswordSchema = z.object({
       .string({
         required_error: 'Email is required!',
       })
-      .email({ message: 'Invalid email format!' }),
+      .email({ message: 'Invalid email format!' })
+      .toLowerCase(),
   }),
 });
 
@@ -423,8 +442,17 @@ const resetPasswordSchema = z.object({
 const deactivateUserAccountSchema = z.object({
   body: z
     .object({
-      email: z.string().email('Invalid email!'),
-      password: z.string(),
+      email: z
+        .string({
+          required_error: 'Email is required!',
+        })
+        .email({ message: 'Invalid email format!' })
+        .toLowerCase(),
+
+      password: z.string({
+        required_error: 'Password is required!',
+      }),
+
       deactivationReason: z
         .string()
         .min(3, 'Reason must be at least 3 characters!'),
@@ -436,7 +464,13 @@ const deactivateUserAccountSchema = z.object({
 const deleteUserAccountSchema = z.object({
   body: z
     .object({
-      email: z.string().email('Invalid email!'),
+      email: z
+        .string({
+          required_error: 'Email is required!',
+        })
+        .email({ message: 'Invalid email format!' })
+        .toLowerCase(),
+
       password: z.string(),
     })
     .strict(),
@@ -462,6 +496,16 @@ const updateAuthDataSchema = z.object({
     stringLocation: z.string({
       required_error: 'Address is required!',
       invalid_type_error: 'Address must be string!',
+    }),
+
+    latitude: z.coerce.number({
+      required_error: 'Latitude is required!',
+      invalid_type_error: 'Latitude must be string!',
+    }),
+
+    longitude: z.coerce.number({
+      required_error: 'Longitude is required!',
+      invalid_type_error: 'Longitude must be string!',
     }),
   }),
 });
