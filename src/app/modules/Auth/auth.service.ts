@@ -22,6 +22,7 @@ import Business from '../Business/business.model';
 import BusinessPreferences from '../BusinessPreferences/businessPreferences.model';
 import Client from '../Client/client.model';
 import ClientPreferences from '../ClientPreferences/clientPreferences.model';
+import GuestSpot from '../GuestSpot/guestSpot.model';
 import { defaultUserImage, ROLE } from './auth.constant';
 import { IAuth } from './auth.interface';
 import { AuthValidation, TProfilePayload } from './auth.validation';
@@ -253,9 +254,9 @@ const signinIntoDB = async (payload: {
   if (!isPasswordCorrect) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid credentials!');
   }
-  
+
   user.isDeactivated = false;
-  user.deactivationReason = "";
+  user.deactivationReason = '';
   user.deactivatedAt = null;
   user.fcmToken = payload.fcmToken;
   await user.save();
@@ -1361,7 +1362,7 @@ const deactivateUserAccountFromDB = async (
   const currentUser = await Auth.findOne({
     _id: user._id,
     email,
-  }).select('+password'); 
+  }).select('+password');
   if (!currentUser) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
@@ -1389,7 +1390,6 @@ const deactivateUserAccountFromDB = async (
 
   return result;
 };
-
 
 // 15. deleteSpecificUserAccount
 const deleteSpecificUserAccount = async (
@@ -1500,7 +1500,6 @@ const deleteSpecificUserAccount = async (
   }
 };
 
-
 // 16. getNewAccessTokenFromServer
 const getNewAccessTokenFromServer = async (refreshToken: string) => {
   // checking if the given token is valid
@@ -1567,7 +1566,12 @@ const getNewAccessTokenFromServer = async (refreshToken: string) => {
 
 // 17. updateAuthDataIntoDB
 const updateAuthDataIntoDB = async (
-  payload: { fullName: string; stringLocation: string },
+  payload: {
+    fullName: string;
+    stringLocation: string;
+    latitude: number;
+    longitude: number;
+  },
   userData: IAuth
 ) => {
   const user = await Auth.findByIdAndUpdate(
@@ -1589,6 +1593,7 @@ const updateAuthDataIntoDB = async (
       { auth: user._id },
       {
         stringLocation: payload.stringLocation,
+        'location.coordinates': [payload.longitude, payload.latitude],
       },
       { new: true }
     );
@@ -1596,14 +1601,53 @@ const updateAuthDataIntoDB = async (
   }
 
   if (user.role === ROLE.ARTIST) {
-    const artist = await Artist.findOneAndUpdate(
+    const artist = await Artist.findOne({ auth: user._id }).select(
+      '_id stringLocation'
+    );
+
+    if (!artist) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Artist not found!');
+    }
+
+    // Check if artist has an active guest spot right now
+    const now = new Date();
+    const hasActiveGuestSpot = await GuestSpot.exists({
+      artist: artist._id,
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    });
+
+    const updatePayload: Record<string, unknown> = {
+      stringLocation: payload.stringLocation,
+    };
+
+    // If active guest spot: update only mainLocation
+    // Else: update both mainLocation and currentLocation
+    if (hasActiveGuestSpot) {
+      updatePayload['mainLocation.coordinates'] = [
+        payload.longitude,
+        payload.latitude,
+      ];
+    } else {
+      updatePayload['mainLocation.coordinates'] = [
+        payload.longitude,
+        payload.latitude,
+      ];
+      updatePayload['currentLocation.coordinates'] = [
+        payload.longitude,
+        payload.latitude,
+      ];
+    }
+
+    const updatedArtist = await Artist.findOneAndUpdate(
       { auth: user._id },
-      {
-        stringLocation: payload.stringLocation,
-      },
+      updatePayload,
       { new: true }
     );
-    stringLocation = artist?.stringLocation || '123 Main St, Springfield, IL';
+
+    stringLocation =
+      updatedArtist?.stringLocation || '123 Main St, Springfield, IL';
   }
 
   if (user.role === ROLE.BUSINESS) {
@@ -1611,6 +1655,7 @@ const updateAuthDataIntoDB = async (
       { auth: user._id },
       {
         stringLocation: payload.stringLocation,
+        'location.coordinates': [payload.longitude, payload.latitude],
       },
       { new: true }
     );
